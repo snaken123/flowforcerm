@@ -30,3 +30,4 @@ test-reports/
 
 # stray reserved-name artifact from source repo
 nul
+.neon
