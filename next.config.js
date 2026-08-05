@@ -10,15 +10,6 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/:path*",
-        destination: "/kiosk",
-        has: [{ type: "host", value: "flowforcerm.com/kiosk" }],
-      },
-    ];
-  },
   async headers() {
     return [
       {

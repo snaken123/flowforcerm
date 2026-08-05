@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
-    const host = req.headers.get("host") ?? "";
 
     const token = req.nextauth.token;
 
@@ -48,11 +47,10 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        const host = req.headers.get("host") ?? "";
         const { pathname } = req.nextUrl;
-        // Allow kiosk subdomain root through — the rewrite above handles it,
-        // and /kiosk page.tsx does its own auth check
-        if (host.startsWith("kiosk.") && pathname === "/") return true;
+        // Allow the /kiosk path through unauthenticated —
+        // /kiosk page.tsx does its own auth check
+        if (pathname.startsWith("/kiosk")) return true;
         return !!token;
       },
     },
