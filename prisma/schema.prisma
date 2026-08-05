@@ -1,0 +1,621 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  MEMBER
+  KIOSK
+  STORE
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  FROZEN
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  CANCELLED
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+  WAIVED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password           String?
+  role               Role      @default(MEMBER)
+  mustChangePassword     Boolean   @default(false)
+  passwordResetToken     String?   @unique
+  passwordResetExpires   DateTime?
+  totpSecret             String?
+  totpEnabled            Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  member          Member?   @relation("OwnMember")
+  managedMembers  Member[]  @relation("GuardianMembers")
+  employee Employee?
+
+  // Email OAuth tokens (stored separately for security)
+  emailIntegration EmailIntegration?
+  bookings         Booking[]
+  auditLogs        AuditLog[]
+  shopSales        ShopSale[]
+  shopInventoryLogs ShopInventoryLog[]
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  userName    String   // denormalized for display even if user deleted
+  action      String   // e.g. "ASSIGN_MEMBERSHIP", "FREEZE", "DELETE_SCHEDULE"
+  entityType  String   // e.g. "Member", "Subscription", "Schedule"
+  entityId    String?
+  entityName  String?  // e.g. member full name, schedule class name
+  description String   // human-readable summary
+  metadata    Json?    // extra details
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model Member {
+  id              String       @id @default(cuid())
+  userId          String?      @unique
+  user            User?        @relation("OwnMember", fields: [userId], references: [id], onDelete: Cascade)
+  guardianUserId  String?
+  guardian        User?        @relation("GuardianMembers", fields: [guardianUserId], references: [id], onDelete: SetNull)
+
+  // Personal info
+  memberNumber    String?   @unique
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime?
+  gender          String?
+  phone           String?
+  address         String?
+  city            String?
+  photoUrl        String?
+  faceDescriptor  Float[]
+
+  // Emergency contact
+  emergencyName   String?
+  emergencyPhone  String?
+  emergencyRel    String?
+
+  // Gym info
+  status          MemberStatus @default(ACTIVE)
+  joinDate        DateTime     @default(now())
+  activatedAt     DateTime?
+  notes           String?      @db.Text
+  source          String?      // how they heard about the gym
+
+  // Medical / waiver
+  medicalNotes          String?      @db.Text
+  waiverSigned          Boolean      @default(false)
+  waiverDate            DateTime?
+  privacyAcceptedAt     DateTime?
+  rulesAcknowledgedAt   DateTime?
+  handbookReadAt        DateTime?
+  onboardingCompletedAt DateTime?
+  athleteIdAsHome       Boolean      @default(true)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  subscriptions   Subscription[]
+  checkIns        CheckIn[]
+  rankRecords     RankRecord[]
+  payments        Payment[]
+  bookings        Booking[]
+  shopSales       ShopSale[]
+
+  @@index([status])
+}
+
+model Employee {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  employeeNumber String?   @unique
+  firstName      String
+  lastName       String
+  phone          String?
+  photoUrl       String?
+  employeeTypes  String[]
+  title          String?
+  bio            String?      @db.Text
+  certifications String?      @db.Text
+  belt           String?
+  hireDate       DateTime     @default(now())
+  dateOfBirth    DateTime?
+  isActive       Boolean      @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  taughtServices ServiceEmployee[]
+  schedules      ClassScheduleCoach[]
+  shopSales      ShopSale[]
+  subscriptions  Subscription[]
+  bookings       Booking[]
+  payments       Payment[]
+}
+
+model Service {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?   @db.Text
+  category      String    // e.g. "Martial Arts", "Fitness", "Kids"
+  color         String    @default("#3B82F6")
+  iconName      String?
+
+  // Pricing
+  monthlyPrice      Float?
+  dropInPrice       Float?
+  isActive          Boolean   @default(true)
+  freeTrialEnabled  Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subscriptions    Subscription[]
+  instructors      ServiceEmployee[]
+  packages         ServicePackage[]
+  allowedInClasses ClassAllowedService[]
+  checkIns         CheckIn[]
+}
+
+model ServicePackage {
+  id             String   @id @default(cuid())
+  serviceId      String
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name           String   // "1 Session", "4 Sessions", "Unlimited", etc.
+  sessions       Int?     // null = unlimited
+  validDays      Int      // validity in days
+  memberPrice    Float?
+  nonMemberPrice Float?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ServiceEmployee {
+  serviceId    String
+  employeeId   String
+  service      Service  @relation(fields: [serviceId], references: [id])
+  employee     Employee @relation(fields: [employeeId], references: [id])
+
+  @@id([serviceId, employeeId])
+}
+
+model ClassSchedule {
+  id             String        @id @default(cuid())
+  classId        String
+  classDef       ClassSession  @relation("ClassSchedules", fields: [classId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int           // 0=Sun, 1=Mon ... 6=Sat
+  startTime      String        // "HH:MM" 24h
+  endTime        String
+  location       String?
+  maxCapacity    Int?
+  isActive       Boolean       @default(true)
+  isRecurring    Boolean       @default(true)
+  startDate      DateTime?     // null = all time; for one-time = the specific date
+  endDate        DateTime?     // null = runs forever; set to cut off "this and succeeding"
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  coaches        ClassScheduleCoach[]
+  exceptions     ClassScheduleException[]
+  checkIns       CheckIn[]
+  bookings       Booking[]
+
+  @@index([classId])
+  @@index([isActive, dayOfWeek])
+}
+
+model ClassScheduleException {
+  id         String        @id @default(cuid())
+  scheduleId String
+  schedule   ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  date       DateTime      // specific date to skip (midnight UTC)
+  createdAt  DateTime      @default(now())
+
+  @@unique([scheduleId, date])
+}
+
+model ClassScheduleCoach {
+  scheduleId   String
+  schedule     ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  employeeId   String
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleId, employeeId])
+  @@index([employeeId])
+}
+
+model ClassSession {
+  id               String        @id @default(cuid())
+  name             String
+  color            String        @default("#3B82F6")
+  classType        String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  location         String?
+  notes            String?
+
+  createdAt        DateTime      @default(now())
+
+  bookings         Booking[]
+  allowedServices  ClassAllowedService[]
+  schedules        ClassSchedule[] @relation("ClassSchedules")
+  checkIns         CheckIn[]
+}
+
+model ClassAllowedService {
+  classSessionId  String
+  classSession    ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([classSessionId, serviceId])
+  @@index([serviceId])
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  memberId         String?
+  member           Member?       @relation(fields: [memberId], references: [id])
+  employeeId       String?
+  employee         Employee?     @relation(fields: [employeeId], references: [id])
+  sessionId        String
+  session          ClassSession  @relation(fields: [sessionId], references: [id])
+  scheduleId       String?       // specific ClassSchedule slot booked
+  schedule         ClassSchedule? @relation(fields: [scheduleId], references: [id])
+  scheduledDate    DateTime?     // the specific occurrence date for recurring schedules
+  subscriptionId   String?       // which membership was used
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  status           BookingStatus @default(CONFIRMED)
+  bookedById       String?       // User.id of who made the booking
+  bookedBy         User?         @relation(fields: [bookedById], references: [id])
+  cancelledAt      DateTime?
+  cancelReason     String?
+  sessionReturned  Boolean       @default(false)
+
+  createdAt        DateTime      @default(now())
+
+  @@unique([memberId, scheduleId, scheduledDate])
+  @@index([memberId])
+  @@index([employeeId])
+  @@index([sessionId])
+  @@index([subscriptionId])
+  @@index([scheduleId, scheduledDate])
+  @@index([memberId, scheduledDate])
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  memberId      String?
+  employeeId    String?
+  serviceId     String
+  member        Member?            @relation(fields: [memberId], references: [id])
+  employee      Employee?          @relation(fields: [employeeId], references: [id])
+  service       Service            @relation(fields: [serviceId], references: [id])
+
+  status        SubscriptionStatus @default(ACTIVE)
+  billingCycle  BillingCycle       @default(MONTHLY)
+  price         Float
+  startDate     DateTime           @default(now())
+  endDate       DateTime?
+  nextBillDate  DateTime?
+  sessionsTotal Int?
+  sessionsUsed  Int                @default(0)
+  frozenAt      DateTime?
+  frozenUntil   DateTime?
+  notes         String?
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  payments      Payment[]
+  bookings      Booking[]
+
+  @@index([memberId])
+  @@index([memberId, status])
+  @@index([status])
+  @@index([serviceId])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  memberId       String?
+  employeeId     String?
+  subscriptionId String?
+  member         Member?       @relation(fields: [memberId], references: [id])
+  employee       Employee?     @relation(fields: [employeeId], references: [id])
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  amount         Float
+  status         PaymentStatus @default(PENDING)
+  method         String?       // "cash", "card", "transfer"
+  reference      String?
+  notes          String?
+  paidAt         DateTime?
+  dueDate        DateTime?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([memberId])
+  @@index([subscriptionId])
+  @@index([paidAt])
+  @@index([status, paidAt])
+}
+
+model CheckIn {
+  id             String         @id @default(cuid())
+  memberId       String
+  member         Member         @relation(fields: [memberId], references: [id])
+  serviceId      String?
+  service        Service?       @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  classSessionId String?
+  classSession   ClassSession?  @relation(fields: [classSessionId], references: [id])
+  scheduleId     String?
+  schedule       ClassSchedule? @relation(fields: [scheduleId], references: [id])
+  checkedInAt    DateTime       @default(now())
+  notes          String?
+
+  @@index([memberId])
+  @@index([scheduleId])
+  @@index([checkedInAt])
+}
+
+model RankRecord {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  martialArt  String
+  rank        String
+  stripes     Int?
+  awardedAt   DateTime @default(now())
+  awardedBy   String?
+  notes       String?
+
+  @@index([memberId])
+}
+
+model EmailIntegration {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider             String   // "gmail" | "outlook"
+  accessToken          String   @db.Text
+  refreshToken         String?  @db.Text
+  expiresAt            DateTime?
+  email                String
+  emailFilterAddresses String[] @default([])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Broadcast {
+  id          String   @id @default(cuid())
+  subject     String
+  body        String   @db.Text
+  audience    String   // "all", "active", "inactive", "specific"
+  recipientCount Int
+  sentAt      DateTime @default(now())
+  sentById    String
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model FreeTrialToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  email     String
+  firstName String
+  lastName  String
+  phone     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+enum ShopCategory {
+  DRINKS
+  MERCHANDISE
+}
+
+enum ShopInventoryLogType {
+  COUNT
+  ADJUSTMENT
+}
+
+model ShopItem {
+  id           String       @id @default(cuid())
+  name         String
+  category     ShopCategory
+  sellingPrice Float
+  costPrice    Float        @default(0)
+  stock        Int          @default(0)
+  photoUrl       String?
+  isActive       Boolean      @default(true)
+  availableSizes String       @default("[]") // JSON array of custom size strings beyond XS/S/M/L/XL
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  saleItems    ShopSaleItem[]
+  inventoryLogs ShopInventoryLog[]
+  sizeStocks   ShopItemSizeStock[]
+
+  @@index([category])
+}
+
+model ShopItemSizeStock {
+  id         String   @id @default(cuid())
+  shopItemId String
+  size       String
+  stock      Int      @default(0)
+
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id], onDelete: Cascade)
+
+  @@unique([shopItemId, size])
+  @@index([shopItemId])
+}
+
+model ShopSale {
+  id              String    @id @default(cuid())
+  buyerMemberId   String?
+  buyerEmployeeId String?
+  buyerName       String?
+  staffId         String
+  staffName       String
+  paymentMode     String?
+  receiptUrl      String?
+  needsReceipt    Boolean   @default(true)
+  total           Float
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  buyerMember   Member?   @relation(fields: [buyerMemberId], references: [id])
+  buyerEmployee Employee? @relation(fields: [buyerEmployeeId], references: [id])
+  staff         User      @relation(fields: [staffId], references: [id])
+  items         ShopSaleItem[]
+
+  @@index([createdAt])
+  @@index([buyerMemberId])
+  @@index([staffId])
+}
+
+model ShopSaleItem {
+  id           String   @id @default(cuid())
+  saleId       String
+  shopItemId   String
+  quantity     Int
+  priceAtSale  Float
+  selectedSize String?  // size chosen at point of sale (merchandise only)
+
+  sale     ShopSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  shopItem ShopItem @relation(fields: [shopItemId], references: [id])
+
+  @@index([saleId])
+}
+
+model ShopInventoryLog {
+  id         String               @id @default(cuid())
+  shopItemId String
+  type       ShopInventoryLogType
+  quantity   Int
+  reason     String?
+  staffId    String
+  staffName  String
+  createdAt  DateTime             @default(now())
+
+  shopItem ShopItem @relation(fields: [shopItemId], references: [id])
+  staff    User     @relation(fields: [staffId], references: [id])
+
+  @@index([shopItemId])
+  @@index([createdAt])
+}
+
+// Atomic counter for race-condition-free sequential member number generation
+model MemberNumberSequence {
+  id      String @id @default("singleton")
+  lastVal Int    @default(0)
+}
+
+// Registered kiosk devices — only devices with a valid token can use the kiosk check-in
+model KioskDevice {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  label     String
+  createdAt DateTime @default(now())
+}

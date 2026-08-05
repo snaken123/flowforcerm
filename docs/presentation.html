@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NorthSouth GymRM – Product Overview</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #888;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59,130,246,0.12);
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+
+  /* ── SLIDE ENGINE ──────────────────────────────────────────────────
+     Each slide fills the viewport but scrolls vertically if content
+     overflows. A custom thin scrollbar keeps it unobtrusive.
+     Cover/closing slides use .slide-vcenter to center their content.
+  ─────────────────────────────────────────────────────────────────── */
+  #deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;   /* scroll-safe: never clips top */
+    padding: clamp(16px, 3vh, 36px) clamp(24px, 4vw, 56px) 72px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    /* thin scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .slide::-webkit-scrollbar { width: 5px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .slide.active { display: flex; }
+
+  /* Vertically-centered wrapper used only on cover/closing slides */
+  .slide-vcenter {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: calc(100vh - 72px - clamp(32px, 6vh, 72px));
+    text-align: center;
+  }
+
+  /* ── NAV ─────────────────────────────────────────────────────────── */
+  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13,13,13,0.97); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 9px 20px; z-index: 100; backdrop-filter: blur(6px); }
+  .nav-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 5px 16px; border-radius: 6px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .nav-btn:hover { border-color: var(--accent); color: var(--text); }
+  .nav-btn:disabled { opacity: 0.28; cursor: default; }
+  .slide-counter { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+  .dot-row { display: flex; gap: 5px; flex-wrap: wrap; max-width: 300px; justify-content: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+  .dot.active { background: var(--accent); }
+
+  /* ── TYPOGRAPHY ──────────────────────────────────────────────────── */
+  .label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; flex-shrink: 0; }
+  .hero-title { font-size: clamp(28px, 5vw, 52px); font-weight: 800; line-height: 1.1; letter-spacing: -2px; text-align: center; }
+  .hero-sub { font-size: clamp(13px, 1.5vw, 17px); color: var(--muted); margin-top: 14px; text-align: center; max-width: 520px; line-height: 1.6; }
+  .slide-title { font-size: clamp(20px, 2.8vw, 30px); font-weight: 700; letter-spacing: -0.5px; align-self: flex-start; margin-bottom: 2px; flex-shrink: 0; }
+  .slide-desc { font-size: clamp(12px, 1.2vw, 14px); color: var(--muted); align-self: flex-start; margin-bottom: clamp(12px, 2vh, 20px); flex-shrink: 0; }
+
+  /* ── COVER ───────────────────────────────────────────────────────── */
+  .cover-logo { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; margin-bottom: 20px; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 4px 24px rgba(0,0,0,0.6); }
+  .cover-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cover-divider { width: 50px; height: 2px; background: var(--accent); margin: 20px auto; }
+  .cover-tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+
+  /* ── LAYOUT ──────────────────────────────────────────────────────── */
+  .full-w { width: 100%; min-height: 0; }
+  .row { display: flex; gap: clamp(12px, 2vw, 20px); width: 100%; align-items: flex-start; min-height: 0; }
+  .col { flex: 1; min-width: 0; min-height: 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.2vw, 14px); width: 100%; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(8px, 1vw, 12px); width: 100%; }
+
+  /* ── CARDS ───────────────────────────────────────────────────────── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.4vw, 18px); }
+  .card-accent { border-top: 2px solid var(--accent); }
+  .card-title { font-size: clamp(11px, 1.1vw, 13px); font-weight: 600; margin-bottom: 4px; }
+  .card-body { font-size: clamp(10px, 1vw, 12px); color: var(--muted); line-height: 1.5; }
+  .role-icon { font-size: clamp(18px, 2vw, 22px); margin-bottom: 6px; }
+
+  /* ── SCREENSHOT FRAME ────────────────────────────────────────────── */
+  .ss-frame { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #111; min-height: 0; flex-shrink: 1; }
+  /* Images cap at 38vh so they never push content off screen.
+     object-fit:cover + object-position:top preserves the most
+     useful part of each screenshot (the header/controls area). */
+  .ss-frame img {
+    width: 100%;
+    display: block;
+    max-height: 38vh;
+    object-fit: cover;
+    object-position: top;
+  }
+  /* Full-width "hero" screenshot slots get slightly more room */
+  .ss-frame.full-w img { max-height: 55vh; }
+
+  /* ── STAT ────────────────────────────────────────────────────────── */
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: clamp(10px, 1.4vh, 16px) clamp(14px, 1.6vw, 20px); text-align: center; }
+  .stat-num { font-size: clamp(24px, 2.8vw, 32px); font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+
+  /* ── PILL ────────────────────────────────────────────────────────── */
+  .pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .pill-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .pill-green { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .pill-amber { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .pill-purple { background: rgba(167,139,250,0.12); color: #c4b5fd; }
+  .pill-cyan { background: rgba(34,211,238,0.12); color: #67e8f9; }
+  .pill-orange { background: rgba(251,146,60,0.12); color: #fb923c; }
+
+  /* ── FEATURE LIST ────────────────────────────────────────────────── */
+  .feat-list { list-style: none; padding: 0; }
+  .feat-list li { padding: clamp(5px, 0.8vh, 8px) 0; border-bottom: 1px solid var(--border); font-size: clamp(11px, 1.1vw, 13px); display: flex; align-items: center; gap: 8px; }
+  .feat-list li:last-child { border-bottom: none; }
+  .feat-list li::before { content: "→"; color: var(--accent); font-size: 11px; flex-shrink: 0; }
+
+  /* ── STEP LIST ───────────────────────────────────────────────────── */
+  .step-list { padding: 0; list-style: none; }
+  .step-list li { display: flex; gap: 10px; align-items: flex-start; padding: clamp(5px, 0.8vh, 8px) 0; font-size: clamp(11px, 1.1vw, 13px); border-bottom: 1px solid var(--border); }
+  .step-list li:last-child { border-bottom: none; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── TABLE ───────────────────────────────────────────────────────── */
+  .mini-table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 1.1vw, 13px); }
+  .mini-table th { background: #1a1a1a; padding: 6px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .mini-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+
+  .hl { color: var(--accent); font-weight: 600; }
+  .muted { color: var(--muted); }
+
+  .slide-divider { background: linear-gradient(135deg, #0d1f3c 0%, #0d0d0d 60%); }
+
+  /* ── SCROLL HINT ─────────────────────────────────────────────────── */
+  /* Fades in a subtle "scroll" indicator when slide overflows */
+  .scroll-hint {
+    position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--muted); letter-spacing: 1px;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scroll-hint::before { content: "▼"; font-size: 9px; animation: bounce 1.4s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 01: COVER -->
+<div class="slide active" data-id="cover">
+  <div class="slide-vcenter">
+    <div class="cover-logo"><img src="ns-logo.png" alt="NorthSouth Logo"></div>
+    <div class="label">Product Overview</div>
+    <h1 class="hero-title">NorthSouth<br>GymRM</h1>
+    <div class="cover-divider"></div>
+    <p class="hero-sub">The all-in-one management system powering NorthSouth Fight Sports — members, classes, check-ins, store, and reporting in one platform.</p>
+    <div class="cover-tagline" style="margin-top:20px;">July 2026 · Version 3.0 · app.northsouth.com.ph</div>
+  </div>
+</div>
+
+<!-- SLIDE 02: WHAT IS GYMRM -->
+<div class="slide" data-id="what">
+  <div class="label">Overview</div>
+  <h2 class="slide-title">What is GymRM?</h2>
+  <p class="slide-desc">A purpose-built multi-tenant SaaS for martial arts and combat sports gyms.</p>
+  <div class="row" style="align-items:flex-start;">
+    <div class="col">
+      <div class="grid-2">
+        <div class="card card-accent"><div class="card-title">🏋️ Member Management</div><div class="card-body">Full athlete database with photo, contact, emergency info, rank history, and guardian links.</div></div>
+        <div class="card card-accent"><div class="card-title">📅 Class Scheduling</div><div class="card-body">Weekly calendar with copy, multi-coach support, and capacity limits.</div></div>
+        <div class="card card-accent"><div class="card-title">🖥️ Self-Service Kiosk</div><div class="card-body">Athletes check in via QR code or NS number — no staff needed.</div></div>
+        <div class="card card-accent"><div class="card-title">🛒 Store POS</div><div class="card-body">Sell merchandise and drinks with a dedicated POS terminal and inventory tracking.</div></div>
+        <div class="card card-accent"><div class="card-title">📊 Reports</div><div class="card-body">Daily and monthly revenue by service type and payment method.</div></div>
+        <div class="card card-accent"><div class="card-title">📣 Communications</div><div class="card-body">SMS broadcasts and email to all members from inside the app.</div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ss-frame">
+        <img src="screenshots/v3-01-admin-dashboard.png" alt="Dashboard">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 03: ROLES -->
+<div class="slide" data-id="roles">
+  <div class="label">Access Control</div>
+  <h2 class="slide-title">Six Roles — One Platform</h2>
+  <p class="slide-desc">Every user sees only what they need. Access is enforced at the API level.</p>
+  <div class="grid-3" style="margin-top:4px;">
+    <div class="card"><div class="role-icon">🛡️</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Admin</div><span class="pill pill-blue">Full Access</span></div><div class="card-body">Members · Schedule · Reports · Store · Employees · Settings · Logs</div></div>
+    <div class="card"><div class="role-icon">🥋</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Coach</div><span class="pill pill-green">Read-Only</span></div><div class="card-body">Today's assigned classes, athlete rosters, full schedule read-only.</div></div>
+    <div class="card"><div class="role-icon">👤</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Staff</div><span class="pill pill-amber">Operational</span></div><div class="card-body">Check-In · Members · Schedule · Reports · Store</div></div>
+    <div class="card"><div class="role-icon">🖥️</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Kiosk</div><span class="pill pill-cyan">Terminal</span></div><div class="card-body">Self-service check-in screen for the gym entrance tablet.</div></div>
+    <div class="card"><div class="role-icon">🛒</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Store</div><span class="pill pill-orange">POS Only</span></div><div class="card-body">Point-of-sale terminal. Process sales and view transaction history.</div></div>
+    <div class="card"><div class="role-icon">🏃</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div class="card-title" style="margin:0">Athlete</div><span class="pill pill-purple">Self-Service</span></div><div class="card-body">Profile · Schedule · Bookings · Membership · Athlete ID Card</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 04: LOGIN -->
+<div class="slide" data-id="login">
+  <div class="label">Authentication</div>
+  <h2 class="slide-title">Signing In</h2>
+  <p class="slide-desc">One login URL for all roles — each user is routed to their dashboard automatically.</p>
+  <div class="row" style="align-items:center;gap:28px;">
+    <div class="col" style="max-width:340px;">
+      <ul class="step-list">
+        <li><div class="step-num">1</div><span>Go to <span class="hl">app.northsouth.com.ph</span></span></li>
+        <li><div class="step-num">2</div><span>Enter email address</span></li>
+        <li><div class="step-num">3</div><span>Enter password</span></li>
+        <li><div class="step-num">4</div><span>Click <span class="hl">Sign In</span></span></li>
+        <li><div class="step-num">5</div><span>Routed to your role-specific dashboard</span></li>
+      </ul>
+      <div style="margin-top:20px;padding:12px 14px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Role routing</div>
+        <table class="mini-table">
+          <tr><td>Admin / Staff / Coach</td><td class="muted">→ /dashboard</td></tr>
+          <tr><td>Kiosk</td><td class="muted">→ /kiosk</td></tr>
+          <tr><td>Store</td><td class="muted">→ /admin/shop</td></tr>
+          <tr><td>Athlete</td><td class="muted">→ Member portal</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="ss-frame" style="flex:1;">
+      <img src="screenshots/v3-00-login.png" alt="Login">
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 05: ADMIN DASHBOARD -->
+<div class="slide" data-id="admin-dash">
+  <div class="label">Admin</div>
+  <h2 class="slide-title">Admin Dashboard</h2>
+  <p class="slide-desc">Real-time snapshot — check-ins today, new members, overdue payments, and expiring subscriptions.</p>
+  <div class="ss-frame full-w" style="width:100%;">
+    <img src="screenshots/v3-01-admin-dashboard.png" alt="Admin Dashboard">
+  </div>
+</div>
+
+<!-- SLIDE 06: ATHLETES -->
+<div class="slide" data-id="athletes">
+  <div class="label">Admin · Athletes</div>
+  <h2 class="slide-title">Managing Athletes</h2>
+  <p class="slide-desc">Full member database — instant search, rich profiles, memberships, payments, rank history.</p>
+  <div class="row" style="gap:18px;">
+    <div class="col" style="display:flex;flex-direction:column;gap:10px;">
+      <ul class="feat-list">
+        <li>Search by name or email — instant results</li>
+        <li>View and edit complete athlete profile</li>
+        <li>Assign and manage multiple memberships</li>
+        <li>Log payments with method and date</li>
+        <li>Full check-in history and attendance</li>
+        <li>Record rank promotions and belt history</li>
+        <li>Link guardian accounts for minors</li>
+        <li>Freeze all memberships with confirmation</li>
+        <li>Free Trial badge for prospects</li>
+      </ul>
+    </div>
+    <div style="flex:1.4;display:flex;flex-direction:column;gap:10px;">
+      <div class="ss-frame"><img src="screenshots/v3-02-admin-athletes.png" alt="Athletes List"></div>
+      <div class="ss-frame"><img src="screenshots/v3-02b-admin-athletes-search.png" alt="Athlete Search"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 07: ATHLETE DETAIL -->
+<div class="slide" data-id="athlete-detail">
+  <div class="label">Admin · Athlete Detail</div>
+  <h2 class="slide-title">Athlete Profile</h2>
+  <p class="slide-desc">Everything about a member in one place — memberships, payments, attendance, rank, and ID.</p>
+  <div class="ss-frame full-w" style="width:100%;">
+    <img src="screenshots/v3-03-admin-athlete-detail.png" alt="Athlete Detail">
+  </div>
+</div>
+
+<!-- SLIDE 08: SCHEDULE -->
+<div class="slide" data-id="schedule">
+  <div class="label">Admin · Schedule</div>
+  <h2 class="slide-title">Class Schedule</h2>
+  <p class="slide-desc">Weekly calendar — add, edit, copy, and delete classes. Colour-coded by service type.</p>
+  <div class="row" style="gap:20px;align-items:flex-start;">
+    <div class="ss-frame" style="flex:1.6;">
+      <img src="screenshots/v3-04-admin-schedule.png" alt="Schedule">
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Click any slot to add a class</li>
+        <li>Click class card to edit or delete</li>
+        <li>Copy classes to other days</li>
+        <li>Assign a coach per class</li>
+        <li>Set capacity limits</li>
+        <li>View booked athlete count</li>
+        <li>Colour-coded by service type</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 09: REPORTS -->
+<div class="slide" data-id="reports">
+  <div class="label">Admin · Reports</div>
+  <h2 class="slide-title">Revenue Reports</h2>
+  <p class="slide-desc">Monthly and daily revenue broken down by service type and payment method — Manila timezone.</p>
+  <div class="row" style="gap:20px; align-items:flex-start;">
+    <div class="ss-frame" style="flex:1.6;">
+      <img src="screenshots/v3-06-admin-reports.png" alt="Reports">
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Select any month or specific day</li>
+        <li>Breakdown by membership service</li>
+        <li>Payment method subtotals</li>
+        <li>Staff vs member payments labelled</li>
+        <li>Philippine Peso (₱) figures</li>
+        <li>Asia/Manila date boundaries</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: STORE -->
+<div class="slide" data-id="store">
+  <div class="label">Admin · Store</div>
+  <h2 class="slide-title">Store &amp; POS</h2>
+  <p class="slide-desc">Sell gym merchandise, drinks, and gear. Manage inventory and view complete sales history.</p>
+  <div class="grid-3" style="gap:12px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">New Sale</div>
+      <div class="ss-frame"><img src="screenshots/v3-07-admin-store-pos.png" alt="POS"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Inventory</div>
+      <div class="ss-frame"><img src="screenshots/v3-07b-admin-store-inventory.png" alt="Inventory"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Sales Report</div>
+      <div class="ss-frame"><img src="screenshots/v3-07c-admin-store-sales.png" alt="Sales Report"></div>
+    </div>
+  </div>
+  <div class="grid-3" style="gap:12px;margin-top:12px;">
+    <div class="stat-box"><div class="stat-num">3</div><div class="stat-label">Store Tabs</div></div>
+    <div class="stat-box"><div class="stat-num">4+</div><div class="stat-label">Payment Methods</div></div>
+    <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Products</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 11: COMMUNICATIONS -->
+<div class="slide" data-id="comms">
+  <div class="label">Admin · Communications</div>
+  <h2 class="slide-title">Member Communications</h2>
+  <p class="slide-desc">Send SMS broadcasts or emails to your entire member base from inside GymRM.</p>
+  <div class="grid-2" style="gap:18px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">SMS Broadcast</div>
+      <div class="ss-frame"><img src="screenshots/v3-08-admin-communications.png" alt="SMS Broadcast"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Email</div>
+      <div class="ss-frame"><img src="screenshots/v3-08b-admin-email.png" alt="Email"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: SETTINGS -->
+<div class="slide" data-id="settings">
+  <div class="label">Admin · Settings</div>
+  <h2 class="slide-title">Settings &amp; Configuration</h2>
+  <p class="slide-desc">Classes, membership packages, employees, subscriptions, activity logs, web integration, special logins.</p>
+  <div class="grid-2" style="gap:12px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Memberships</div>
+      <div class="ss-frame"><img src="screenshots/v3-05-admin-services.png" alt="Services"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Classes</div>
+      <div class="ss-frame"><img src="screenshots/v3-05b-admin-classes.png" alt="Classes"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">All Subscriptions</div>
+      <div class="ss-frame"><img src="screenshots/v3-05c-admin-subscriptions.png" alt="Subscriptions"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Activity Logs</div>
+      <div class="ss-frame"><img src="screenshots/v3-10-admin-activity-logs.png" alt="Activity Logs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13: EMPLOYEES -->
+<div class="slide" data-id="employees">
+  <div class="label">Admin · Employees &amp; Logins</div>
+  <h2 class="slide-title">Employees &amp; Special Logins</h2>
+  <p class="slide-desc">Manage staff accounts, roles, and the dedicated Kiosk/Store terminal credentials.</p>
+  <div class="row" style="gap:20px; align-items:flex-start;">
+    <div style="flex:1.4;display:flex;flex-direction:column;gap:12px;">
+      <div class="ss-frame"><img src="screenshots/v3-09-admin-employees.png" alt="Employees"></div>
+      <div class="ss-frame"><img src="screenshots/v3-11-admin-settings.png" alt="Special Logins"></div>
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Add / edit / deactivate employees</li>
+        <li>Assign roles: Admin, Staff, Coach, Store, Kiosk</li>
+        <li>Reset employee passwords</li>
+        <li>Manage Kiosk terminal password</li>
+        <li>Manage Store terminal password</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 14: WEB INTEGRATION -->
+<div class="slide" data-id="web">
+  <div class="label">Admin · Web Integration</div>
+  <h2 class="slide-title">Web Integration</h2>
+  <p class="slide-desc">Embed free trial registration on your website and connect Gmail for email delivery.</p>
+  <div class="row" style="gap:20px; align-items:flex-start;">
+    <div class="ss-frame" style="flex:1.6;">
+      <img src="screenshots/v3-12-admin-web-integration.png" alt="Web Integration">
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Free trial registration link</li>
+        <li>Embeddable sign-up widget</li>
+        <li>Connect Gmail for email delivery</li>
+        <li>Share link on social media</li>
+      </ul>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title" style="font-size:12px;">Free Trial Flow</div>
+        <div class="card-body" style="margin-top:5px;">Prospect fills form online → Account created automatically → Staff assigns membership after trial → No re-registration.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 15: COACH -->
+<div class="slide" data-id="coach">
+  <div class="label">Coach Role</div>
+  <h2 class="slide-title">Coach Dashboard</h2>
+  <p class="slide-desc">Today's assigned classes, class rosters, and the full weekly schedule in read-only mode.</p>
+  <div class="row" style="gap:16px; align-items:flex-start;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+      <div class="ss-frame"><img src="screenshots/v3-17-coach-dashboard.png" alt="Coach Dashboard"></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+      <div class="ss-frame"><img src="screenshots/v3-18-coach-schedule.png" alt="Coach Schedule"></div>
+      <ul class="feat-list">
+        <li>Today's classes with times and booked count</li>
+        <li>View full athlete roster per class</li>
+        <li>Full schedule in read-only view</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 16: STAFF -->
+<div class="slide" data-id="staff">
+  <div class="label">Staff Role</div>
+  <h2 class="slide-title">Staff &amp; Front Desk</h2>
+  <p class="slide-desc">Daily operations — check-ins, member lookups, schedule management, and store sales.</p>
+  <div class="grid-3" style="gap:12px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Dashboard</div>
+      <div class="ss-frame"><img src="screenshots/v3-14-staff-dashboard.png" alt="Staff Dashboard"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Check-In</div>
+      <div class="ss-frame"><img src="screenshots/v3-15-staff-checkin.png" alt="Staff Check-In"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Schedule</div>
+      <div class="ss-frame"><img src="screenshots/v3-16-staff-schedule.png" alt="Staff Schedule"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 17: KIOSK -->
+<div class="slide" data-id="kiosk">
+  <div class="label">Kiosk Role</div>
+  <h2 class="slide-title">Self-Service Kiosk Check-In</h2>
+  <p class="slide-desc">A dedicated check-in terminal at the gym entrance — athletes check in without staff assistance.</p>
+  <div class="row" style="gap:24px; align-items:center;">
+    <div class="ss-frame" style="flex:1.4;">
+      <img src="screenshots/v3-19-kiosk-screen.png" alt="Kiosk Screen">
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Runs on any browser (tablet, monitor, laptop)</li>
+        <li>QR code scan from Athlete ID card</li>
+        <li>Manual entry via NS number numpad</li>
+        <li>30-minute cooldown prevents duplicate scans</li>
+        <li>Session does not expire — always-on</li>
+        <li>Password managed in Admin → Special Logins</li>
+      </ul>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title" style="font-size:12px;">Check-In Flow</div>
+        <div class="card-body" style="margin-top:5px;font-size:12px;">Scan QR or enter NS number → Validate membership → Name confirmed on screen → Check-in logged → Screen resets.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 18: STORE ROLE -->
+<div class="slide" data-id="store-role">
+  <div class="label">Store Role</div>
+  <h2 class="slide-title">Store POS Terminal</h2>
+  <p class="slide-desc">Dedicated POS account for the merchandise counter — sell products, process payments, view history.</p>
+  <div class="row" style="gap:18px; align-items:flex-start;">
+    <div style="flex:1.4;display:flex;flex-direction:column;gap:12px;">
+      <div class="ss-frame"><img src="screenshots/v3-20-store-pos.png" alt="Store POS"></div>
+      <div class="ss-frame"><img src="screenshots/v3-20b-store-inventory.png" alt="Store Inventory"></div>
+    </div>
+    <div class="col">
+      <ul class="feat-list">
+        <li>Click product cards to add to cart</li>
+        <li>Adjust quantity with + / − controls</li>
+        <li>Select payment method</li>
+        <li>Complete Sale — cart clears instantly</li>
+        <li>Sales Report for transaction history</li>
+        <li>Inventory managed by Admin/Staff</li>
+      </ul>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title" style="font-size:12px;margin-bottom:8px;">Supported Payment Methods</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="pill pill-green">Cash</span>
+          <span class="pill pill-blue">GCash</span>
+          <span class="pill pill-amber">Maya</span>
+          <span class="pill pill-purple">Bank Transfer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 19: ATHLETE PORTAL -->
+<div class="slide" data-id="athlete">
+  <div class="label">Athlete Portal</div>
+  <h2 class="slide-title">What Athletes Can Do</h2>
+  <p class="slide-desc">Members have their own login — profile, schedule, bookings, ID card, and membership management.</p>
+  <div class="grid-3" style="gap:12px; margin-top:8px;">
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">👤</div><div class="card-title">Profile</div><div class="card-body">View and update personal info, emergency contact, and profile photo.</div></div>
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">📅</div><div class="card-title">Schedule &amp; Bookings</div><div class="card-body">Browse the weekly calendar and book a spot. Session deduction confirmation shown.</div></div>
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">🪪</div><div class="card-title">Athlete ID Card</div><div class="card-body">Digital ID with photo, NS number, and QR code for kiosk check-in.</div></div>
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">💳</div><div class="card-title">Memberships</div><div class="card-body">See active, frozen, and expired memberships. View remaining sessions.</div></div>
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">🧾</div><div class="card-title">Payment History</div><div class="card-body">Full record of all payments — date, amount, and method.</div></div>
+    <div class="card"><div style="font-size:22px;margin-bottom:8px;">🖥️</div><div class="card-title">Kiosk Check-In</div><div class="card-body">Use the QR code at the entrance kiosk for instant self check-in.</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 20: CLOSING -->
+<div class="slide slide-divider" data-id="closing">
+  <div class="slide-vcenter">
+    <div class="cover-logo"><img src="ns-logo.png" alt="NorthSouth Logo"></div>
+    <div class="label">NorthSouth GymRM</div>
+    <h1 class="hero-title">Everything your gym needs.<br><span style="color:var(--accent);">In one place.</span></h1>
+    <div class="cover-divider"></div>
+    <div class="grid-3" style="gap:14px;margin-top:8px;max-width:580px;width:100%;">
+      <div class="stat-box"><div class="stat-num">6</div><div class="stat-label">Roles</div></div>
+      <div class="stat-box"><div class="stat-num">1</div><div class="stat-label">Login URL</div></div>
+      <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Athletes</div></div>
+    </div>
+    <p class="hero-sub" style="margin-top:16px;">app.northsouth.com.ph</p>
+    <div class="cover-tagline" style="margin-top:8px;">NorthSouth Fight Sports · GymRM v3.0 · July 2026</div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- NAV BAR -->
+<div class="nav-bar">
+  <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled>← Prev</button>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="dot-row" id="dot-row"></div>
+    <span class="slide-counter" id="slide-counter">1 / 20</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const total = slides.length;
+
+  // Build dot nav
+  const dotRow = document.getElementById('dot-row');
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotRow.appendChild(d);
+  }
+
+  // Inject scroll-hint element into each slide
+  slides.forEach(s => {
+    const hint = document.createElement('div');
+    hint.className = 'scroll-hint';
+    hint.textContent = 'scroll for more';
+    s.appendChild(hint);
+  });
+
+  function checkOverflow(slide) {
+    const hint = slide.querySelector('.scroll-hint');
+    if (!hint) return;
+    const overflows = slide.scrollHeight > slide.clientHeight + 4;
+    // Only show hint near top (hide once user has scrolled down)
+    hint.style.opacity = (overflows && slide.scrollTop < 20) ? '1' : '0';
+  }
+
+  function goTo(n) {
+    const prev = slides[cur];
+    prev.classList.remove('active');
+    prev.scrollTop = 0;
+    dotRow.children[cur].classList.remove('active');
+
+    cur = Math.max(0, Math.min(n, total - 1));
+    const next = slides[cur];
+    next.classList.add('active');
+    dotRow.children[cur].classList.add('active');
+    document.getElementById('slide-counter').textContent = (cur + 1) + ' / ' + total;
+    document.getElementById('prev-btn').disabled = cur === 0;
+    document.getElementById('next-btn').disabled = cur === total - 1;
+
+    // Check overflow after images may have loaded
+    requestAnimationFrame(() => checkOverflow(next));
+    setTimeout(() => checkOverflow(next), 300);
+  }
+
+  // Hide scroll hint as user scrolls down, re-show if they scroll back to top
+  slides.forEach(s => {
+    s.addEventListener('scroll', () => {
+      const hint = s.querySelector('.scroll-hint');
+      if (hint) hint.style.opacity = s.scrollTop > 20 ? '0' : (s.scrollHeight > s.clientHeight + 4 ? '1' : '0');
+    }, { passive: true });
+  });
+
+  // Arrow key nav only triggers slide change when slide is scrolled to bottom (or top for prev)
+  document.addEventListener('keydown', e => {
+    const activeSlide = slides[cur];
+    const atBottom = activeSlide.scrollTop + activeSlide.clientHeight >= activeSlide.scrollHeight - 4;
+    const atTop = activeSlide.scrollTop <= 0;
+
+    if ((e.key === 'ArrowRight' || e.key === ' ') && atBottom) { e.preventDefault(); nextSlide(); }
+    else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); activeSlide.scrollBy({ top: 120, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowLeft' && atTop) { e.preventDefault(); prevSlide(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); activeSlide.scrollBy({ top: -120, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); activeSlide.scrollBy({ top: 80, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activeSlide.scrollBy({ top: -80, behavior: 'smooth' }); }
+  });
+
+  function nextSlide() { goTo(cur + 1); }
+  function prevSlide() { goTo(cur - 1); }
+
+  // Touch swipe — only horizontal swipes trigger slide change
+  let tx = 0, ty = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = tx - e.changedTouches[0].clientX;
+    const dy = ty - e.changedTouches[0].clientY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) dx > 0 ? nextSlide() : prevSlide();
+  });
+
+  goTo(0);
+</script>
+</body>
+</html>

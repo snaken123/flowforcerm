@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  NorthSouth GymRM – User Manual (XML Format)
+  Version 1.0 | July 2026
+  This document mirrors user-manual.html in structured XML for system integration,
+  printing, or conversion to other formats.
+-->
+<manual>
+  <metadata>
+    <title>NorthSouth GymRM User Manual</title>
+    <subtitle>Complete Guide for All Users</subtitle>
+    <gym>NorthSouth Fight Sports</gym>
+    <version>1.0</version>
+    <date>July 2026</date>
+    <language>English</language>
+    <roles>
+      <role id="admin">Admin</role>
+      <role id="coach">Coach</role>
+      <role id="staff">Staff / Kiosk</role>
+      <role id="member">Athlete (Member)</role>
+    </roles>
+  </metadata>
+
+  <!-- ══════════════════════════════
+       SECTION 1: GETTING STARTED
+  ══════════════════════════════ -->
+  <section id="getting-started" audience="all">
+    <heading>Getting Started with NorthSouth GymRM</heading>
+    <intro>Everything you need to know before you log in for the first time.</intro>
+
+    <chapter id="what-is-gymrm">
+      <heading>What is NorthSouth GymRM?</heading>
+      <body>NorthSouth GymRM is the official management system of NorthSouth Fight Sports. It tracks all members, class schedules, payments, and attendance in one place — accessible from any device with an internet connection. No installation required. It works through any web browser such as Google Chrome or Safari.</body>
+    </chapter>
+
+    <chapter id="who-uses">
+      <heading>Who Uses GymRM?</heading>
+      <roles-list>
+        <role-item id="admin">
+          <name>Admin</name>
+          <description>Manages all members, schedules, revenue, memberships, and system settings. Full access to everything.</description>
+        </role-item>
+        <role-item id="coach">
+          <name>Coach</name>
+          <description>Views today's class schedule and the list of athletes booked into their assigned classes.</description>
+        </role-item>
+        <role-item id="staff">
+          <name>Staff / Front Desk</name>
+          <description>Looks up members by ID number and checks them in to class using the kiosk screen.</description>
+        </role-item>
+        <role-item id="member">
+          <name>Athlete (Member)</name>
+          <description>Views personal profile, checks the class schedule, books classes, and monitors their subscription.</description>
+        </role-item>
+      </roles-list>
+    </chapter>
+
+    <chapter id="how-to-access">
+      <heading>How to Open the App</heading>
+      <intro>GymRM is a website. You access it using any web browser on any device.</intro>
+      <steps>
+        <step number="1">Open your web browser. On Android phones, this is usually Google Chrome. On iPhones, it is Safari.</step>
+        <step number="2">Type the gym's web address in the address bar at the top and press Go or Enter.</step>
+        <step number="3">The NorthSouth login page will appear with the logo and a Sign In form.</step>
+      </steps>
+      <tip>Save the address as a bookmark or add it to your phone's home screen so you can open it with one tap.</tip>
+      <screenshots>
+        <screenshot file="screenshots/01-login-desktop.png" caption="Login page on a computer" figure="1"/>
+        <screenshot file="screenshots/01-login-mobile.png" caption="Login page on an Android phone" figure="2"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="how-to-login">
+      <heading>How to Log In</heading>
+      <steps>
+        <step number="1">On the login page, tap or click the Email field and type your email address.</step>
+        <step number="2">Tap or click the Password field and type your password. Characters appear as dots for privacy.</step>
+        <step number="3">Tap the blue Sign In button.</step>
+        <step number="4">You will be taken to your dashboard based on your role (Admin, Coach, Staff, or Athlete).</step>
+      </steps>
+      <warning>If you see "Invalid email or password," check that your CAPS LOCK is off. Passwords are case-sensitive.</warning>
+    </chapter>
+
+    <chapter id="forgot-password">
+      <heading>Forgot Your Password?</heading>
+      <steps>
+        <step number="1">On the login page, tap Forgot password? (found above the password field).</step>
+        <step number="2">Enter your email address and tap Send Reset Link.</step>
+        <step number="3">Check your email inbox for a reset link from NorthSouth.</step>
+        <step number="4">Tap the link in the email and follow the instructions to create a new password.</step>
+      </steps>
+      <tip>Check your Spam or Junk folder if you do not see the email. If still missing after 5 minutes, contact the front desk.</tip>
+    </chapter>
+
+    <chapter id="navigating">
+      <heading>Finding Your Way Around</heading>
+      <intro>After logging in, a sidebar menu appears on the left. On phones, it may appear as a menu icon at the top.</intro>
+      <menu-items>
+        <item icon="home"><label>Dashboard</label><description>Your main overview – shows today's activity at a glance.</description></item>
+        <item icon="users"><label>Athletes</label><description>Full list of all gym members. Admin and Staff only.</description></item>
+        <item icon="calendar"><label>Schedule</label><description>Weekly class calendar – view, add, or manage classes.</description></item>
+        <item icon="chart"><label>Reports</label><description>Revenue reports and member statistics. Admin only.</description></item>
+        <item icon="tag"><label>Memberships</label><description>View and manage membership plan types and pricing.</description></item>
+        <item icon="chat"><label>Communications</label><description>Send SMS or notifications to members.</description></item>
+        <item icon="gear"><label>Settings</label><description>Change your account password or email.</description></item>
+      </menu-items>
+      <tip>To log out: click your name at the bottom-left of the sidebar, then choose Sign Out.</tip>
+    </chapter>
+  </section>
+
+  <!-- ══════════════════════════════
+       SECTION 2: ADMIN
+  ══════════════════════════════ -->
+  <section id="admin" audience="admin">
+    <heading>Admin Guide</heading>
+    <intro>For gym managers and administrators who have full access to all features.</intro>
+
+    <chapter id="admin-dashboard">
+      <heading>1. Dashboard – Your Daily Overview</heading>
+      <intro>The Dashboard shows a quick summary of what is happening at the gym today.</intro>
+      <summary-boxes>
+        <box><label>Total Members</label><description>Total number of athletes registered in the system.</description></box>
+        <box><label>Today's Check-ins</label><description>How many athletes have checked in to class so far today.</description></box>
+        <box><label>Revenue This Month</label><description>Total payments collected in the current month, in Philippine Pesos.</description></box>
+        <box><label>Overdue Payments</label><description>Number of members with unpaid dues. Click to view them.</description></box>
+      </summary-boxes>
+      <sections-visible>
+        <item>Recent Check-ins – Athletes who checked in recently, with time.</item>
+        <item>Recent Members – Newly registered athletes with their join date.</item>
+        <item>Expiring Soon – Members whose subscriptions are about to expire.</item>
+      </sections-visible>
+      <tip>Check the dashboard every morning to review overdue payments, expiring memberships, and inactive members.</tip>
+      <screenshots>
+        <screenshot file="screenshots/02-admin-dashboard.png" caption="Admin dashboard showing today's summary" figure="4"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="admin-athletes">
+      <heading>2. Managing Athletes (Members)</heading>
+      <intro>The Athletes page is where you manage all gym members — add new ones, update their information, view subscriptions, and check their history.</intro>
+
+      <procedure id="find-member">
+        <heading>How to Find a Member</heading>
+        <steps>
+          <step number="1">Click Athletes in the left sidebar menu.</step>
+          <step number="2">Use the search bar at the top to type a name, member number, or email address.</step>
+          <step number="3">The list filters automatically as you type.</step>
+          <step number="4">Click View on any athlete's row to open their full profile.</step>
+        </steps>
+      </procedure>
+
+      <procedure id="add-member">
+        <heading>How to Add a New Athlete</heading>
+        <steps>
+          <step number="1">Click Add Athlete on the Athletes page (top right).</step>
+          <step number="2">Fill in: First name, Last name, Email, Contact number, Birthday, Emergency contact.</step>
+          <step number="3">Click Save. The athlete will receive an email to set up their app account.</step>
+        </steps>
+      </procedure>
+
+      <columns>
+        <column><name>Athlete</name><description>Name and member ID number (e.g., NS-00001).</description></column>
+        <column><name>Status</name><description>ACTIVE = currently enrolled. INACTIVE = no active membership.</description></column>
+        <column><name>Subscriptions</name><description>Current membership plan and days remaining.</description></column>
+        <column><name>Email</name><description>Email address on file.</description></column>
+        <column><name>Joined</name><description>Date they first registered at the gym.</description></column>
+        <column><name>App Activated</name><description>Active = app login set up. Pending = not yet activated.</description></column>
+        <column><name>Last Check-in</name><description>When they last attended a class.</description></column>
+      </columns>
+
+      <screenshots>
+        <screenshot file="screenshots/03-admin-athletes.png" caption="Athletes list page" figure="5"/>
+        <screenshot file="screenshots/03b-athlete-profile.png" caption="Individual athlete profile" figure="6"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="admin-schedule">
+      <heading>3. Schedule Management</heading>
+      <intro>The Schedule page shows all classes for the week in a calendar view. Each colored block is a class.</intro>
+
+      <procedure id="view-class">
+        <heading>How to View Class Details</heading>
+        <steps>
+          <step number="1">Click Schedule in the sidebar.</step>
+          <step number="2">Find the class and click its colored block.</step>
+          <step number="3">A popup shows booked athletes, coach, location, and capacity.</step>
+        </steps>
+      </procedure>
+
+      <procedure id="add-class">
+        <heading>How to Add a New Class</heading>
+        <steps>
+          <step number="1">Click Add at the top right of the Schedule page.</step>
+          <step number="2">Select the class type (Boxing, Judo, BJJ, etc.).</step>
+          <step number="3">Choose the day, start time, and end time.</step>
+          <step number="4">Set the maximum number of athletes allowed.</step>
+          <step number="5">Choose if this is a one-time or recurring weekly class.</step>
+          <step number="6">Click Save. The class appears on the calendar.</step>
+        </steps>
+      </procedure>
+
+      <procedure id="delete-class">
+        <heading>How to Cancel or Delete a Class</heading>
+        <steps>
+          <step number="1">Click the class block you want to remove.</step>
+          <step number="2">In the popup, click the Delete (trash) icon.</step>
+          <step number="3">Choose to cancel just this occurrence or the entire recurring series.</step>
+        </steps>
+        <warning>If athletes are booked into the class, notify them through Communications before deleting.</warning>
+      </procedure>
+
+      <screenshots>
+        <screenshot file="screenshots/04-admin-schedule.png" caption="Weekly schedule calendar view" figure="8"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="admin-reports">
+      <heading>4. Reports and Revenue</heading>
+      <intro>The Reports page gives a financial and attendance overview of the gym.</intro>
+      <report-sections>
+        <item><name>Total Members</name><description>Grand total of all members in the system.</description></item>
+        <item><name>Total Revenue</name><description>All-time total payments received.</description></item>
+        <item><name>Daily Revenue</name><description>Payments received on a specific date. Shows member name, plan, amount, and payment method.</description></item>
+        <item><name>Monthly Revenue</name><description>Total collected in a specific month with all transaction details.</description></item>
+        <item><name>New Members Chart</name><description>Bar chart showing new members joined in the last few months.</description></item>
+        <item><name>Daily Check-ins Chart</name><description>Bar chart showing daily attendance over the past week.</description></item>
+      </report-sections>
+
+      <procedure id="view-daily-revenue">
+        <heading>How to View Revenue for a Specific Date</heading>
+        <steps>
+          <step number="1">Click Reports in the sidebar.</step>
+          <step number="2">In the Daily Revenue section, click the calendar icon to pick a date.</step>
+          <step number="3">The table shows all payments received on that day.</step>
+          <step number="4">Click CSV or PDF to download the data.</step>
+        </steps>
+      </procedure>
+
+      <screenshots>
+        <screenshot file="screenshots/05-admin-reports.png" caption="Reports page showing revenue and attendance data" figure="9"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="admin-memberships">
+      <heading>5. Membership Plans</heading>
+      <intro>Manage the different membership types and programs offered at the gym.</intro>
+      <plan-card-info>
+        <item>Plan Name (e.g., Annual Membership, Boxing, Judo, BJJ)</item>
+        <item>Price – how much the plan costs</item>
+        <item>Description – what is included</item>
+        <item>Subscribers – how many members are currently enrolled</item>
+      </plan-card-info>
+      <tip>Click the pencil (edit) icon on any membership card to update its name, price, description, or settings.</tip>
+      <screenshots>
+        <screenshot file="screenshots/06-admin-memberships.png" caption="Membership plan cards" figure="10"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="admin-communications">
+      <heading>6. Communications</heading>
+      <intro>Send SMS messages or push notifications to members directly from GymRM.</intro>
+      <steps>
+        <step number="1">Click Communications in the sidebar.</step>
+        <step number="2">Choose recipients: All Members, a specific group, or individual athletes.</step>
+        <step number="3">Type your message in the text box.</step>
+        <step number="4">Click Send. Members receive the message on their mobile phones.</step>
+      </steps>
+      <tip>Use for class cancellations, payment reminders, special events, or gym announcements. Keep messages short and clear.</tip>
+    </chapter>
+
+    <chapter id="admin-settings">
+      <heading>7. Settings</heading>
+      <intro>Update your admin account email and password.</intro>
+      <steps>
+        <step number="1">Click Settings in the sidebar.</step>
+        <step number="2">Under Web or App, type your current password.</step>
+        <step number="3">Type your new password and confirm it in the third field.</step>
+        <step number="4">Click Update Account Password.</step>
+      </steps>
+      <warning>Use a mix of letters and numbers. At least 8 characters. Do not share your password.</warning>
+      <screenshots>
+        <screenshot file="screenshots/07-admin-settings.png" caption="Settings page for password management" figure="11"/>
+      </screenshots>
+    </chapter>
+  </section>
+
+  <!-- ══════════════════════════════
+       SECTION 3: COACH
+  ══════════════════════════════ -->
+  <section id="coach" audience="coach">
+    <heading>Coach Guide</heading>
+    <intro>For NorthSouth coaches who need to view their classes and check who is coming in today.</intro>
+
+    <chapter id="coach-dashboard">
+      <heading>1. Your Dashboard – Today's Classes</heading>
+      <intro>When you log in as a Coach, you see only the classes assigned to you for today.</intro>
+      <class-card-info>
+        <item>Class name (e.g., Judo, BJJ, Boxing)</item>
+        <item>Start and end time</item>
+        <item>Training location or room</item>
+        <item>List of booked athletes</item>
+        <item>Check-in status – green checkmark appears next to checked-in athletes</item>
+      </class-card-info>
+      <tip>No classes showing? It means no classes are scheduled for you today, or classes have not been added. Contact the admin.</tip>
+      <screenshots>
+        <screenshot file="screenshots/08-coach-dashboard.png" caption="Coach dashboard showing today's classes on desktop" figure="12"/>
+        <screenshot file="screenshots/08b-coach-dashboard-mobile.png" caption="Coach dashboard on Android phone" figure="13"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="coach-athletes">
+      <heading>2. Seeing Who Is in Your Class</heading>
+      <steps>
+        <step number="1">Look at the class card for your session.</step>
+        <step number="2">Names of booked athletes are listed below the class time with initials shown as circles.</step>
+        <step number="3">Athletes who checked in show a green checkmark (✓ In) next to their name.</step>
+        <step number="4">Athletes who have not yet arrived appear without the green label.</step>
+      </steps>
+      <note>The list updates in real time. No need to refresh the page.</note>
+    </chapter>
+
+    <chapter id="coach-schedule">
+      <heading>3. Viewing the Full Weekly Schedule</heading>
+      <steps>
+        <step number="1">Click Schedule in the left sidebar.</step>
+        <step number="2">The weekly calendar shows all gym classes.</step>
+        <step number="3">Use the arrow buttons to navigate to next or previous weeks.</step>
+        <step number="4">Click any class block to see details: time, booked athletes, and capacity.</step>
+      </steps>
+    </chapter>
+  </section>
+
+  <!-- ══════════════════════════════
+       SECTION 4: STAFF / KIOSK
+  ══════════════════════════════ -->
+  <section id="staff" audience="staff">
+    <heading>Staff and Front Desk Guide</heading>
+    <intro>For front desk staff who check in athletes and look up member information.</intro>
+
+    <chapter id="kiosk-checkin">
+      <heading>1. Checking In an Athlete – Kiosk Screen</heading>
+      <intro>The Kiosk is a check-in screen for the front desk. Athletes enter their member number on the number pad, or staff can scan their QR code.</intro>
+      <steps>
+        <step number="1">Open the Kiosk page. The screen shows a number pad and "Scanner Ready" message.</step>
+        <step number="2">The athlete tells you their member number (format: NS-00001). Type it on the number pad, or scan their QR code.</step>
+        <step number="3">Tap the OK button.</step>
+        <step number="4">The athlete's name, photo, and today's available classes appear on screen.</step>
+        <step number="5">Select the class the athlete is attending (e.g., Judo 10:00 AM).</step>
+        <step number="6">Tap Check In. A confirmation message appears and the check-in is recorded.</step>
+      </steps>
+      <warning>Member not found? Check for typos in the member number. New members not yet registered must see the admin first.</warning>
+      <warning>Inactive membership? The system will show a warning. Check with admin before allowing entry.</warning>
+      <screenshots>
+        <screenshot file="screenshots/09-kiosk-desktop.png" caption="Kiosk check-in screen with number pad" figure="14"/>
+        <screenshot file="screenshots/09b-kiosk-member-found.png" caption="Member details shown after entering ID" figure="15"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="staff-lookup">
+      <heading>2. Looking Up a Member</heading>
+      <steps>
+        <step number="1">In the Kiosk screen, enter the member's ID or scan their QR code.</step>
+        <step number="2">The member's profile card appears: name, photo, subscription status, and sessions remaining.</step>
+        <step number="3">Check if membership is active or expired at a glance.</step>
+      </steps>
+      <tip>No member number? Ask them to show their app profile where the NS number is displayed, or search by name in the Athletes page.</tip>
+    </chapter>
+
+    <chapter id="staff-access">
+      <heading>3. Staff Access Levels</heading>
+      <access-table>
+        <row><feature>Dashboard overview</feature><access>Yes</access></row>
+        <row><feature>View athlete list</feature><access>Yes</access></row>
+        <row><feature>Check in athletes</feature><access>Yes</access></row>
+        <row><feature>View schedule</feature><access>Yes</access></row>
+        <row><feature>Edit schedule or add classes</feature><access>Admin only</access></row>
+        <row><feature>View revenue reports</feature><access>Admin only</access></row>
+        <row><feature>Edit membership plans</feature><access>Admin only</access></row>
+        <row><feature>Delete members</feature><access>Admin only</access></row>
+      </access-table>
+    </chapter>
+  </section>
+
+  <!-- ══════════════════════════════
+       SECTION 5: MEMBER / ATHLETE
+  ══════════════════════════════ -->
+  <section id="member" audience="member">
+    <heading>Athlete Guide</heading>
+    <intro>For members who want to view their profile, check the schedule, and book classes.</intro>
+
+    <chapter id="member-setup">
+      <heading>1. Setting Up Your Account</heading>
+      <intro>When you join NorthSouth, gym staff will register you in the system. You will receive an email to set up your app account.</intro>
+      <steps>
+        <step number="1">Check your email for a message from NorthSouth with the subject "Activate your GymRM account."</step>
+        <step number="2">Tap the link in the email. It will open GymRM and ask you to create a password.</step>
+        <step number="3">Type a password you can remember. Tap Save.</step>
+        <step number="4">Your account is active. Log in with your email and new password.</step>
+      </steps>
+      <tip>Did not receive the email? Check Spam or Junk folder. Still missing? Ask the front desk to resend the activation link.</tip>
+    </chapter>
+
+    <chapter id="member-profile">
+      <heading>2. Your Profile</heading>
+      <intro>Your profile page shows all personal information the gym has on file, plus your member card and number.</intro>
+      <profile-info>
+        <item>Member number (e.g., NS-00042) – use this to check in at the front desk</item>
+        <item>QR Code – scannable code for quick check-in</item>
+        <item>Personal details: name, birthday, contact number, emergency contact</item>
+        <item>Subscription: current membership plan and days or sessions remaining</item>
+        <item>Attendance history: all classes attended</item>
+      </profile-info>
+      <screenshots>
+        <screenshot file="screenshots/10-member-profile.png" caption="Member profile page on desktop" figure="16"/>
+        <screenshot file="screenshots/10b-member-profile-mobile.png" caption="Member profile on Android phone" figure="17"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="member-schedule">
+      <heading>3. Viewing the Class Schedule</heading>
+      <steps>
+        <step number="1">Tap Schedule in the menu.</step>
+        <step number="2">The weekly calendar shows all available classes. Each color is a different class type.</step>
+        <step number="3">Use the Day or Week toggle to switch views. Day view is easier on smaller phone screens.</step>
+        <step number="4">Tap any class block to see details: coach, location, available spots.</step>
+      </steps>
+      <screenshots>
+        <screenshot file="screenshots/11-member-schedule.png" caption="Class schedule as seen by a member" figure="18"/>
+        <screenshot file="screenshots/11b-member-schedule-mobile.png" caption="Schedule on Android phone" figure="19"/>
+      </screenshots>
+    </chapter>
+
+    <chapter id="member-booking">
+      <heading>4. Booking a Class</heading>
+      <steps>
+        <step number="1">Go to Schedule and find the class you want.</step>
+        <step number="2">Tap the class block to open its details.</step>
+        <step number="3">Tap Book or the + button.</step>
+        <step number="4">Confirmation message appears: "You have successfully booked this class."</step>
+        <step number="5">The class now shows in your schedule with a Booked label.</step>
+      </steps>
+      <warning>Class is full? The Book button is disabled. Try a different session or ask admin to add capacity.</warning>
+      <tip>To cancel a booking, tap the class in your schedule and select Cancel Booking. Do this early so others can take your spot.</tip>
+    </chapter>
+
+    <chapter id="member-subscription">
+      <heading>5. Your Membership and Subscription</heading>
+      <subscription-statuses>
+        <status value="Active">Membership is current. You can attend classes.</status>
+        <status value="Expiring Soon">Membership ends within 30 days. Time to renew.</status>
+        <status value="Expired">Membership has ended. Contact front desk to renew before attending class.</status>
+      </subscription-statuses>
+      <subscription-types>
+        <type><name>Annual Membership</name><description>Valid for one full year. Unlimited classes within that period.</description></type>
+        <type><name>Session-based</name><description>Fixed number of class visits. Each check-in uses one session.</description></type>
+        <type><name>Monthly</name><description>Access to classes for one calendar month.</description></type>
+      </subscription-types>
+      <note>Memberships do not renew automatically. Contact the front desk when yours expires.</note>
+    </chapter>
+
+    <chapter id="member-checkin">
+      <heading>6. Checking In to Class</heading>
+      <steps>
+        <step number="1">Go to the front desk or kiosk screen upon arrival.</step>
+        <step number="2">Tell the staff your member number (e.g., NS-00042) or show your QR code from the app.</step>
+        <step number="3">Staff enter your number or scan your QR code. Your name and today's classes appear on screen.</step>
+        <step number="4">Confirm which class you are attending. Staff taps Check In.</step>
+        <step number="5">Confirmation appears. You are now checked in. Enjoy your training!</step>
+      </steps>
+      <tip>Self check-in: At some locations, type your member number on the kiosk number pad and tap OK. Follow on-screen instructions.</tip>
+    </chapter>
+  </section>
+
+</manual>

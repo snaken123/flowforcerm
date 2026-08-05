@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NorthSouth GymRM – User Manual v3</title>
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #ffffff;
+    --gray-100: #f5f5f5;
+    --gray-200: #e8e8e8;
+    --gray-400: #9a9a9a;
+    --gray-600: #555;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #1a1a1a; background: #fff; }
+
+  /* COVER */
+  .cover { background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; page-break-after: always; }
+  .cover-logo { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; margin: 0 auto 24px; box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 4px 24px rgba(0,0,0,0.6); }
+  .cover-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cover h1 { font-size: 38px; font-weight: 700; letter-spacing: -1px; margin-bottom: 6px; }
+  .cover .subtitle { font-size: 14px; letter-spacing: 4px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 32px; }
+  .cover .doc-title { font-size: 22px; font-weight: 300; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 16px 40px; margin-bottom: 32px; letter-spacing: 1px; }
+  .cover .version { font-size: 13px; color: var(--gray-400); }
+
+  /* LAYOUT */
+  .wrapper { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* TOP NAV */
+  .top-nav { background: var(--black); color: var(--white); padding: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .top-nav-inner { display: flex; align-items: center; gap: 0; max-width: 1100px; margin: 0 auto; padding: 0 24px; flex-wrap: wrap; }
+  .top-nav .brand { font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--white); padding: 14px 16px 14px 0; border-right: 1px solid #333; margin-right: 8px; white-space: nowrap; flex-shrink: 0; }
+  .tab-btn { background: none; border: none; color: var(--gray-400); font-size: 13px; font-weight: 500; padding: 16px 14px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
+  .tab-btn:hover { color: var(--white); }
+  .tab-btn.active { color: var(--white); border-bottom-color: var(--blue); }
+
+  /* SECTION PANELS */
+  .section-panel { display: none; padding: 40px 0 80px; }
+  .section-panel.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { padding: 32px 0 24px; border-bottom: 2px solid var(--black); margin-bottom: 36px; }
+  .page-header .role-badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; margin-bottom: 10px; }
+  .badge-admin { background: #1e3a8a; color: #bfdbfe; }
+  .badge-coach { background: #166534; color: #bbf7d0; }
+  .badge-staff { background: #78350f; color: #fde68a; }
+  .badge-member { background: #581c87; color: #e9d5ff; }
+  .badge-login { background: #1a1a1a; color: #d1d5db; }
+  .badge-kiosk { background: #164e63; color: #a5f3fc; }
+  .badge-store { background: #713f12; color: #fde68a; }
+  .page-header h1 { font-size: 30px; font-weight: 700; color: var(--black); margin-bottom: 6px; }
+  .page-header p { font-size: 16px; color: var(--gray-600); }
+
+  /* TOC */
+  .toc { background: var(--gray-100); border-radius: 10px; padding: 24px 28px; margin-bottom: 40px; }
+  .toc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--gray-400); margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* CHAPTER */
+  .chapter-heading { font-size: 22px; font-weight: 700; color: var(--black); margin: 40px 0 12px; padding-top: 16px; border-top: 1px solid var(--gray-200); }
+  .chapter-intro { font-size: 16px; color: var(--gray-600); margin-bottom: 20px; }
+
+  /* STEP LIST */
+  .step-list { list-style: none; padding: 0; margin: 16px 0; }
+  .step-list li { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+  .step-num { flex-shrink: 0; width: 28px; height: 28px; background: var(--black); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .step-text { font-size: 15px; line-height: 1.6; padding-top: 4px; }
+
+  /* SCREENSHOT BOX */
+  .ss-box { border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden; margin: 24px 0; background: var(--gray-100); }
+  .ss-box img { width: 100%; display: block; }
+  .ss-caption { padding: 10px 14px; font-size: 13px; color: var(--gray-600); background: var(--gray-100); border-top: 1px solid var(--gray-200); }
+
+  /* CALLOUT BOXES */
+  .callout { border-radius: 8px; padding: 16px 20px; margin: 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; font-size: 14px; margin-bottom: 4px; }
+  .callout-body p { font-size: 14px; line-height: 1.5; margin: 0; }
+  .callout-tip { background: var(--blue-light); border-left: 4px solid var(--blue); }
+  .callout-warn { background: var(--amber-light); border-left: 4px solid var(--amber); }
+  .callout-success { background: var(--green-light); border-left: 4px solid var(--green); }
+  .callout-danger { background: var(--red-light); border-left: 4px solid var(--red); }
+
+  /* TABLE */
+  .doc-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  .doc-table th { background: var(--black); color: var(--white); padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  .doc-table tr:hover td { background: var(--gray-100); }
+
+  /* ROLE CARD GRID */
+  .role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0; }
+  .role-card { border: 1px solid var(--gray-200); border-radius: 10px; padding: 20px; }
+  .role-card .rc-icon { font-size: 28px; margin-bottom: 10px; }
+  .role-card .rc-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .role-card .rc-desc { font-size: 13px; color: var(--gray-600); line-height: 1.5; }
+
+  /* INLINE BADGE */
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; vertical-align: middle; }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+
+  /* TWO COLUMNS */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 20px 0; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  @media print {
+    .section-panel { display: block !important; page-break-before: always; }
+    .top-nav { display: none; }
+    .cover { page-break-after: always; }
+  }
+  @media (max-width: 700px) {
+    .cover h1 { font-size: 26px; }
+    .top-nav-inner { padding: 0 12px; }
+    .tab-btn { padding: 12px 8px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo"><img src="ns-logo.png" alt="NorthSouth Logo"></div>
+  <h1>NorthSouth GymRM</h1>
+  <div class="subtitle">NorthSouth Fight Sports</div>
+  <div class="doc-title">User Manual — Version 3.0</div>
+  <div class="version">For all roles · July 2026 · app.northsouth.com.ph</div>
+</div>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <div class="brand">GymRM</div>
+    <button class="tab-btn active" onclick="showTab('login')">Getting Started</button>
+    <button class="tab-btn" onclick="showTab('admin')">Admin</button>
+    <button class="tab-btn" onclick="showTab('coach')">Coach</button>
+    <button class="tab-btn" onclick="showTab('staff')">Staff</button>
+    <button class="tab-btn" onclick="showTab('kiosk')">Kiosk</button>
+    <button class="tab-btn" onclick="showTab('store')">Store</button>
+    <button class="tab-btn" onclick="showTab('member')">Athlete</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: GETTING STARTED
+════════════════════════════════════════════════════════════ -->
+<div id="tab-login" class="section-panel active">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-login">All Users</div>
+      <h1>Getting Started with GymRM</h1>
+      <p>Everything you need to log in and find your way around.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#what-is">What is NorthSouth GymRM?</a></li>
+        <li><a href="#who-uses">Who uses GymRM?</a></li>
+        <li><a href="#how-to-open">How to open the app</a></li>
+        <li><a href="#how-to-login">How to log in</a></li>
+        <li><a href="#navigation">Finding your way around</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="what-is">What is NorthSouth GymRM?</h2>
+    <p class="chapter-intro">GymRM is the all-in-one management system for NorthSouth Fight Sports. It handles athlete records, class scheduling, check-ins, memberships, store sales, communications, and reporting — all from one place, on any device.</p>
+
+    <h2 class="chapter-heading" id="who-uses">Who uses GymRM?</h2>
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="rc-icon">🛡️</div>
+        <div class="rc-name">Admin</div>
+        <div class="rc-desc">Full access. Manages members, schedule, reports, store, employees, and settings.</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">🥋</div>
+        <div class="rc-name">Coach</div>
+        <div class="rc-desc">Sees today's classes and class rosters. Read-only access to the schedule.</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">👤</div>
+        <div class="rc-name">Staff / Front Desk</div>
+        <div class="rc-desc">Checks in athletes, looks up members, assigns memberships, manages schedule.</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">🖥️</div>
+        <div class="rc-name">Kiosk</div>
+        <div class="rc-desc">Self-service check-in screen placed at the gym entrance. Members scan their QR or enter their athlete number.</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">🛒</div>
+        <div class="rc-name">Store</div>
+        <div class="rc-desc">POS terminal access. Processes product sales, views inventory and sales reports.</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">🏃</div>
+        <div class="rc-name">Athlete (Member)</div>
+        <div class="rc-desc">Views personal profile, class schedule, bookings, memberships, and athlete ID card.</div>
+      </div>
+    </div>
+
+    <h2 class="chapter-heading" id="how-to-open">How to open the app</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Open any web browser — Chrome, Safari, or Edge.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Go to <strong>app.northsouth.com.ph</strong></div></li>
+      <li><div class="step-num">3</div><div class="step-text">The Sign In page will appear. You can bookmark this page for quick access.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Works on phones and tablets</strong><p>GymRM works on any screen size. The layout adjusts automatically for mobile use.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="how-to-login">How to log in</h2>
+    <div class="ss-box">
+      <img src="screenshots/v3-00-login.png" alt="Login page">
+      <div class="ss-caption">The NorthSouth GymRM login screen</div>
+    </div>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Enter your <strong>Email address</strong> in the first field.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Enter your <strong>Password</strong> in the second field.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Click the blue <strong>Sign In</strong> button.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">You will be taken directly to your personal dashboard.</div></li>
+    </ol>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Forgot your password?</strong><p>Click the <em>Forgot password?</em> link on the login page. Enter your email and a reset link will be sent to your inbox.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="navigation">Finding your way around</h2>
+    <p class="chapter-intro">After signing in, you will see a sidebar on the left with all the sections available to your role. Click any item to navigate. Some sections have sub-items that expand when clicked.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-00b-login-filled.png" alt="Login filled">
+      <div class="ss-caption">Entering credentials — click Sign In to continue</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Sidebar Item</th><th>Who Sees It</th><th>What It Does</th></tr>
+      <tr><td>Dashboard</td><td>Admin, Coach, Staff</td><td>Daily overview — check-ins, members, expiring subscriptions</td></tr>
+      <tr><td>Athletes</td><td>Admin, Staff</td><td>Full member database — search, view, edit, add athletes</td></tr>
+      <tr><td>Schedule</td><td>All roles</td><td>Weekly class calendar — add, edit, copy, delete classes</td></tr>
+      <tr><td>Reports</td><td>Admin, Staff</td><td>Revenue reports broken down by day, month, or service</td></tr>
+      <tr><td>Store</td><td>Admin, Staff, Store</td><td>Point-of-sale, inventory, and sales reporting</td></tr>
+      <tr><td>Communications</td><td>Admin</td><td>SMS broadcast and email to members</td></tr>
+      <tr><td>Settings</td><td>Admin</td><td>Classes, Memberships, Employees, Subscriptions, Logs, Logins</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: ADMIN
+════════════════════════════════════════════════════════════ -->
+<div id="tab-admin" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-admin">Admin</div>
+      <h1>Admin Guide</h1>
+      <p>Full access to every feature in GymRM. This section covers all admin tools.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#a-dashboard">1. Dashboard</a></li>
+        <li><a href="#a-athletes">2. Managing Athletes</a></li>
+        <li><a href="#a-schedule">3. Schedule Management</a></li>
+        <li><a href="#a-reports">4. Reports &amp; Revenue</a></li>
+        <li><a href="#a-store">5. Store POS &amp; Inventory</a></li>
+        <li><a href="#a-communications">6. Communications</a></li>
+        <li><a href="#a-classes">7. Classes &amp; Memberships</a></li>
+        <li><a href="#a-employees">8. Employees</a></li>
+        <li><a href="#a-subscriptions">9. Subscriptions</a></li>
+        <li><a href="#a-logs">10. Activity Logs</a></li>
+        <li><a href="#a-web">11. Web Integration</a></li>
+        <li><a href="#a-settings">12. Special Logins</a></li>
+      </ol>
+    </div>
+
+    <!-- DASHBOARD -->
+    <h2 class="chapter-heading" id="a-dashboard">1. Dashboard – Your daily overview</h2>
+    <p class="chapter-intro">The Dashboard is the first screen you see after logging in. It shows a real-time summary of everything happening at the gym today.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-01-admin-dashboard.png" alt="Admin Dashboard">
+      <div class="ss-caption">Admin Dashboard — live stats, recent check-ins, newest members, and expiring subscriptions</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Card</th><th>What it shows</th></tr>
+      <tr><td>Total Members</td><td>Total registered athletes (and count of active ones)</td></tr>
+      <tr><td>Today's Check-Ins</td><td>Number of athletes who checked in today</td></tr>
+      <tr><td>New This Month</td><td>New members joined in the current calendar month</td></tr>
+      <tr><td>Overdue Payments</td><td>Members whose payment is overdue — click to review</td></tr>
+      <tr><td>Recent Check-Ins</td><td>Live feed of the most recent athlete check-ins</td></tr>
+      <tr><td>Newest Members</td><td>Most recently joined athletes with subscription info</td></tr>
+      <tr><td>Expiring Soon</td><td>Subscriptions expiring in the next 7 days — take action early</td></tr>
+    </table>
+
+    <!-- ATHLETES -->
+    <h2 class="chapter-heading" id="a-athletes">2. Managing Athletes (Members)</h2>
+    <p class="chapter-intro">The Athletes section is the complete member database. Search, view, add, edit, and manage every athlete from here.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-02-admin-athletes.png" alt="Athletes list">
+      <div class="ss-caption">Athletes list — 1,246 total athletes with status, subscriptions, and last check-in</div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:16px;">How to find a member</h3>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Athletes</strong> in the sidebar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Type a name or email in the <strong>Search</strong> bar at the top.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Results filter instantly as you type.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Click <strong>View</strong> to open the athlete's full profile.</div></li>
+    </ol>
+    <div class="ss-box">
+      <img src="screenshots/v3-02b-admin-athletes-search.png" alt="Athlete search">
+      <div class="ss-caption">Searching by name — results appear instantly</div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:16px;">Athlete profile — what you can do</h3>
+    <div class="ss-box">
+      <img src="screenshots/v3-03-admin-athlete-detail.png" alt="Athlete detail">
+      <div class="ss-caption">Athlete detail page — memberships, payment history, attendance, rank records</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Action</th><th>How to do it</th></tr>
+      <tr><td>Edit profile info</td><td>Click the <strong>Edit</strong> button at the top of the profile</td></tr>
+      <tr><td>Assign a membership</td><td>Click <strong>+ Assign Membership</strong> in the top right</td></tr>
+      <tr><td>Edit membership dates/sessions</td><td>Click the pencil ✏️ icon on the membership card</td></tr>
+      <tr><td>Freeze memberships</td><td>Click <strong>Freeze All</strong> — requires admin password confirmation</td></tr>
+      <tr><td>Check in an athlete</td><td>Click the <strong>Check In</strong> button at the top of the profile</td></tr>
+      <tr><td>Log a payment</td><td>Scroll to Payment History → click <strong>+ Log Payment</strong></td></tr>
+      <tr><td>Add a rank record</td><td>Scroll to Rank History → click <strong>+ Add Rank</strong></td></tr>
+      <tr><td>Link a guardian account</td><td>Scroll to Guardian Account → click <strong>+ Link Guardian</strong></td></tr>
+      <tr><td>Delete an athlete</td><td>Click the trash icon on the Athletes list — requires admin password</td></tr>
+    </table>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Editing sessions remaining</strong><p>When editing a membership, the "Sessions remaining" field cannot exceed the package total. Entering a higher number will show an error before saving.</p></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <h2 class="chapter-heading" id="a-schedule">3. Schedule Management</h2>
+    <p class="chapter-intro">The Schedule shows a weekly calendar of all classes. Add, edit, copy, or delete classes from this view.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-04-admin-schedule.png" alt="Schedule">
+      <div class="ss-caption">Weekly class schedule — colour-coded by service type</div>
+    </div>
+    <h3 style="margin:24px 0 12px;font-size:16px;">How to add a class</h3>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click any empty time slot in the calendar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Fill in the class name, coach, time, and service type.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Click <strong>Save</strong>.</div></li>
+    </ol>
+    <h3 style="margin:24px 0 12px;font-size:16px;">How to copy a class to another day</h3>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click on an existing class card.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Click <strong>Copy</strong> in the class detail popup.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Select the date and click <strong>Save</strong>.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Deleting a class with bookings</strong><p>If athletes are booked into a class you want to delete, notify them first via Communications, then delete. Bookings are cancelled automatically.</p></div>
+    </div>
+
+    <!-- REPORTS -->
+    <h2 class="chapter-heading" id="a-reports">4. Reports &amp; Revenue</h2>
+    <p class="chapter-intro">The Reports page shows revenue data broken down by day, month, and membership type. All figures use the Philippine Peso (₱) and are calculated in the Asia/Manila timezone.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-06-admin-reports.png" alt="Reports">
+      <div class="ss-caption">Revenue Reports — monthly and daily summaries</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Feature</th><th>Description</th></tr>
+      <tr><td>Monthly Revenue</td><td>Total income for the selected month, broken down by service type</td></tr>
+      <tr><td>Daily Revenue</td><td>Pick a specific date to see all payments for that day</td></tr>
+      <tr><td>Employee payments</td><td>Payments made for employee memberships are labelled "(Staff)"</td></tr>
+      <tr><td>Payment methods</td><td>Cash, GCash, Maya, Bank Transfer — each shows sub-type where applicable</td></tr>
+    </table>
+
+    <!-- STORE -->
+    <h2 class="chapter-heading" id="a-store">5. Store POS &amp; Inventory</h2>
+    <p class="chapter-intro">The Store section has three tabs: New Sale (POS), Inventory management, and Sales Report.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-07-admin-store-pos.png" alt="Store POS">
+      <div class="ss-caption">Store — New Sale tab (Point of Sale)</div>
+    </div>
+    <h3 style="margin:24px 0 12px;font-size:16px;">Processing a sale</h3>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Store</strong> in the sidebar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Select items by clicking the product cards to add them to the cart.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Adjust quantities using the + / − buttons in the cart.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Select the payment method (Cash, GCash, etc.).</div></li>
+      <li><div class="step-num">5</div><div class="step-text">Click <strong>Complete Sale</strong> to process the transaction.</div></li>
+    </ol>
+    <div class="ss-box">
+      <img src="screenshots/v3-07b-admin-store-inventory.png" alt="Store Inventory">
+      <div class="ss-caption">Store — Inventory tab (manage products and stock)</div>
+    </div>
+    <div class="ss-box">
+      <img src="screenshots/v3-07c-admin-store-sales.png" alt="Store Sales Report">
+      <div class="ss-caption">Store — Sales Report tab (transaction history)</div>
+    </div>
+    <h3 style="margin:24px 0 12px;font-size:16px;">Managing inventory</h3>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click the <strong>Inventory</strong> tab inside the Store page.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Click <strong>+ Add Product</strong> to add a new item.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Edit an existing product by clicking the pencil icon next to it.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Update stock levels and prices as needed.</div></li>
+    </ol>
+
+    <!-- COMMUNICATIONS -->
+    <h2 class="chapter-heading" id="a-communications">6. Communications</h2>
+    <p class="chapter-intro">Send SMS broadcasts or emails to your member base directly from the app.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-08-admin-communications.png" alt="Communications – Broadcast">
+      <div class="ss-caption">Communications — SMS Broadcast to members</div>
+    </div>
+    <div class="ss-box">
+      <img src="screenshots/v3-08b-admin-email.png" alt="Communications – Email">
+      <div class="ss-caption">Communications — Email to members</div>
+    </div>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>SMS vs Email</strong><p>Use <strong>Broadcast</strong> for urgent SMS messages (e.g. class cancellations, gym closures). Use <strong>Email</strong> for newsletters or detailed announcements. Email requires the Gmail integration to be connected in Web Integration settings.</p></div>
+    </div>
+
+    <!-- CLASSES -->
+    <h2 class="chapter-heading" id="a-classes">7. Classes &amp; Memberships</h2>
+    <p class="chapter-intro">Manage the types of classes offered at the gym and the membership service packages available to athletes.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-05b-admin-classes.png" alt="Classes">
+      <div class="ss-caption">Settings → Classes — manage class types and configurations</div>
+    </div>
+    <div class="ss-box">
+      <img src="screenshots/v3-05-admin-services.png" alt="Memberships / Services">
+      <div class="ss-caption">Settings → Memberships — all membership service packages</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Service Name</td><td>E.g. Boxing, BJJ, Muay Thai, Annual Membership</td></tr>
+      <tr><td>Color</td><td>Color shown on the Schedule calendar for this service</td></tr>
+      <tr><td>Free Trial Enabled</td><td>If ON, this service appears on the public free trial registration form</td></tr>
+      <tr><td>Packages</td><td>Pricing tiers for this service (session count, duration, price)</td></tr>
+    </table>
+
+    <!-- EMPLOYEES -->
+    <h2 class="chapter-heading" id="a-employees">8. Employees</h2>
+    <p class="chapter-intro">Manage staff accounts, coach profiles, and employee memberships.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-09-admin-employees.png" alt="Employees">
+      <div class="ss-caption">Settings → Employees — staff list with roles and details</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Column</th><th>Meaning</th></tr>
+      <tr><td>Name</td><td>Employee full name</td></tr>
+      <tr><td>Role</td><td>ADMIN, STAFF, COACH, STORE, or KIOSK</td></tr>
+      <tr><td>Email</td><td>Login email address for this employee</td></tr>
+      <tr><td>Actions</td><td>Edit details or reset password</td></tr>
+    </table>
+
+    <!-- SUBSCRIPTIONS -->
+    <h2 class="chapter-heading" id="a-subscriptions">9. All Subscriptions</h2>
+    <p class="chapter-intro">A global view of all active, expired, frozen, and cancelled subscriptions across all athletes.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-05c-admin-subscriptions.png" alt="All Subscriptions">
+      <div class="ss-caption">Settings → Subscriptions — global subscription list with status filters</div>
+    </div>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Filter by status</strong><p>Use the status filter to see only ACTIVE, EXPIRED, FROZEN, or CANCELLED subscriptions. Useful for renewals follow-up.</p></div>
+    </div>
+
+    <!-- ACTIVITY LOGS -->
+    <h2 class="chapter-heading" id="a-logs">10. Activity Logs</h2>
+    <p class="chapter-intro">A complete audit trail of every action taken in the system — who did what and when.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-10-admin-activity-logs.png" alt="Activity Logs">
+      <div class="ss-caption">Settings → Activity Logs — full audit trail of system actions</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Column</th><th>Description</th></tr>
+      <tr><td>Date &amp; Time</td><td>When the action occurred (Asia/Manila time)</td></tr>
+      <tr><td>User</td><td>Which staff member performed the action</td></tr>
+      <tr><td>Action</td><td>What was done — e.g. ADD_MEMBER, EDIT_SUBSCRIPTION, DELETE_MEMBERSHIP</td></tr>
+      <tr><td>Entity</td><td>Which record was affected</td></tr>
+      <tr><td>Description</td><td>Full detail of what changed</td></tr>
+    </table>
+
+    <!-- WEB INTEGRATION -->
+    <h2 class="chapter-heading" id="a-web">11. Web Integration</h2>
+    <p class="chapter-intro">Connect GymRM to your website and email. Generate registration links and embed forms for public sign-ups.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-12-admin-web-integration.png" alt="Web Integration">
+      <div class="ss-caption">Settings → Web Integration — registration links and Gmail connection</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>Feature</th><th>Description</th></tr>
+      <tr><td>Free Trial Registration Link</td><td>Public URL where non-members can sign up for a free trial class. Share on social media or embed on your website.</td></tr>
+      <tr><td>Gmail Integration</td><td>Connect a Gmail account to send notification emails directly from GymRM.</td></tr>
+      <tr><td>Embeddable Widget</td><td>Copy an HTML snippet to embed on your website for direct registration.</td></tr>
+    </table>
+
+    <!-- SPECIAL LOGINS -->
+    <h2 class="chapter-heading" id="a-settings">12. Special Logins</h2>
+    <p class="chapter-intro">Manage the passwords for the Kiosk and Store terminal accounts.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-11-admin-settings.png" alt="Special Logins / Settings">
+      <div class="ss-caption">Settings → Special Logins — Kiosk and Store account password management</div>
+    </div>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Keep Kiosk and Store credentials secure</strong><p>The Kiosk account is used on the public check-in terminal. The Store account is used on the POS device. Change these passwords from this screen if they need to be updated.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: COACH
+════════════════════════════════════════════════════════════ -->
+<div id="tab-coach" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-coach">Coach</div>
+      <h1>Coach Guide</h1>
+      <p>Coaches see today's classes, their rosters, and the full weekly schedule.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#c-dashboard">1. Your Dashboard – Today's classes</a></li>
+        <li><a href="#c-roster">2. Viewing the class roster</a></li>
+        <li><a href="#c-schedule">3. Full weekly schedule</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="c-dashboard">1. Your Dashboard – Today's Classes</h2>
+    <p class="chapter-intro">After logging in, coaches see a dashboard showing only the classes scheduled for today that are assigned to them.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-17-coach-dashboard.png" alt="Coach Dashboard">
+      <div class="ss-caption">Coach Dashboard — today's assigned classes</div>
+    </div>
+    <table class="doc-table">
+      <tr><th>What you see</th><th>Description</th></tr>
+      <tr><td>Class name &amp; time</td><td>The class you are coaching and when it starts</td></tr>
+      <tr><td>Booked / Capacity</td><td>How many athletes have booked vs the class limit</td></tr>
+      <tr><td>View Roster button</td><td>Opens the list of athletes booked into this class</td></tr>
+    </table>
+
+    <h2 class="chapter-heading" id="c-roster">2. Viewing the Class Roster</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">From your Dashboard, find the class you want to review.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Click <strong>View Roster</strong> (or the class card).</div></li>
+      <li><div class="step-num">3</div><div class="step-text">You will see the full list of booked athletes with their names and membership type.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Coaches cannot check in athletes</strong><p>Check-in is handled by the Staff check-in screen or the Kiosk. Coaches have read-only view of the roster.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="c-schedule">3. Full Weekly Schedule</h2>
+    <p class="chapter-intro">Coaches can view the full weekly schedule — all classes, not just their own.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-18-coach-schedule.png" alt="Coach Schedule">
+      <div class="ss-caption">Full weekly schedule — coaches see all classes (read-only)</div>
+    </div>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Coaches cannot edit the schedule</strong><p>Editing, adding, or deleting classes is an Admin/Staff action. Contact admin if changes are needed.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: STAFF
+════════════════════════════════════════════════════════════ -->
+<div id="tab-staff" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-staff">Staff / Front Desk</div>
+      <h1>Staff Guide</h1>
+      <p>Staff handles check-ins, member lookups, memberships, and schedule management.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#s-dashboard">1. Staff Dashboard</a></li>
+        <li><a href="#s-checkin">2. Checking In an Athlete</a></li>
+        <li><a href="#s-lookup">3. Looking Up a Member</a></li>
+        <li><a href="#s-schedule">4. Schedule</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="s-dashboard">1. Staff Dashboard</h2>
+    <p class="chapter-intro">The Staff Dashboard shows the same overview as the Admin Dashboard — total members, today's check-ins, new members, and expiring subscriptions.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-14-staff-dashboard.png" alt="Staff Dashboard">
+      <div class="ss-caption">Staff Dashboard overview</div>
+    </div>
+
+    <h2 class="chapter-heading" id="s-checkin">2. Checking In an Athlete</h2>
+    <p class="chapter-intro">The Staff Check-In screen is used at the front desk to manually check athletes into classes.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-15-staff-checkin.png" alt="Staff Check-In">
+      <div class="ss-caption">Staff Check-In screen — search by name or athlete number</div>
+    </div>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Schedule → Check-In</strong> in the sidebar, or go to <em>staff/checkin</em>.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Search for the athlete by name or NS number.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Select the <strong>class</strong> the athlete is attending (optional — for session-based memberships).</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Click <strong>Check In</strong>. A confirmation message appears.</div></li>
+    </ol>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Duplicate check-in</strong><p>If an athlete has already checked in today, the system will warn you. You can force a second check-in for the same day if needed (e.g. they attended two separate classes).</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="s-lookup">3. Looking Up a Member</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Athletes</strong> in the sidebar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Type the member's name or email in the Search box.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Click <strong>View</strong> to see their profile, memberships, and payment history.</div></li>
+    </ol>
+
+    <h2 class="chapter-heading" id="s-schedule">4. Schedule</h2>
+    <p class="chapter-intro">Staff can view and edit the full weekly schedule — adding, copying, and removing classes.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-16-staff-schedule.png" alt="Staff Schedule">
+      <div class="ss-caption">Schedule view for staff — same as admin, full edit access</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: KIOSK
+════════════════════════════════════════════════════════════ -->
+<div id="tab-kiosk" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-kiosk">Kiosk</div>
+      <h1>Kiosk Check-In Guide</h1>
+      <p>The self-service kiosk lets athletes check themselves in at the gym entrance without staff assistance.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#k-setup">1. Setting up the Kiosk</a></li>
+        <li><a href="#k-checkin">2. How athletes check in</a></li>
+        <li><a href="#k-qr">3. QR code check-in</a></li>
+        <li><a href="#k-cooldown">4. Cooldown rules</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="k-setup">1. Setting Up the Kiosk</h2>
+    <p class="chapter-intro">The kiosk is a dedicated screen — typically a tablet or monitor at the gym entrance — that displays the check-in interface 24/7.</p>
+    <div class="ss-box">
+      <img src="screenshots/v3-19-kiosk-screen.png" alt="Kiosk Check-In Screen">
+      <div class="ss-caption">Kiosk Check-In screen — scanner ready, numpad for manual entry</div>
+    </div>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Open a browser on the kiosk device and go to <strong>app.northsouth.com.ph</strong></div></li>
+      <li><div class="step-num">2</div><div class="step-text">Log in with the Kiosk account credentials (set in Admin → Settings → Special Logins).</div></li>
+      <li><div class="step-num">3</div><div class="step-text">The kiosk check-in screen will appear automatically.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Keep the browser in full-screen mode (press F11) and leave the device plugged in.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>The kiosk stays logged in</strong><p>The kiosk session does not expire. Once set up, it will remain on the check-in screen until the browser is closed or the password is changed.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="k-checkin">2. How Athletes Check In (Manual)</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">The screen shows <strong>"Scanner Ready"</strong> with a numpad and an NS- field.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">The athlete enters their NS number using the numpad (e.g. 1234 for NS-1234).</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Press <strong>GO</strong>.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">If found, the athlete's name and membership are confirmed on screen.</div></li>
+      <li><div class="step-num">5</div><div class="step-text">The check-in is logged and the screen resets after a few seconds.</div></li>
+    </ol>
+
+    <h2 class="chapter-heading" id="k-qr">3. QR Code Check-In</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">The athlete opens their <strong>Athlete ID card</strong> in the GymRM Athlete portal on their phone.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">They hold their phone screen up to the QR scanner connected to the kiosk.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">The kiosk reads the code and checks them in instantly.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>No QR scanner?</strong><p>The manual numpad always works as a fallback. Athletes can look up their NS number on their Athlete ID card in the app.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="k-cooldown">4. Kiosk Cooldown Rules</h2>
+    <table class="doc-table">
+      <tr><th>Rule</th><th>Detail</th></tr>
+      <tr><td>Cooldown period</td><td>30 minutes between kiosk check-ins for the same athlete</td></tr>
+      <tr><td>Why this exists</td><td>Prevents accidental double scans</td></tr>
+      <tr><td>Override</td><td>Staff can manually check in an athlete from the Staff Check-In screen if needed within the cooldown window</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: STORE
+════════════════════════════════════════════════════════════ -->
+<div id="tab-store" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-store">Store</div>
+      <h1>Store Guide</h1>
+      <p>The Store POS is used to sell drinks, merchandise, and other gym products. Access is available to Admin, Staff, and Store role users.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#st-pos">1. Processing a sale (POS)</a></li>
+        <li><a href="#st-inventory">2. Managing inventory</a></li>
+        <li><a href="#st-reports">3. Sales reports</a></li>
+        <li><a href="#st-login">4. Store terminal login</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="st-pos">1. Processing a Sale (POS)</h2>
+    <div class="ss-box">
+      <img src="screenshots/v3-20-store-pos.png" alt="Store POS">
+      <div class="ss-caption">Store POS — New Sale tab with product cards and cart</div>
+    </div>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Store</strong> in the sidebar. The <strong>New Sale</strong> tab opens by default.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Click a product card to add it to the cart on the right.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Use <strong>+</strong> and <strong>−</strong> to change quantity, or the trash icon to remove an item.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Select a <strong>payment method</strong> — Cash, GCash, Maya, Bank Transfer.</div></li>
+      <li><div class="step-num">5</div><div class="step-text">Click <strong>Complete Sale</strong>. The cart clears and the sale is recorded.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Special price</strong><p>If a product is sold at a discount, enter the adjusted price before completing the sale. A justification reason is required for any price change.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="st-inventory">2. Managing Inventory</h2>
+    <div class="ss-box">
+      <img src="screenshots/v3-20b-store-inventory.png" alt="Store Inventory">
+      <div class="ss-caption">Store — Inventory tab</div>
+    </div>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Inside the Store page, click the <strong>Inventory</strong> tab.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Click <strong>+ Add Product</strong> to create a new item.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Set the product name, price, stock level, and image.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Click the pencil icon on any product to edit it.</div></li>
+    </ol>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Inventory management — Admin and Staff only</strong><p>The Store role account can process sales but cannot add or edit products. Contact an Admin or Staff member to update inventory.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="st-reports">3. Sales Reports</h2>
+    <div class="ss-box">
+      <img src="screenshots/v3-07c-admin-store-sales.png" alt="Store Sales Report">
+      <div class="ss-caption">Store — Sales Report tab (transaction history)</div>
+    </div>
+    <p>The Sales Report tab shows a full history of every transaction processed through the Store POS, including the date, items sold, quantity, total, and payment method.</p>
+
+    <h2 class="chapter-heading" id="st-login">4. Store Terminal Login</h2>
+    <p class="chapter-intro">The Store account is a shared login for the POS terminal at the merchandise counter.</p>
+    <table class="doc-table">
+      <tr><th>Detail</th><th>Value</th></tr>
+      <tr><td>Login URL</td><td>app.northsouth.com.ph</td></tr>
+      <tr><td>Account email</td><td>Set by admin in Settings → Special Logins</td></tr>
+      <tr><td>Password</td><td>Set by admin in Settings → Special Logins</td></tr>
+      <tr><td>Landing page after login</td><td>Store POS (New Sale tab)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB: MEMBER / ATHLETE
+════════════════════════════════════════════════════════════ -->
+<div id="tab-member" class="section-panel">
+  <div class="wrapper">
+    <div class="page-header">
+      <div class="role-badge badge-member">Athlete</div>
+      <h1>Athlete Guide</h1>
+      <p>As a member, GymRM gives you access to your profile, class schedule, bookings, and membership details.</p>
+    </div>
+
+    <div class="toc">
+      <h3>In this section</h3>
+      <ol>
+        <li><a href="#m-login">1. Logging In as an Athlete</a></li>
+        <li><a href="#m-profile">2. Your Profile</a></li>
+        <li><a href="#m-schedule">3. Class Schedule &amp; Bookings</a></li>
+        <li><a href="#m-id">4. Your Athlete ID Card</a></li>
+        <li><a href="#m-membership">5. Memberships &amp; Billing</a></li>
+        <li><a href="#m-checkin">6. Self Check-In (Kiosk)</a></li>
+        <li><a href="#m-free-trial">7. Free Trial Registration</a></li>
+      </ol>
+    </div>
+
+    <h2 class="chapter-heading" id="m-login">1. Logging In as an Athlete</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Go to <strong>app.northsouth.com.ph</strong> in your browser.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Enter the email and password you registered with.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Click <strong>Sign In</strong>.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">You are taken to your personal Member Dashboard.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>First time?</strong><p>If you registered through a Free Trial, your account was created automatically. Use the email you registered with and the password from your confirmation email. If you forgot it, use <em>Forgot password?</em> on the login page.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="m-profile">2. Your Profile</h2>
+    <p class="chapter-intro">Your profile shows your personal information, emergency contact, and photo. You can update most of these yourself.</p>
+    <table class="doc-table">
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Name</td><td>Your full name as it appears in the system</td></tr>
+      <tr><td>Email</td><td>Your login email and contact email</td></tr>
+      <tr><td>Phone</td><td>Contact phone number</td></tr>
+      <tr><td>Emergency Contact</td><td>Name and phone of your emergency contact</td></tr>
+      <tr><td>Profile Photo</td><td>Photo used on your Athlete ID card</td></tr>
+    </table>
+
+    <h2 class="chapter-heading" id="m-schedule">3. Class Schedule &amp; Bookings</h2>
+    <p class="chapter-intro">View the full weekly class schedule and book yourself into classes that match your membership.</p>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Click <strong>Schedule</strong> in your sidebar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Browse the weekly calendar — classes show the coach name, time, and available spots.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Click a class you want to join.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Click <strong>Book</strong> to reserve your spot.</div></li>
+      <li><div class="step-num">5</div><div class="step-text">Your booking appears in your personal schedule.</div></li>
+    </ol>
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Session-based memberships</strong><p>If your membership has a limited number of sessions (e.g. 10-session Boxing package), one session is deducted each time you check in to a class. The system will warn you if you have 0 sessions remaining.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="m-id">4. Your Athlete ID Card</h2>
+    <p class="chapter-intro">Your Athlete ID card is a digital card with your photo, name, NS number, and a QR code for kiosk check-in.</p>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Tap <strong>Athlete ID</strong> in your sidebar.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Your ID card is displayed with your QR code.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">At the kiosk, hold the QR code up to the scanner to check in instantly.</div></li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Screenshot your ID card</strong><p>Take a screenshot of your Athlete ID card and save it to your phone's home screen for fast kiosk check-in — no need to open the app every time.</p></div>
+    </div>
+
+    <h2 class="chapter-heading" id="m-membership">5. Memberships &amp; Billing</h2>
+    <p class="chapter-intro">View all your active and past memberships, session counts, and payment history.</p>
+    <table class="doc-table">
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td><span class="badge badge-green">ACTIVE</span></td><td>Membership is valid and you can check in</td></tr>
+      <tr><td><span class="badge badge-amber">FROZEN</span></td><td>Membership is paused — sessions and expiry date are on hold</td></tr>
+      <tr><td><span class="badge badge-red">EXPIRED</span></td><td>Membership has ended — renew at the front desk</td></tr>
+      <tr><td><span class="badge badge-red">CANCELLED</span></td><td>Membership was cancelled by admin</td></tr>
+    </table>
+
+    <h2 class="chapter-heading" id="m-checkin">6. Self Check-In (Kiosk)</h2>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Walk up to the kiosk at the gym entrance.</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Either scan your QR code (from your Athlete ID card) or enter your NS number using the numpad.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">The screen will confirm your name and check-in. Done!</div></li>
+    </ol>
+
+    <h2 class="chapter-heading" id="m-free-trial">7. Free Trial Registration</h2>
+    <p class="chapter-intro">New members can register for a free trial class online without visiting the gym first.</p>
+    <ol class="step-list">
+      <li><div class="step-num">1</div><div class="step-text">Visit the Free Trial Registration link provided by NorthSouth (available on the gym's social media or website).</div></li>
+      <li><div class="step-num">2</div><div class="step-text">Fill in your name, email, phone number, and select a class type.</div></li>
+      <li><div class="step-num">3</div><div class="step-text">Submit the form — your free trial account is created and a confirmation email is sent.</div></li>
+      <li><div class="step-num">4</div><div class="step-text">Show up at the gym for your trial class. Staff will check you in.</div></li>
+    </ol>
+    <div class="callout callout-success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body"><strong>Free trial converts to full membership</strong><p>If you decide to join after your trial, staff will assign a paid membership directly to your existing athlete account — no re-registration needed.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

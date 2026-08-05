@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NorthSouth Gym CRM — Audit Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem 1rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 700; color: #f8fafc; }
+  h2 { font-size: 1.2rem; font-weight: 600; color: #94a3b8; margin: 2.5rem 0 1rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .meta { color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; }
+  .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  .pill { border-radius: 9999px; padding: 0.4rem 1rem; font-size: 0.875rem; font-weight: 600; }
+  .pill-red { background: #7f1d1d; color: #fca5a5; }
+  .pill-amber { background: #78350f; color: #fcd34d; }
+  .pill-green { background: #14532d; color: #86efac; }
+  .pill-blue { background: #1e3a5f; color: #93c5fd; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .badge { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  .badge-red { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+  .badge-amber { background: #78350f; color: #fcd34d; border: 1px solid #f59e0b; }
+  .badge-green { background: #14532d; color: #86efac; border: 1px solid #22c55e; }
+  .badge-cat { background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6; }
+  .badge-id { background: #2d1b69; color: #c4b5fd; border: 1px solid #7c3aed; font-family: monospace; font-size: 0.75rem; }
+  .card-title { font-size: 1rem; font-weight: 700; color: #f1f5f9; flex: 1; min-width: 200px; }
+  .file-ref { font-family: monospace; font-size: 0.78rem; color: #64748b; margin-bottom: 0.75rem; }
+  .section-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.75rem; margin-bottom: 0.3rem; }
+  .description, .why { color: #cbd5e1; font-size: 0.875rem; }
+  ol.recs { color: #94a3b8; font-size: 0.875rem; padding-left: 1.25rem; }
+  ol.recs li { margin-bottom: 0.3rem; }
+  code { background: #0f172a; border: 1px solid #334155; border-radius: 4px; padding: 0.1rem 0.4rem; font-family: monospace; font-size: 0.82em; color: #f472b6; }
+  .divider { border: none; border-top: 1px solid #334155; margin: 2rem 0; }
+  .exec-summary { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exec-summary p { color: #cbd5e1; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>NorthSouth Fight Sports Gym CRM — Audit Report</h1>
+  <p class="meta">Generated: 2026-07-26 &nbsp;·&nbsp; Stack: Next.js 14 App Router · TypeScript · Prisma 5 · PostgreSQL (Neon) · NextAuth 4 · Vercel</p>
+
+  <div class="exec-summary">
+    <p>This audit reviewed every API route, page component, the Prisma schema, auth configuration, and utility libraries of the NorthSouth Fight Sports Gym CRM. Two critical SQL injection vulnerabilities were found in raw query paths that accept user-controlled values without parameterisation. A type-error crash was identified in the schedule deletion flow when an employee booking exists (nullable member). The booking count API, the schedule deletion date, and the revenue date-range API all contain timezone bugs that will silently produce wrong results on the Vercel (UTC) runtime when used from Manila (UTC+8). The <code>sessionsUsed</code> increment is non-atomic and vulnerable to a race condition under concurrent requests. An access-control gap allows any authenticated user—including members—to read other members' full profiles via the member detail API. Several unbounded <code>findMany</code> queries lack <code>take</code> limits. The report below lists 22 findings plus 4 pure recommendations.</p>
+  </div>
+
+  <div class="summary">
+    <span class="pill pill-red">🔴 RED &nbsp; 10</span>
+    <span class="pill pill-amber">🟡 AMBER &nbsp; 8</span>
+    <span class="pill pill-green">🟢 GREEN &nbsp; 4</span>
+    <span class="pill pill-blue">💡 Recommendations &nbsp; 4</span>
+  </div>
+
+  <hr class="divider" />
+  <h2>Findings — RED (Critical)</h2>
+
+  <!-- FIND-001 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-001</span>
+      <span class="card-title">SQL Injection in Kiosk Attend Check-in API</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">app/api/checkins/attend/route.ts · lines 38–40</div>
+    <div class="section-label">Description</div>
+    <p class="description">The attend check-in endpoint calls <code>$queryRawUnsafe</code> with a template string that directly interpolates <code>classId</code> from the request body: <code>WHERE "classSessionId" = '${classId}'</code>. The <code>classId</code> value is received from the POST body and is never validated to be a CUID; it is only checked to be a non-empty array member. An authenticated user (any role including MEMBER) can supply a crafted string such as <code>' OR '1'='1</code> to read arbitrary <code>ClassAllowedService</code> rows, or a UNION payload to exfiltrate other tables.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A single crafted POST body can enumerate allowed services for all classes or, with more effort, read password hashes and tokens from the User table via UNION injection.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace the raw query with Prisma's type-safe API: <code>prisma.classAllowedService.findMany({ where: { classSessionId: classId }, select: { serviceId: true } })</code>.</li>
+      <li>Remove the <code>$queryRawUnsafe</code> import alias and add ESLint rule <code>no-restricted-properties</code> to ban it project-wide.</li>
+      <li>Add a CUID-format validation check on <code>classId</code> before any DB call (e.g., <code>z.string().cuid()</code> in the Zod schema).</li>
+    </ol>
+  </div>
+
+  <!-- FIND-002 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-002</span>
+      <span class="card-title">SQL Injection in Dashboard Service Lookup</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">app/(dashboard)/dashboard/page.tsx · lines 104–108</div>
+    <div class="section-label">Description</div>
+    <p class="description">The member dashboard builds a raw SQL query with string interpolation of <code>serviceIds</code> values: <code>WHERE id = ANY(ARRAY[${serviceIds.map(id => `'${id}'`).join(",")}]::text[])</code>. Although <code>serviceIds</code> is derived from the member's own check-in records (which come from the DB), the values still flow into raw SQL without parameterisation. Prisma's <code>$queryRaw</code> tagged-template API supports array parameters safely.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">If any DB-stored serviceId were poisoned (e.g., by an admin-created service with a malicious ID, which is impossible given CUID generation, but the pattern itself is wrong), this path could be exploited. More immediately, this pattern is a maintenance hazard and sets a dangerous precedent for copy-paste into other code paths.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace with Prisma's parameterised API: <code>prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true, name: true, color: true } })</code>.</li>
+      <li>The <code>(prisma as any).$queryRawUnsafe</code> cast pattern also bypasses TypeScript safety—remove both instances from the codebase.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-003 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-003</span>
+      <span class="card-title">Null Crash When Listing Booked Athletes on Deletion</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Bug</span>
+    </div>
+    <div class="file-ref">app/api/schedules/[id]/route.ts · lines 101–112</div>
+    <div class="section-label">Description</div>
+    <p class="description">The DELETE handler fetches bookings for a schedule and maps them to athlete names: <code>bookings.map((b) => `${b.member.firstName} ${b.member.lastName}`)</code>. The <code>Booking.member</code> relation is nullable (employee bookings and guest bookings have no member). If any booking in the slot was made for an employee coach, <code>b.member</code> is <code>null</code> and accessing <code>.firstName</code> throws a TypeError at runtime, returning an unhandled 500 error instead of the warning prompt.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Any schedule that has at least one coach or employee booking will crash the deletion endpoint, making it impossible to see the booking-warning prompt or force-delete the schedule through the UI.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Guard the map: <code>b.member ? `${b.member.firstName} ${b.member.lastName}` : b.employee ? `${b.employee.firstName} ${b.employee.lastName} (staff)` : "Unknown"</code>.</li>
+      <li>Include the employee relation in the <code>findMany</code> include block alongside member so employee names appear in the warning list.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-004 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-004</span>
+      <span class="card-title">Wrong Field Filter: sessionId vs scheduleId in Schedule GET</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/schedules/[id]/route.ts · lines 27–30</div>
+    <div class="section-label">Description</div>
+    <p class="description">The GET handler for a specific schedule returns a booking count using <code>{ sessionId: schedule.classId, status: "CONFIRMED" }</code>. <code>sessionId</code> on the <code>Booking</code> model is the <code>ClassSession</code> ID (the sport type, shared by all time-slot schedules). This counts ALL confirmed bookings across every schedule that belongs to the same class—not just the one schedule being viewed. The correct filter is <code>{ scheduleId: params.id }</code>.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">An admin viewing "Wednesday Judo 6 PM" sees the total booking count for every Judo schedule ever created, not for that slot. This inflated number appears in the admin edit dialog and informs capacity decisions incorrectly.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Change the where clause to <code>{ scheduleId: params.id, status: "CONFIRMED" }</code>.</li>
+      <li>Also add a <code>scheduledDate</code> filter when the caller passes a <code>date</code> query param so the count reflects only the specific occurrence.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-005 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-005</span>
+      <span class="card-title">Race Condition: Non-Atomic sessionsUsed Increment</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/subscriptions/[id]/use-session/route.ts · lines 11–24</div>
+    <div class="section-label">Description</div>
+    <p class="description">The use-session endpoint reads <code>sub.sessionsUsed</code>, increments it in application code, then writes it back with an explicit value. If two concurrent requests both read the same <code>sessionsUsed = 3</code>, both compute <code>newUsed = 4</code>, and both write 4—effectively consuming only one session instead of two. The membership is never exhausted when it should be.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A member and a front-desk staff member simultaneously scanning a session can cause one session to be silently skipped, allowing members to attend more classes than their package permits.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace the manual increment with Prisma's atomic operator: <code>data: { sessionsUsed: { increment: 1 } }</code>.</li>
+      <li>Move the exhaustion check to an <code>updateMany</code> conditional or fetch the updated record and set status there; or use a database-level trigger/Prisma middleware.</li>
+      <li>Wrap the read and the conditional status update in a <code>prisma.$transaction</code> with an optimistic concurrency version field if exact exhaustion timing is critical.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-006 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-006</span>
+      <span class="card-title">toISOString() Timezone Bug in Schedule Deletion</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Timezone</span>
+    </div>
+    <div class="file-ref">app/(dashboard)/admin/schedule/schedule-client.tsx · line 757</div>
+    <div class="section-label">Description</div>
+    <p class="description">When deleting a schedule occurrence, the client sends <code>date: clickedDate?.toISOString()</code>. <code>toISOString()</code> converts to UTC. In Manila (UTC+8), any click after 4 PM local time (which is after midnight UTC the next day) will send tomorrow's UTC date as the target date. The server then creates a <code>ClassScheduleException</code> for the wrong date—blocking the wrong future occurrence while leaving the clicked one unaffected.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Evening class cancellations silently apply to the following day's occurrence. Members see their class still showing on the calendar for the day they expected it to be cancelled, leading to confusing no-shows.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace <code>clickedDate?.toISOString()</code> with <code>clickedDate?.toLocaleDateString("en-CA")</code> (YYYY-MM-DD) everywhere the date is sent to the schedule DELETE endpoint.</li>
+      <li>Audit the entire <code>schedule-client.tsx</code> for other <code>.toISOString().slice(0,10)</code> patterns (also present at line 187 <code>todayStr()</code> and line 332 in <code>copyItem</code>) and replace all with <code>toLocaleDateString("en-CA")</code>.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-007 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-007</span>
+      <span class="card-title">Missing Role Check: Any Authenticated User Can Create Check-ins</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">app/api/checkins/route.ts · lines 15–29 (POST)</div>
+    <div class="section-label">Description</div>
+    <p class="description">The POST handler for <code>/api/checkins</code> checks only <code>if (!session)</code>—any authenticated user including MEMBER can call it with any <code>memberId</code> to record a check-in for another member. There is no role check and no verification that the calling user is associated with the supplied <code>memberId</code>.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A member can impersonate another member's check-in, artificially reducing another member's session count (if a <code>serviceId</code> is supplied the validation deducts sessions) or fabricating attendance history.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add a role guard immediately after the session check: allow only <code>ADMIN</code>, <code>STAFF</code>, and <code>KIOSK</code> roles, or if a MEMBER is calling, verify <code>memberId</code> equals their own member record.</li>
+      <li>Restrict the <code>serviceId</code> deduction path to ADMIN/STAFF only.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-008 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-008</span>
+      <span class="card-title">Any Authenticated User Can Read Any Member's Full Profile</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">app/api/members/[id]/route.ts · lines 30–47 (GET)</div>
+    <div class="section-label">Description</div>
+    <p class="description">The GET handler checks <code>if (!session)</code> but performs no role check and no ownership check. Any authenticated user—member, kiosk, store—can fetch <code>/api/members/[any-id]</code> and receive the full member record including emergency contacts, medical notes, phone, address, subscription history, and recent check-ins.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A member can enumerate other members' PII by iterating IDs (CUIDs can be guessed from leaked references). This is a GDPR/privacy violation and exposes sensitive medical and emergency contact information.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add role-based gating: ADMIN/STAFF can read any member; MEMBER can only read their own record (verify <code>member.userId === session.user.id</code>).</li>
+      <li>For MEMBER self-reads, project out sensitive admin-only fields (medicalNotes, notes, source) from the response.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-009 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-009</span>
+      <span class="card-title">Revenue API Uses Server Local Time Instead of Manila Time</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Timezone</span>
+    </div>
+    <div class="file-ref">app/api/admin/revenue/route.ts · lines 19–26</div>
+    <div class="section-label">Description</div>
+    <p class="description"><code>new Date(y, m-1, d, 0, 0, 0, 0)</code> and <code>new Date(y, m-1, d, 23, 59, 59, 999)</code> use the JavaScript runtime's local timezone. On Vercel, the runtime is UTC. This means the daily revenue boundaries are UTC midnight, not Manila midnight. Payments made between 00:00 and 07:59 Manila time are attributed to the previous day, and payments made after 16:00 UTC (00:00 Manila next day) that are actually the next Manila day are included in the current day's report.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Daily and monthly revenue reports shown to gym owners will show incorrect totals, with up to 8 hours of transactions misattributed to the wrong day.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Use the existing <code>manilaDayBoundaries(dateStr)</code> helper from <code>lib/time.ts</code> to construct the <code>start</code> and <code>end</code> dates.</li>
+      <li>For monthly: compute the Manila first and last day of the month as strings (<code>"YYYY-MM-01"</code>, <code>"YYYY-MM-{last}"</code>) and pass them through <code>manilaDayBoundaries</code>.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-010 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-010</span>
+      <span class="card-title">Attend Check-in Marks Wrong Booking as Attended (Missing scheduleId + scheduledDate Filter)</span>
+      <span class="badge badge-red">🔴 RED</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/checkins/attend/route.ts · lines 58–63</div>
+    <div class="section-label">Description</div>
+    <p class="description">When upsert-ing a booking on kiosk check-in, the code searches for an existing booking with <code>{ memberId, sessionId: classId, status: { in: ["CONFIRMED", "ATTENDED"] } }</code>—no <code>scheduleId</code> and no <code>scheduledDate</code> filter. If a member has a CONFIRMED booking for a Judo session from three weeks ago, that old booking is found and updated to ATTENDED. The actual current booking for today's slot remains CONFIRMED (invisible as attended in today's schedule view).</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Attendance records for historical bookings are corrupted, and the schedule attendance list for today will not reflect the actual check-in, breaking the coach's attendance view.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add <code>scheduleId</code> and <code>scheduledDate</code> to the <code>findFirst</code> where clause when those values are available from the context (look up the current running schedule the same way the kiosk does).</li>
+      <li>Alternatively, always create a new ATTENDED booking rather than updating an old one when checking in via the kiosk flow.</li>
+    </ol>
+  </div>
+
+  <hr class="divider" />
+  <h2>Findings — AMBER (Risk / Degraded)</h2>
+
+  <!-- FIND-011 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-011</span>
+      <span class="card-title">Unbounded findMany on Members and Subscriptions</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Performance</span>
+    </div>
+    <div class="file-ref">app/api/members/route.ts · line 24 · app/api/subscriptions/route.ts · line 31</div>
+    <div class="section-label">Description</div>
+    <p class="description">Both <code>GET /api/members</code> and <code>GET /api/subscriptions</code> call <code>prisma.findMany</code> with no <code>take</code> limit. The members query includes subscriptions and services in the response. As the gym grows, a blank GET request (no <code>q</code> or <code>status</code> filter) will return every member row with all related data, exhausting the Neon serverless connection pool and causing 30+ second response times.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">On a gym with 500+ members, this query will time out on Vercel's 10-second function limit. It also enables data harvesting by any authenticated user via the member endpoint.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add <code>take: 100</code> (or configurable via a <code>limit</code> query param) to both queries.</li>
+      <li>Add cursor-based or offset pagination for the admin members list client.</li>
+      <li>Require at least one filter parameter (<code>q</code>, <code>status</code>, or <code>memberId</code>) before returning results from the subscriptions endpoint.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-012 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-012</span>
+      <span class="card-title">Booking Count API weekEnd Boundary Off by One Day</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Bug</span>
+    </div>
+    <div class="file-ref">app/api/bookings/counts/route.ts · line 16</div>
+    <div class="section-label">Description</div>
+    <p class="description"><code>const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)</code> computes Saturday at <code>00:00:00Z</code>. Any bookings with <code>scheduledDate</code> equal to Saturday midnight are excluded because the filter is <code>lte: weekEnd</code> and Saturday midnight is exactly at the boundary—bookings stored at that exact instant would be included, but in practice <code>scheduledDate</code> is stored as midnight UTC, so Saturday is included. However, Saturday bookings with a <code>scheduledDate</code> beyond the start of Saturday (none, since they are midnight values) would be missed. More critically, the intent is a 7-day window but the calculation adds only 6 days, so the Sunday-through-Saturday window is truncated to Sunday through early Saturday.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">The schedule card counts (bookings/capacity) for Saturday classes will show 0 even when Saturday bookings exist, causing coaches to think Saturday sessions are empty.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Change to <code>new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)</code> to include the entire Saturday.</li>
+      <li>Alternatively, use <code>lt</code> instead of <code>lte</code> and add exactly 7 days: <code>scheduledDate: { gte: weekStart, lt: new Date(weekStart.getTime() + 7 * 86400000) }</code>.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-013 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-013</span>
+      <span class="card-title">Schedule Page Initial Booking Counts Show All-Time Totals (No Date Filter)</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">UX/Logic</span>
+    </div>
+    <div class="file-ref">app/(dashboard)/admin/schedule/page.tsx · lines 43–47</div>
+    <div class="section-label">Description</div>
+    <p class="description">The server-side <code>bookingCounts</code> query has no <code>scheduledDate</code> filter: <code>where: { scheduleId: { not: null }, status: { not: "CANCELLED" } }</code>. This returns the sum of all confirmed bookings across every occurrence of every schedule, ever. On initial page render, each schedule card shows this inflated all-time count. The client-side <code>useEffect</code> then replaces it with the current week's count, creating a visible flash of wrong data.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Admins may misread the initial state as "80 people booked this slot this week" when it actually means "80 bookings have been made to this slot over 6 months." The flash also indicates a design inconsistency between SSR and client data.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add a <code>scheduledDate</code> filter to the SSR groupBy matching the current week window (same logic as <code>/api/bookings/counts</code>).</li>
+      <li>Use <code>manilaDayBoundaries</code> to define the current week start in Manila time for the server query.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-014 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-014</span>
+      <span class="card-title">Check-in Session Deduction Not in a Transaction</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/checkins/attend/route.ts · lines 32–76</div>
+    <div class="section-label">Description</div>
+    <p class="description">The attend check-in flow performs: (1) <code>checkIn.create</code>, (2) <code>subscription.update { sessionsUsed: { increment: 1 } }</code> per class, (3) <code>booking.update</code> or <code>booking.create</code>—all as sequential independent queries. If any step throws (e.g., a DB connectivity blip between steps), the check-in is recorded but sessions are not deducted, or sessions are deducted but the booking record is not created/updated.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Partial failures produce inconsistent state: the member is checked in but sessions are not deducted (benefit to member) or sessions are deducted but attendance is not reflected on the coach's roster (benefit invisible to gym).</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Wrap the entire operation in <code>prisma.$transaction(async (tx) => { ... })</code> using the interactive transaction API.</li>
+      <li>Since the raw query in the same function (FIND-001) must be fixed first, replace it with a Prisma-native call that can participate in the transaction.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-015 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-015</span>
+      <span class="card-title">Coach Dashboard todayStart/todayEnd Use UTC Server Time, Not Manila</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Timezone</span>
+    </div>
+    <div class="file-ref">app/(dashboard)/dashboard/page.tsx · lines 13–15 and 67–68</div>
+    <div class="section-label">Description</div>
+    <p class="description"><code>todayStart.setHours(0, 0, 0, 0)</code> and <code>todayEnd.setHours(23, 59, 59, 999)</code> use the Node.js runtime's local time (UTC on Vercel). This means "today's check-ins" on the coach dashboard spans 00:00–23:59 UTC, which is 08:00 Manila to 07:59 Manila the next day. Check-ins made before 8 AM Manila are invisible, and the exception filter at line 67–68 uses <code>todayStart.toISOString().slice(0,10)</code> which is the UTC date—this could be yesterday's Manila date after midnight Manila.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Coaches may see zero check-ins for classes that ran at 6 AM Manila because those check-ins fall outside the UTC day window. Early-morning class data is silently absent from the dashboard.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace <code>setHours(0,0,0,0)</code>/<code>setHours(23,59,59,999)</code> with <code>manilaDayBoundaries()</code> from <code>lib/time.ts</code>.</li>
+      <li>Replace the <code>todayStr</code> exception comparison with <code>manilaDateStr()</code> to correctly filter out today's exceptions.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-016 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-016</span>
+      <span class="card-title">mustChangePassword Not Forwarded to Session Object</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">lib/auth.ts · lines 87 and 99–109</div>
+    <div class="section-label">Description</div>
+    <p class="description">The JWT callback stores <code>token.mustChangePassword = dbUser.mustChangePassword</code> but the session callback never forwards it to <code>session.user</code>. Any middleware or client component that checks <code>session.user.mustChangePassword</code> will always receive <code>undefined</code> (falsy), effectively disabling the forced password-change flow for users who have this flag set.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">New members created by staff receive a temp password and have <code>mustChangePassword: true</code>. If that flag is not surfaced in the session, they can use the system indefinitely with the temp password without being prompted to change it.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add <code>(session.user as any).mustChangePassword = token.mustChangePassword ?? false;</code> in the session callback.</li>
+      <li>Update the NextAuth type augmentation file to include <code>mustChangePassword: boolean</code> in the <code>Session.user</code> type.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-017 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-017</span>
+      <span class="card-title">Any Authenticated User Can List All Members via GET /api/members</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <div class="file-ref">app/api/members/route.ts · lines 24–52 (GET)</div>
+    <div class="section-label">Description</div>
+    <p class="description">The GET handler checks only <code>if (!session)</code>. Any MEMBER, KIOSK, or STORE role user can call <code>GET /api/members?q=a</code> and receive a list of all members whose names contain "a", including email addresses, phone numbers, and subscription service names. There is no role restriction.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A member can enumerate all other members' contact information by iterating through alphabet queries, producing a full member directory that is not intended to be publicly accessible.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add a role guard: only ADMIN and STAFF should be able to query the member list.</li>
+      <li>If MEMBER-role search is required (e.g., for guardian lookup), project out only name and ID and require a minimum query length of 3 characters.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-018 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-018</span>
+      <span class="card-title">toISOString() in todayStr() and copyItem() — Timezone Bug</span>
+      <span class="badge badge-amber">🟡 AMBER</span>
+      <span class="badge badge-cat">Timezone</span>
+    </div>
+    <div class="file-ref">app/(dashboard)/admin/schedule/schedule-client.tsx · lines 187 and 332</div>
+    <div class="section-label">Description</div>
+    <p class="description">Two additional occurrences: <code>const todayStr = () => new Date().toISOString().slice(0, 10)</code> (used as the default <code>startDate</code> in the Add form) and <code>startDate: new Date().toISOString().slice(0, 10)</code> (in <code>copyItem</code>). Both produce a UTC date string. After 4 PM Manila time the UTC date is already the next day, so the default start date in the Add dialog and the copy pre-fill will show tomorrow's date instead of today's in the Philippines.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">An admin adding or copying a class in the evening will see a start date that is one day in the future, potentially confusing scheduling.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Replace both with <code>new Date().toLocaleDateString("en-CA")</code> which uses the browser's local timezone (correct for a Manila-based user).</li>
+      <li>Alternatively, import the Manila-aware date utility and expose a client-safe version.</li>
+    </ol>
+  </div>
+
+  <hr class="divider" />
+  <h2>Findings — GREEN (Improvement Opportunities)</h2>
+
+  <!-- FIND-019 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-019</span>
+      <span class="card-title">Missing Database Index on Booking.scheduleId and Booking.scheduledDate</span>
+      <span class="badge badge-green">🟢 GREEN</span>
+      <span class="badge badge-cat">Performance</span>
+    </div>
+    <div class="file-ref">prisma/schema.prisma · Booking model (line 336–360)</div>
+    <div class="section-label">Description</div>
+    <p class="description">The <code>Booking</code> model has indexes on <code>memberId</code>, <code>employeeId</code>, and <code>sessionId</code>, but not on <code>scheduleId</code> or <code>scheduledDate</code>. Nearly every schedule-related query filters by both fields: the counts API, the bookings list API, the deletion booking-check, and the attend check-in all use <code>scheduleId</code> and/or <code>scheduledDate</code> in their WHERE clauses.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">Without these indexes, every schedule-based booking lookup performs a full table scan. As the bookings table grows, these queries will degrade from milliseconds to seconds.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add <code>@@index([scheduleId])</code> and <code>@@index([scheduledDate])</code> to the <code>Booking</code> model in the schema.</li>
+      <li>Consider a composite index <code>@@index([scheduleId, scheduledDate])</code> since these fields are almost always queried together.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-020 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-020</span>
+      <span class="card-title">JWT Callback Issues a DB Query on Every Token Refresh</span>
+      <span class="badge badge-green">🟢 GREEN</span>
+      <span class="badge badge-cat">Performance</span>
+    </div>
+    <div class="file-ref">lib/auth.ts · lines 66–96</div>
+    <div class="section-label">Description</div>
+    <p class="description">The JWT callback unconditionally queries the database (<code>prisma.user.findUnique</code> with employee and service joins) on every token refresh. Since Next.js App Router server components and API routes call <code>getServerSession</code> which triggers the JWT callback, every authenticated server-side request results in an extra DB round-trip.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">High-traffic pages (schedule, dashboard) issue 2+ DB queries per page load just for the session, increasing latency and Neon connection usage. This is especially costly on Neon serverless which charges per compute unit.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add a "last-refreshed" timestamp to the JWT token and only re-query the DB when more than 5 minutes have elapsed since the last refresh.</li>
+      <li>Alternatively, remove the profile fields (name, role, employeeTypes) from the JWT callback refresh and store them only on login, trusting the JWT for subsequent requests.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-021 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-021</span>
+      <span class="card-title">Member Number Generation Has a TOCTOU Race Condition</span>
+      <span class="badge badge-green">🟢 GREEN</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/members/route.ts · lines 74–82 · app/api/members/[id]/route.ts · lines 106–113</div>
+    <div class="section-label">Description</div>
+    <p class="description">Member number generation reads the last <code>NS-XXXXX</code> number, increments it, and writes it in two separate steps without a transaction. Two concurrent member creation requests will both read the same "last" number and both create a member with the same <code>NS-XXXXX</code> number, violating the unique constraint (which will cause one request to fail with an unhanded Prisma constraint error).</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">During busy registration periods (e.g., a batch import), duplicate member number conflicts can cause silent failures or 500 errors without informative messages.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Use a PostgreSQL sequence: <code>CREATE SEQUENCE member_number_seq START 1</code> and reference it in the member creation query via <code>$executeRaw</code> or a DB function.</li>
+      <li>Alternatively, wrap the read+write in a <code>prisma.$transaction</code> with a <code>SELECT FOR UPDATE SKIP LOCKED</code> advisory lock, or catch the unique constraint violation and retry.</li>
+    </ol>
+  </div>
+
+  <!-- FIND-022 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">FIND-022</span>
+      <span class="card-title">Booking Cancel: sessionsUsed Decrement Can Underflow to Negative</span>
+      <span class="badge badge-green">🟢 GREEN</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <div class="file-ref">app/api/bookings/[id]/route.ts · lines 66–77</div>
+    <div class="section-label">Description</div>
+    <p class="description">When a booking is cancelled and <code>returnSession: true</code>, the code decrements <code>sessionsUsed: { decrement: 1 }</code> without checking that <code>sessionsUsed > 0</code>. If <code>sessionsUsed</code> is already 0 (e.g., after a previous manual correction), the value becomes -1. Prisma does not enforce non-negative by default and PostgreSQL allows negative integers.</p>
+    <div class="section-label">Why It's a Finding</div>
+    <p class="why">A negative <code>sessionsUsed</code> breaks all session-counting UI (showing "-1 / 4 sessions used") and may cause errors in any code that checks <code>sessionsUsed >= sessionsTotal</code>.</p>
+    <div class="section-label">Recommendations</div>
+    <ol class="recs">
+      <li>Add a guard: <code>if (booking.subscription.sessionsUsed > 0)</code> before decrementing.</li>
+      <li>Use a Prisma <code>updateMany</code> with <code>where: { id: ..., sessionsUsed: { gt: 0 } }</code> to make the guard atomic.</li>
+      <li>Add a PostgreSQL check constraint: <code>ALTER TABLE "Subscription" ADD CONSTRAINT sessions_used_non_negative CHECK ("sessionsUsed" &gt;= 0)</code>.</li>
+    </ol>
+  </div>
+
+  <hr class="divider" />
+  <h2>Pure Recommendations (No Current Bug)</h2>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">REC-001</span>
+      <span class="card-title">Add Rate Limiting to Auth Endpoints</span>
+      <span class="badge badge-cat">Security</span>
+    </div>
+    <p class="description">The <code>/api/auth/forgot-password</code> and <code>/api/auth/reset-password</code> routes have no rate limiting. An attacker can enumerate valid email addresses or brute-force reset tokens. Implement IP-based rate limiting using Vercel's <code>@vercel/kv</code> or a middleware library like <code>upstash/ratelimit</code>. Limit forgot-password to 3 requests per email per 15 minutes.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">REC-002</span>
+      <span class="card-title">Add Booking.scheduledDate NOT NULL Constraint for Recurring Schedules</span>
+      <span class="badge badge-cat">Data Integrity</span>
+    </div>
+    <p class="description"><code>Booking.scheduledDate</code> is nullable. Null-date bookings are invisible to all date-filtered queries (counts API, coach dashboard, schedule booking list when a date is supplied). Enforce <code>scheduledDate</code> as non-null at the application layer when creating bookings for recurring schedules. Consider a Prisma middleware or Zod validation that rejects bookings missing <code>scheduledDate</code> when <code>scheduleId</code> belongs to a recurring <code>ClassSchedule</code>.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">REC-003</span>
+      <span class="card-title">Standardise Date Serialisation: Prohibit toISOString() in Client → Server Paths</span>
+      <span class="badge badge-cat">Timezone</span>
+    </div>
+    <p class="description">There are multiple mixed usages of <code>toISOString()</code> and <code>toLocaleDateString("en-CA")</code> for dates sent to the server. Standardise on <code>toLocaleDateString("en-CA")</code> (YYYY-MM-DD) for all date-only values sent from client to server, and on <code>toISOString()</code> only for full datetime values where the time component is meaningful. Add an ESLint rule or code review checklist item enforcing this.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-id">REC-004</span>
+      <span class="card-title">MemberCalendar getBooking() Does Not Filter by Date</span>
+      <span class="badge badge-cat">UX/Logic</span>
+    </div>
+    <p class="description">In <code>member-calendar.tsx</code>, <code>getBooking(scheduleId)</code> finds the first booking matching <code>b.scheduleId === scheduleId</code> with no date filter. A member who has a CONFIRMED booking from a previous week for the same recurring schedule will see every future occurrence of that class marked as "BOOKED" even without a new booking. The fix is to filter by <code>selectedDate</code> as well: <code>bookings.find(b => b.scheduleId === scheduleId && b.scheduledDate === selectedDate)</code> using a consistent date string representation.</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,350 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  KeyRound, Monitor, ShoppingBag, Eye, EyeOff,
+  Tablet, Plus, Trash2, Copy, Check, AlertCircle,
+} from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+
+type AccountInfo = { email: string; updatedAt: string } | null;
+
+function PasswordForm({ account, label, icon: Icon, email }: {
+  account: "kiosk" | "store";
+  label: string;
+  icon: React.ElementType;
+  email?: string;
+}) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+    if (newPassword !== confirm) { setError("Passwords do not match."); return; }
+    if (newPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/system-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account, newPassword, adminPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to update password."); return; }
+      setSuccess(true);
+      setNewPassword("");
+      setConfirm("");
+      setAdminPassword("");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Icon className="h-4 w-4" />
+          {label}
+        </CardTitle>
+        {email && (
+          <CardDescription className="font-mono text-xs">{email}</CardDescription>
+        )}
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>New Password</Label>
+            <div className="relative">
+              <Input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+              />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowNew((v) => !v)}>
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Confirm New Password</Label>
+            <Input
+              type={showNew ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Repeat new password"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5 pt-1 border-t">
+            <Label>Your Admin Password <span className="text-muted-foreground text-xs font-normal">(to confirm)</span></Label>
+            <div className="relative">
+              <Input
+                type={showAdmin ? "text" : "password"}
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="Your admin password"
+                required
+              />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowAdmin((v) => !v)}>
+                {showAdmin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {success && <p className="text-sm text-green-600 font-medium">Password updated successfully.</p>}
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? "Updating..." : `Update ${label} Password`}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Kiosk Devices ───────────────────────────────────────────────────────────
+
+type KioskDevice = { id: string; label: string; createdAt: string };
+
+function KioskDevicesSection() {
+  const [devices, setDevices] = useState<KioskDevice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/kiosk-devices");
+      if (res.ok) setDevices(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setAddError("");
+    if (!newLabel.trim()) { setAddError("Device label is required."); return; }
+    setAdding(true);
+    try {
+      const res = await fetch("/api/admin/kiosk-devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: newLabel.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddError(data.error ?? "Failed to create device."); return; }
+      setNewToken(data.token);
+      setNewLabel("");
+      load();
+    } catch {
+      setAddError("Network error. Please try again.");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    setRevoking(id);
+    try {
+      await fetch("/api/admin/kiosk-devices", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setDevices((prev) => prev.filter((d) => d.id !== id));
+    } finally {
+      setRevoking(null);
+    }
+  }
+
+  function copyToken() {
+    if (!newToken) return;
+    navigator.clipboard.writeText(newToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Kiosk Devices</h2>
+        <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Register Device
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <p className="text-sm text-muted-foreground p-4">Loading…</p>
+          ) : devices.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <Tablet className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No devices registered.</p>
+              <p className="text-xs text-muted-foreground/70">
+                Register a device to restrict kiosk access to approved hardware only.
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {devices.map((d) => (
+                <li key={d.id} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Tablet className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{d.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Registered {new Date(d.createdAt).toLocaleDateString("en-PH", { dateStyle: "medium" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">Active</Badge>
+                    <Button
+                      size="sm" variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                      disabled={revoking === d.id}
+                      onClick={() => handleRevoke(d.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add device dialog */}
+      <Dialog open={showAdd} onOpenChange={(open) => { if (!open) { setShowAdd(false); setNewLabel(""); setAddError(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register Kiosk Device</DialogTitle>
+          </DialogHeader>
+          {newToken ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 flex gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800 dark:text-amber-200">
+                  <p className="font-semibold mb-1">Copy this token now.</p>
+                  <p>It will not be shown again. Enter it on the kiosk device when prompted.</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Device Token</Label>
+                <div className="flex gap-2">
+                  <Input value={newToken} readOnly className="font-mono text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={copyToken}>
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => { setShowAdd(false); setNewToken(null); }}>Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <form onSubmit={handleAdd} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Device Label</Label>
+                <Input
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. Front Desk iPad"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">A name to identify this physical device.</p>
+              </div>
+              {addError && <p className="text-sm text-destructive">{addError}</p>}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                <Button type="submit" disabled={adding}>
+                  {adding ? "Generating…" : "Generate Token"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Root ────────────────────────────────────────────────────────────────────
+
+export function SettingsClient() {
+  const [accounts, setAccounts] = useState<{ kiosk: AccountInfo; store: AccountInfo }>({ kiosk: null, store: null });
+
+  useEffect(() => {
+    fetch("/api/admin/system-accounts")
+      .then((r) => r.json())
+      .then(setAccounts)
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <KeyRound className="h-6 w-6" />
+          Settings
+        </h1>
+        <p className="text-muted-foreground mt-1">Manage system account credentials and devices.</p>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">System Accounts</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PasswordForm
+            account="kiosk"
+            label="Kiosk"
+            icon={Monitor}
+            email={accounts.kiosk?.email ?? undefined}
+          />
+          <PasswordForm
+            account="store"
+            label="Store"
+            icon={ShoppingBag}
+            email={accounts.store?.email ?? undefined}
+          />
+        </div>
+      </div>
+
+      <KioskDevicesSection />
+    </div>
+  );
+}

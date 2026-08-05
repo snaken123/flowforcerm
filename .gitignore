@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+.env*.local
+
+# Next.js build output
+.next/
+out/
+
+# Prisma generated client
+node_modules/.prisma/
+
+# uploads folder (user photos stored locally)
+public/uploads/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+.vercel
+.env*
+
+# Test reports
+test-reports/
+
+# stray reserved-name artifact from source repo
+nul
