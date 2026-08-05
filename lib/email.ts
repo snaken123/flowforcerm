@@ -3,8 +3,8 @@ import { Resend } from "resend";
 const apiKey = process.env.RESEND_API_KEY;
 if (!apiKey) console.error("[email] RESEND_API_KEY is not set");
 const resend = new Resend(apiKey);
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://app.northsouth.com.ph";
-const FROM = process.env.EMAIL_FROM ?? "NorthSouth Fight Sports <noreply@northsouth.com.ph>";
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
+const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
 export async function sendActivationEmail({
   to,
@@ -15,15 +15,15 @@ export async function sendActivationEmail({
   firstName: string;
   tempPassword: string;
 }) {
-  if (!to || to.endsWith("@northsouth.local")) return;
+  if (!to || to.endsWith("@flowforcerm.local")) return;
   const result = await resend.emails.send({
     from: FROM,
     to,
-    subject: "NorthSouth Fight Sports — Activate Your Account",
+    subject: "FlowForceRM — Activate Your Account",
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
         <h2 style="margin-bottom:8px">Hi ${firstName},</h2>
-        <p style="color:#555">Your NorthSouth Fight Sports account credentials have been reset. Use the details below to log in.</p>
+        <p style="color:#555">Your FlowForceRM account credentials have been reset. Use the details below to log in.</p>
 
         <div style="background:#f4f4f5;border-radius:8px;padding:20px 24px;margin:24px 0">
           <p style="margin:0 0 8px 0;font-size:14px;color:#555">Your login credentials:</p>
@@ -55,16 +55,16 @@ export async function sendActivationLinkEmail({
   firstName: string;
   token: string;
 }) {
-  if (!to || to.endsWith("@northsouth.local")) return;
+  if (!to || to.endsWith("@flowforcerm.local")) return;
   const setupUrl = `${APP_URL}/reset-password?token=${token}`;
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: "NorthSouth Fight Sports — Set Up Your Account",
+    subject: "FlowForceRM — Set Up Your Account",
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
         <h2 style="margin-bottom:8px">Hi ${firstName},</h2>
-        <p style="color:#555">Your NorthSouth Fight Sports account is ready. Click the button below to set your password and activate your account.</p>
+        <p style="color:#555">Your FlowForceRM account is ready. Click the button below to set your password and activate your account.</p>
         <p style="color:#555">Your existing password is unchanged — this link simply lets you create a new one if you haven't already.</p>
 
         <a href="${setupUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;margin:24px 0">
@@ -72,7 +72,7 @@ export async function sendActivationLinkEmail({
         </a>
 
         <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>. If you didn't expect this email, you can safely ignore it — your account and password are untouched.</p>
-        <p style="font-size:12px;color:#aaa;margin-top:24px">NorthSouth Fight Sports · app.northsouth.com.ph</p>
+        <p style="font-size:12px;color:#aaa;margin-top:24px">FlowForceRM · flowforcerm.com</p>
       </div>
     `,
   });
@@ -88,12 +88,12 @@ export async function sendPasswordResetEmail({
   firstName: string;
   token: string;
 }) {
-  if (!to || to.endsWith("@northsouth.local")) return;
+  if (!to || to.endsWith("@flowforcerm.local")) return;
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: "NorthSouth Fight Sports — Reset Your Password",
+    subject: "FlowForceRM — Reset Your Password",
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
         <h2 style="margin-bottom:8px">Hi ${firstName},</h2>
@@ -105,7 +105,7 @@ export async function sendPasswordResetEmail({
         </a>
 
         <p style="font-size:13px;color:#888">This link expires in <strong>1 hour</strong>.</p>
-        <p style="font-size:12px;color:#aaa;margin-top:24px">NorthSouth Fight Sports · app.northsouth.com.ph</p>
+        <p style="font-size:12px;color:#aaa;margin-top:24px">FlowForceRM · flowforcerm.com</p>
       </div>
     `,
   });
@@ -121,15 +121,15 @@ export async function sendWelcomeEmail({
   firstName: string;
   tempPassword: string;
 }) {
-  if (!to || to.endsWith("@northsouth.local")) return;
+  if (!to || to.endsWith("@flowforcerm.local")) return;
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: "Welcome to NorthSouth Fight Sports — Your Account is Ready",
+    subject: "Welcome to FlowForceRM — Your Account is Ready",
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
         <h2 style="margin-bottom:8px">Welcome, ${firstName}! 👊</h2>
-        <p style="color:#555">Your NorthSouth Fight Sports member account has been created.</p>
+        <p style="color:#555">Your FlowForceRM member account has been created.</p>
 
         <div style="background:#f4f4f5;border-radius:8px;padding:20px 24px;margin:24px 0">
           <p style="margin:0 0 8px 0;font-size:14px;color:#555">Your temporary login credentials:</p>

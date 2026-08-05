@@ -1,6 +1,6 @@
 # GymRM Undocumented Features Report
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Audit date: July 2026*
 
 This report describes features and behaviours that are present in the codebase but were previously undocumented or incompletely described. Each item is derived from reading the implementation directly.

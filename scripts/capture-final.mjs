@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-const BASE = 'https://app.northsouth.com.ph';
+const BASE = 'https://flowforcerm.com';
 const browser = await chromium.launch({ headless: true });
 
 async function loginAdmin(page) {

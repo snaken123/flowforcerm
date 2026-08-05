@@ -15,7 +15,7 @@ const nextConfig = {
       {
         source: "/:path*",
         destination: "/kiosk",
-        has: [{ type: "host", value: "kiosk.northsouth.com.ph" }],
+        has: [{ type: "host", value: "flowforcerm.com/kiosk" }],
       },
     ];
   },

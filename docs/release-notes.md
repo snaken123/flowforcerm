@@ -1,6 +1,6 @@
 # GymRM Release Notes
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 
 This document records significant changes to the GymRM platform, derived from the current codebase state as of July 2026.
 

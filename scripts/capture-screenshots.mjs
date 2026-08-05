@@ -7,7 +7,7 @@ import { chromium } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 
-const BASE_URL = 'https://app.northsouth.com.ph';
+const BASE_URL = 'https://flowforcerm.com';
 const OUT_DIR = path.resolve('docs/screenshots');
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -15,8 +15,8 @@ const ACCOUNTS = {
   admin:  { email: 'admin@mygym.com',                password: 'admin123' },
   staff:  { email: 'staff@mygym.com',                password: 'staff123' },
   member: { email: 'snaken123@gmail.com',             password: 'Ss771017_01' },
-  store:  { email: 'store@northsouth.com.ph',         password: 'Store2024' },
-  kiosk:  { email: 'kiosk@northsouth.com.ph',         password: 'Kiosk123' },
+  store:  { email: 'store@flowforcerm.com',         password: 'Store2024' },
+  kiosk:  { email: 'kiosk@flowforcerm.com',         password: 'Kiosk123' },
 };
 
 async function ss(page, name) {

@@ -1,5 +1,5 @@
 # GymRM Troubleshooting Guide
-## NorthSouth Fight Sports
+## FlowForceRM
 
 *Last updated: July 2026*
 
@@ -42,7 +42,7 @@ Find your symptom in the section that matches the area of the application where 
 
 **Resolution:**
 1. Do not use private/incognito mode for regular use.
-2. Ensure the browser allows cookies for `app.northsouth.com.ph`.
+2. Ensure the browser allows cookies for `flowforcerm.com`.
 3. The kiosk account uses non-expiring sessions by design — check that the kiosk is logged in as the `kiosk@` account.
 
 ---
@@ -302,4 +302,4 @@ Find your symptom in the section that matches the area of the application where 
 
 ---
 
-*NorthSouth Fight Sports — GymRM Troubleshooting Guide v2.0 — July 2026*
+*FlowForceRM — GymRM Troubleshooting Guide v2.0 — July 2026*

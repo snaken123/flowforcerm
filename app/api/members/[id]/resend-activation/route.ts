@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  if (!member.user.email || member.user.email.endsWith("@northsouth.local")) {
+  if (!member.user.email || member.user.email.endsWith("@flowforcerm.local")) {
     return NextResponse.json({ error: "This member has no valid email address on file." }, { status: 400 });
   }
 

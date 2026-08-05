@@ -1,5 +1,5 @@
 const SEMAPHORE_API_KEY = process.env.SEMAPHORE_API_KEY!;
-const SEMAPHORE_SENDER = process.env.SEMAPHORE_SENDER ?? "NorthSouth";
+const SEMAPHORE_SENDER = process.env.SEMAPHORE_SENDER ?? "FlowForceRM";
 
 export async function sendSMS(to: string, message: string) {
   const phone = to.replace(/\D/g, "");

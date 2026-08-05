@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NorthSouth Gym CRM — Audit Report</title>
+<title>FlowForceRM Gym CRM — Audit Report</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem 1rem; }
@@ -40,11 +40,11 @@
 <body>
 <div class="container">
 
-  <h1>NorthSouth Fight Sports Gym CRM — Audit Report</h1>
+  <h1>FlowForceRM Gym CRM — Audit Report</h1>
   <p class="meta">Generated: 2026-07-26 &nbsp;·&nbsp; Stack: Next.js 14 App Router · TypeScript · Prisma 5 · PostgreSQL (Neon) · NextAuth 4 · Vercel</p>
 
   <div class="exec-summary">
-    <p>This audit reviewed every API route, page component, the Prisma schema, auth configuration, and utility libraries of the NorthSouth Fight Sports Gym CRM. Two critical SQL injection vulnerabilities were found in raw query paths that accept user-controlled values without parameterisation. A type-error crash was identified in the schedule deletion flow when an employee booking exists (nullable member). The booking count API, the schedule deletion date, and the revenue date-range API all contain timezone bugs that will silently produce wrong results on the Vercel (UTC) runtime when used from Manila (UTC+8). The <code>sessionsUsed</code> increment is non-atomic and vulnerable to a race condition under concurrent requests. An access-control gap allows any authenticated user—including members—to read other members' full profiles via the member detail API. Several unbounded <code>findMany</code> queries lack <code>take</code> limits. The report below lists 22 findings plus 4 pure recommendations.</p>
+    <p>This audit reviewed every API route, page component, the Prisma schema, auth configuration, and utility libraries of the FlowForceRM Gym CRM. Two critical SQL injection vulnerabilities were found in raw query paths that accept user-controlled values without parameterisation. A type-error crash was identified in the schedule deletion flow when an employee booking exists (nullable member). The booking count API, the schedule deletion date, and the revenue date-range API all contain timezone bugs that will silently produce wrong results on the Vercel (UTC) runtime when used from Manila (UTC+8). The <code>sessionsUsed</code> increment is non-atomic and vulnerable to a race condition under concurrent requests. An access-control gap allows any authenticated user—including members—to read other members' full profiles via the member detail API. Several unbounded <code>findMany</code> queries lack <code>take</code> limits. The report below lists 22 findings plus 4 pure recommendations.</p>
   </div>
 
   <div class="summary">

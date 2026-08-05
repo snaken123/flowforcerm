@@ -1,5 +1,5 @@
 # GymRM Documentation Changelog
-## NorthSouth Fight Sports
+## FlowForceRM
 
 *Tracks all documentation changes across the project's doc suite.*
 
@@ -110,4 +110,4 @@ The initial audit identified:
 
 ---
 
-*NorthSouth Fight Sports — Documentation Changelog v2.0 — July 2026*
+*FlowForceRM — Documentation Changelog v2.0 — July 2026*

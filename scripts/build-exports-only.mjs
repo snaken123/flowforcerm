@@ -19,7 +19,7 @@ const PptxGenJS = require('pptxgenjs');
 const pptx = new PptxGenJS();
 pptx.defineLayout({ name: 'WIDESCREEN', width: 13.33, height: 7.5 });
 pptx.layout = 'WIDESCREEN';
-pptx.title = 'NorthSouth GymRM – Product Overview';
+pptx.title = 'FlowForceRM GymRM – Product Overview';
 for (const p of slidePaths) {
   const imgData = fs.readFileSync(p).toString('base64');
   const slide = pptx.addSlide();

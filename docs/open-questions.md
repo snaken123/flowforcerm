@@ -1,6 +1,6 @@
 # GymRM Open Questions & Ambiguities
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Audit date: July 2026*
 
 This document records open questions, ambiguous behaviours, and unresolved design decisions discovered during the documentation audit. Each item is a candidate for follow-up with the product owner or a future development decision.

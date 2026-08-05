@@ -60,10 +60,10 @@ async function main() {
 
     // Generate unique placeholder email
     const base = `noemail.${slugify(firstName)}.${slugify(lastName)}`;
-    let email = `${base}@northsouth.local`;
+    let email = `${base}@flowforcerm.local`;
     let suffix = 1;
     while (usedEmails.has(email)) {
-      email = `${base}.${suffix}@northsouth.local`;
+      email = `${base}.${suffix}@flowforcerm.local`;
       suffix++;
     }
 

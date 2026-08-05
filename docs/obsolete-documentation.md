@@ -1,6 +1,6 @@
 # GymRM Obsolete Documentation Report
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Audit date: July 2026*
 
 This report identifies documentation that existed prior to the July 2026 regeneration effort and is now obsolete, superseded, or inaccurate based on the current codebase.
@@ -47,7 +47,7 @@ The `vercel.json` cron schedule should be the canonical source of truth for the 
 
 The web integration client component (`app/(dashboard)/admin/web-integration/web-integration-client.tsx`) has the base URL hardcoded as:
 ```
-https://app.northsouth.com.ph
+https://flowforcerm.com
 ```
 
 If the application is deployed under a different domain (staging, development), the embed codes shown in the UI will be incorrect. Any documentation that describes the embed URLs should note this as the production URL only.

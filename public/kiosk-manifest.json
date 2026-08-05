@@ -1,7 +1,7 @@
 {
-  "name": "NorthSouth Check-In Kiosk",
+  "name": "FlowForceRM Check-In Kiosk",
   "short_name": "NS Kiosk",
-  "description": "NorthSouth Fight Sports — Member Check-In",
+  "description": "FlowForceRM — Member Check-In",
   "start_url": "/kiosk",
   "scope": "/kiosk",
   "display": "fullscreen",

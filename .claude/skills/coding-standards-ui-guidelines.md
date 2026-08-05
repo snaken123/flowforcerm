@@ -1,6 +1,6 @@
 ---
 name: coding-standards-ui-guidelines
-description: Coding conventions and UI implementation guidelines for the NorthSouth gym CRM. Invoke before writing any new component, API route, or utility function to ensure consistency with existing patterns.
+description: Coding conventions and UI implementation guidelines for the FlowForceRM gym CRM. Invoke before writing any new component, API route, or utility function to ensure consistency with existing patterns.
 ---
 
 ## TypeScript

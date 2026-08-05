@@ -157,11 +157,11 @@ export default function LoginPage() {
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <div className="h-24 w-24 rounded-full overflow-hidden">
-              <img src="/logo-reverse.jpg" alt="NorthSouth" className="h-full w-full object-cover" />
+              <img src="/logo-reverse.jpg" alt="FlowForceRM" className="h-full w-full object-cover" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold uppercase tracking-widest text-white">NorthSouth</h1>
-          <p className="text-[#666] uppercase tracking-[0.2em] text-xs">Fight Sports</p>
+          <h1 className="text-3xl font-bold uppercase tracking-widest text-white">FlowForceRM</h1>
+          <p className="text-[#666] uppercase tracking-[0.2em] text-xs">Manage Less. Train More.</p>
         </div>
         <Card className="bg-[#111] border-white/10 text-white">
           <CardHeader>

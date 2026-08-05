@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 const user = await prisma.user.create({
   data: {
-    email: 'kiosk@northsouth.com.ph',
+    email: 'kiosk@flowforcerm.com',
     name: 'Kiosk',
     password: '$2a$10$FDBgutE0ifr7HSXSWbawHeNKKiG4NLttUqHtyqgls/dpWRhHdUO26',
     role: 'KIOSK',

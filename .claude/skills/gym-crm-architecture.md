@@ -1,12 +1,12 @@
 ---
 name: gym-crm-architecture
-description: Reference skill for the NorthSouth gym CRM system architecture. Invoke before implementing a new feature to understand routing, data flow, component boundaries, and deployment setup.
+description: Reference skill for the FlowForceRM gym CRM system architecture. Invoke before implementing a new feature to understand routing, data flow, component boundaries, and deployment setup.
 ---
 
 ## Project overview
 
-**App:** NorthSouth Fight Sports gym CRM  
-**URL:** app.northsouth.com.ph  
+**App:** FlowForceRM gym CRM  
+**URL:** flowforcerm.com  
 **Stack:** Next.js 14 App Router · TypeScript strict · Prisma 5 · PostgreSQL (Neon) · NextAuth 4 · Tailwind CSS · shadcn/ui  
 **Deployment:** Vercel — auto-deploys from `main` branch on every `git push`
 

@@ -3,7 +3,7 @@ import { ScheduleEmbedClient } from "./schedule-embed-client";
 
 export const revalidate = 60;
 
-export const metadata = { title: "Class Schedule — NorthSouth Fight Sports" };
+export const metadata = { title: "Class Schedule — FlowForceRM" };
 
 export default async function EmbedSchedulePage() {
   const today = new Date();

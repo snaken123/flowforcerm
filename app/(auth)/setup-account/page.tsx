@@ -19,15 +19,15 @@ type StepId = (typeof STEPS)[number]["id"];
 
 // ── Full document text ──────────────────────────────────────────────────────
 
-const WAIVER_TEXT = `NorthSouth Fight Sports
+const WAIVER_TEXT = `FlowForceRM
 Assumption of Risk, Waiver of Liability, Release, and Electronic Consent Agreement
 Effective Date: July 2, 2026
 
-Welcome to NorthSouth Fight Sports ("NSFS").
+Welcome to FlowForceRM ("NSFS").
 
 Martial arts, combat sports, fitness training, and related activities involve inherent risks that cannot be completely eliminated, regardless of the care taken by coaches, staff, or participants. Before participating in any activity at NSFS, you must carefully read and agree to this Agreement.
 
-By selecting "I Agree" within the NorthSouth Fight Sports app, creating an account, purchasing a membership, booking a class, or participating in any activity, you acknowledge that you have read, understood, and voluntarily agree to the terms of this Agreement.
+By selecting "I Agree" within the FlowForceRM app, creating an account, purchasing a membership, booking a class, or participating in any activity, you acknowledge that you have read, understood, and voluntarily agree to the terms of this Agreement.
 
 1. Acknowledgement of Risk
 
@@ -77,7 +77,7 @@ If I become injured during training, I will immediately stop participating and n
 
 4. Release of Liability
 
-To the fullest extent permitted by law, I release and forever discharge NorthSouth Fight Sports, its owners, directors, officers, employees, coaches, instructors, volunteers, affiliates, and representatives from any and all liability arising from my participation.
+To the fullest extent permitted by law, I release and forever discharge FlowForceRM, its owners, directors, officers, employees, coaches, instructors, volunteers, affiliates, and representatives from any and all liability arising from my participation.
 
 This release includes claims arising from:
 • Personal injury
@@ -136,7 +136,7 @@ I accept responsibility for the minor's conduct and participation.
 
 10. Indemnification
 
-I agree to indemnify and hold harmless NorthSouth Fight Sports from any claims, damages, costs, legal fees, or liabilities arising from my actions, misconduct, or violation of gym policies.
+I agree to indemnify and hold harmless FlowForceRM from any claims, damages, costs, legal fees, or liabilities arising from my actions, misconduct, or violation of gym policies.
 
 11. Electronic Consent
 
@@ -144,7 +144,7 @@ I understand that selecting "I Agree" constitutes my electronic signature.
 
 I agree that this electronic acceptance has the same legal force and effect as a handwritten signature under applicable Philippine laws governing electronic transactions.
 
-The electronic record maintained by NorthSouth Fight Sports shall serve as proof of my acceptance of this Agreement.
+The electronic record maintained by FlowForceRM shall serve as proof of my acceptance of this Agreement.
 
 12. Severability
 
@@ -158,7 +158,7 @@ Any dispute arising from this Agreement shall be subject to the jurisdiction of 
 
 14. Entire Agreement
 
-This Agreement, together with the NorthSouth Fight Sports Membership Terms, Gym Rules, and Privacy Policy, constitutes the entire agreement relating to participation in NorthSouth Fight Sports activities.
+This Agreement, together with the FlowForceRM Membership Terms, Gym Rules, and Privacy Policy, constitutes the entire agreement relating to participation in FlowForceRM activities.
 
 Electronic Acknowledgement
 
@@ -166,19 +166,19 @@ By selecting "I Agree", I acknowledge that:
 • I have carefully read this Agreement in its entirety.
 • I understand the risks associated with martial arts and fitness training.
 • I voluntarily assume those risks.
-• I release NorthSouth Fight Sports from liability to the fullest extent permitted by law.
+• I release FlowForceRM from liability to the fullest extent permitted by law.
 • I understand that this Agreement is legally binding.
 • I understand that my electronic acceptance is equivalent to my handwritten signature.
 • If accepting on behalf of a minor, I certify that I am the parent or legal guardian and have authority to bind the minor to this Agreement.`;
 
-const PRIVACY_TEXT = `NorthSouth Fight Sports Privacy and Confidentiality Agreement
+const PRIVACY_TEXT = `FlowForceRM Privacy and Confidentiality Agreement
 Effective Date: July 2, 2026
 
-Welcome to NorthSouth Fight Sports ("NSFS," "we," "our," or "us").
+Welcome to FlowForceRM ("NSFS," "we," "our," or "us").
 
 We respect your privacy and are committed to protecting your personal information in accordance with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173). This Privacy and Confidentiality Agreement explains how we collect, use, store, and protect your information.
 
-By creating an account, purchasing a membership, registering for classes, or selecting "I Agree" within the NorthSouth Fight Sports app or website, you acknowledge that you have read, understood, and agree to this Privacy and Confidentiality Agreement.
+By creating an account, purchasing a membership, registering for classes, or selecting "I Agree" within the FlowForceRM app or website, you acknowledge that you have read, understood, and agree to this Privacy and Confidentiality Agreement.
 
 1. Information We Collect
 
@@ -218,7 +218,7 @@ Your information may be used to:
 
 3. Competition Registration
 
-If you authorize NorthSouth Fight Sports to register you for tournaments, seminars, or affiliated events, we may share only the information required by organizers, including:
+If you authorize FlowForceRM to register you for tournaments, seminars, or affiliated events, we may share only the information required by organizers, including:
 • Name
 • Age
 • Date of birth
@@ -295,7 +295,7 @@ We do not sell, rent, or intentionally disclose your information except:
 
 9. Respect for Member Privacy
 
-NorthSouth Fight Sports is built on trust and mutual respect.
+FlowForceRM is built on trust and mutual respect.
 
 Members agree to respect the privacy of fellow members and shall not:
 • Share another member's personal information without permission
@@ -307,7 +307,7 @@ Violation of this provision may result in disciplinary action or termination of 
 
 10. Confidential Training Materials
 
-Training curriculums, lesson plans, instructional videos, member-only content, coaching methodologies, and other proprietary materials developed or provided by NSFS remain the intellectual property of NorthSouth Fight Sports.
+Training curriculums, lesson plans, instructional videos, member-only content, coaching methodologies, and other proprietary materials developed or provided by NSFS remain the intellectual property of FlowForceRM.
 
 Members agree not to reproduce, distribute, sell, or commercially exploit these materials without written permission.
 
@@ -344,7 +344,7 @@ Requests may be submitted through the contact information below.
 
 14. Changes to this Agreement
 
-NorthSouth Fight Sports may modify this Privacy and Confidentiality Agreement at any time.
+FlowForceRM may modify this Privacy and Confidentiality Agreement at any time.
 
 Material changes will be posted within the app and on our official website.
 
@@ -352,15 +352,15 @@ Continued use of our services after such changes constitutes acceptance of the u
 
 Contact Us
 
-NorthSouth Fight Sports
+FlowForceRM
 89 Maharlika St., Brgy. San Antonio
 San Pedro, Laguna 4023
-Email: info@northsouth.com.ph
-Website: www.northsouth.com.ph
+Email: info@flowforcerm.com
+Website: www.flowforcerm.com
 
 Electronic Consent
 
-By selecting "I Agree", creating an account, purchasing a membership, registering for classes, or continuing to use the NorthSouth Fight Sports app or services, you acknowledge that:
+By selecting "I Agree", creating an account, purchasing a membership, registering for classes, or continuing to use the FlowForceRM app or services, you acknowledge that:
 • You have read and understood this Privacy and Confidentiality Agreement.
 • You consent to the collection, use, storage, and processing of your personal information as described herein.
 • You consent to electronic communications related to your membership.
@@ -475,7 +475,7 @@ export default function SetupAccountPage() {
           <div className="flex items-center gap-3">
             <img src="/NS LOGO.png" alt="NS Logo" className="h-9 w-9 rounded-full object-cover" />
             <div>
-              <p className="font-bold text-sm leading-none">NorthSouth Fight Sports</p>
+              <p className="font-bold text-sm leading-none">FlowForceRM</p>
               <p className="text-xs text-muted-foreground mt-0.5">Account Setup</p>
             </div>
           </div>
@@ -643,7 +643,7 @@ export default function SetupAccountPage() {
                   onChange={(e) => setAgreed(e.target.checked)}
                 />
                 <span className="text-sm">
-                  I have read and understood the NorthSouth Fight Sports Privacy and Confidentiality Agreement and consent to the collection and use of my personal information as described, in accordance with the Philippine Data Privacy Act of 2012.
+                  I have read and understood the FlowForceRM Privacy and Confidentiality Agreement and consent to the collection and use of my personal information as described, in accordance with the Philippine Data Privacy Act of 2012.
                 </span>
               </label>
               {!scrolled && (
@@ -665,7 +665,7 @@ export default function SetupAccountPage() {
           {step.id === "welcome" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold">Welcome to NorthSouth Fight Sports! 🥋</h1>
+                <h1 className="text-2xl font-bold">Welcome to FlowForceRM! 🥋</h1>
                 <p className="text-muted-foreground mt-1">
                   You're all set. Before you jump in, here are two resources available to you anytime in the app.
                 </p>

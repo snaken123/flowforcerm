@@ -13,7 +13,7 @@ export default async function RootPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-8 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-3">
-          <img src="/NS LOGO.png" alt="NorthSouth Fight Sports" className="h-10 w-10 object-cover rounded-full" />
+          <img src="/NS LOGO.png" alt="FlowForceRM" className="h-10 w-10 object-cover rounded-full" />
         </div>
         <Link
           href="/login"
@@ -31,8 +31,8 @@ export default async function RootPage() {
           </div>
         </div>
         <h1 className="text-6xl sm:text-7xl font-bold tracking-tight leading-none mb-4 uppercase">
-          NorthSouth<br />
-          <span className="text-[#888]">Fight Sports</span>
+          FlowForceRM<br />
+          <span className="text-[#888]">Manage Less. Train More.</span>
         </h1>
         <p className="text-lg text-[#666] max-w-lg mx-auto mb-10 tracking-wide">
           Gym management built for martial arts — athletes, classes, schedules, ranks, and memberships in one system.
@@ -73,7 +73,7 @@ export default async function RootPage() {
       <section className="max-w-6xl mx-auto px-8 pb-24">
         <div className="rounded-xl border border-white/10 bg-[#111] p-12 text-center">
           <h2 className="text-3xl font-bold mb-3 uppercase tracking-wide">Ready to Train?</h2>
-          <p className="text-[#666] mb-8 tracking-wide">Sign in to access the NorthSouth management portal.</p>
+          <p className="text-[#666] mb-8 tracking-wide">Sign in to access the FlowForceRM management portal.</p>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 rounded-md bg-white text-black hover:bg-[#e0e0e0] transition-colors px-8 py-3 font-semibold tracking-wide"
@@ -85,7 +85,7 @@ export default async function RootPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 text-center text-sm text-[#444] tracking-wide">
-        © {new Date().getFullYear()} NorthSouth Fight Sports · All rights reserved
+        © {new Date().getFullYear()} FlowForceRM · All rights reserved
       </footer>
     </div>
   );

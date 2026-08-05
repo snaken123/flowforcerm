@@ -1,8 +1,8 @@
 # GymRM User Manual
-## NorthSouth Fight Sports — Complete Operations Guide
+## FlowForceRM — Complete Operations Guide
 
 **Version:** 2.0 — July 2026  
-**Application:** app.northsouth.com.ph  
+**Application:** flowforcerm.com  
 **Support:** admin@mygym.com
 
 ---
@@ -34,7 +34,7 @@
 
 ## 1. Introduction
 
-GymRM is the all-in-one gym management platform for NorthSouth Fight Sports. It handles athlete registration, membership assignment, class scheduling, attendance tracking, revenue reporting, and store sales — all accessible from any browser at **app.northsouth.com.ph**.
+GymRM is the all-in-one gym management platform for FlowForceRM. It handles athlete registration, membership assignment, class scheduling, attendance tracking, revenue reporting, and store sales — all accessible from any browser at **flowforcerm.com**.
 
 ### Who This Manual Is For
 
@@ -64,11 +64,11 @@ GymRM is the all-in-one gym management platform for NorthSouth Fight Sports. It 
 ![Login screen](screenshots/00-login.png)
 
 ### URL
-`https://app.northsouth.com.ph`
+`https://flowforcerm.com`
 
 ### Steps
 
-1. Open your browser and go to **app.northsouth.com.ph**
+1. Open your browser and go to **flowforcerm.com**
 2. Enter your **Email** and **Password**
 3. Click **Sign In**
 4. You are redirected to your role's home page automatically
@@ -190,7 +190,7 @@ Displays all **1,246 registered athletes** in a sortable, searchable table.
 | Date of Birth | No | — |
 | Gender | No | — |
 | Address | No | — |
-| Referral Source | No | How they heard about NorthSouth |
+| Referral Source | No | How they heard about FlowForceRM |
 
 3. Click **Save**
 4. The system auto-assigns a member number (NS-XXXXX)
@@ -533,7 +533,7 @@ Allows front desk staff to check in any athlete by searching their name — fast
 
 ![Kiosk Check-In Screen](screenshots/19-kiosk-checkin.png)
 
-**Path:** `/kiosk` | **Login:** kiosk@northsouth.com.ph | **Roles:** Admin, Staff, Kiosk
+**Path:** `/kiosk` | **Login:** kiosk@flowforcerm.com | **Roles:** Admin, Staff, Kiosk
 
 A dedicated self-service terminal at the gym entrance where athletes check in independently.
 
@@ -722,7 +722,7 @@ Gmail integration for reading and responding to athlete emails inside GymRM.
 
 ---
 
-### Team at NorthSouth
+### Team at FlowForceRM
 
 | Name | Roles | Teaches |
 |---|---|---|
@@ -843,7 +843,7 @@ Complete audit trail of all staff and admin actions — **96 log entries** recor
 
 Manages shared system account passwords for the Kiosk and Store terminals.
 
-### Kiosk Account (kiosk@northsouth.com.ph)
+### Kiosk Account (kiosk@flowforcerm.com)
 
 The shared login for the self-service check-in kiosk.
 
@@ -854,7 +854,7 @@ To change the password:
 
 > **Warning:** After changing the kiosk password, the kiosk tablet is logged out. Re-login during off-peak hours. Communicate the new password to staff who manage the kiosk.
 
-### Store Account (store@northsouth.com.ph)
+### Store Account (store@flowforcerm.com)
 
 Same process for the shared store terminal. Change when store staff changes or a security rotation is needed.
 
@@ -955,5 +955,5 @@ Shows upcoming class sessions that the athlete is **eligible to attend** based o
 
 ---
 
-*GymRM User Manual v2.0 — NorthSouth Fight Sports — July 2026*  
-*Source of truth: live application at app.northsouth.com.ph verified July 28, 2026*
+*GymRM User Manual v2.0 — FlowForceRM — July 2026*  
+*Source of truth: live application at flowforcerm.com verified July 28, 2026*

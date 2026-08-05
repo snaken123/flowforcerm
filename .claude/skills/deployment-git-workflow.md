@@ -1,13 +1,13 @@
 ---
 name: deployment-git-workflow
-description: Git workflow and deployment process for the NorthSouth gym CRM. Invoke before committing or pushing to understand branching strategy, deploy targets, and post-deploy checks.
+description: Git workflow and deployment process for the FlowForceRM gym CRM. Invoke before committing or pushing to understand branching strategy, deploy targets, and post-deploy checks.
 ---
 
 ## Deployment
 
 - **Platform:** Vercel
 - **Trigger:** every `git push` to `main` auto-deploys to production
-- **Production URL:** app.northsouth.com.ph
+- **Production URL:** flowforcerm.com
 - **No staging environment** — changes go straight to prod; test locally before pushing
 
 ---
@@ -92,7 +92,7 @@ npx prisma studio
 ## Post-deploy checklist
 
 After pushing to main, verify on production:
-1. Open app.northsouth.com.ph — no 500 errors on load
+1. Open flowforcerm.com — no 500 errors on load
 2. Log in as admin — schedule page loads with correct data
 3. Log in as member — member schedule renders without errors
 4. Check Vercel Function Logs for any runtime errors

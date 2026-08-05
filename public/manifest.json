@@ -1,7 +1,7 @@
 {
-  "name": "NorthSouth Fight Sports",
-  "short_name": "NorthSouth",
-  "description": "NorthSouth Fight Sports — Gym Management System",
+  "name": "FlowForceRM",
+  "short_name": "FlowForceRM",
+  "description": "FlowForceRM — Gym Management System",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

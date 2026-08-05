@@ -1,6 +1,6 @@
 ---
 name: gym-crm-database-business-rules
-description: Database schema reference and business rules for the NorthSouth gym CRM. Invoke before writing Prisma queries, schema changes, or any code that reads/writes bookings, schedules, or subscriptions.
+description: Database schema reference and business rules for the FlowForceRM gym CRM. Invoke before writing Prisma queries, schema changes, or any code that reads/writes bookings, schedules, or subscriptions.
 ---
 
 ## Database

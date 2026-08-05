@@ -1,14 +1,14 @@
 # GymRM Quick Reference Guides
-## NorthSouth Fight Sports — One-Page Cheat Sheets
+## FlowForceRM — One-Page Cheat Sheets
 
-**Application:** app.northsouth.com.ph | **July 2026**
+**Application:** flowforcerm.com | **July 2026**
 
 ---
 
 # FRONT DESK STAFF — Quick Reference
 
 ## Daily Opening Checklist
-- [ ] Log in at app.northsouth.com.ph
+- [ ] Log in at flowforcerm.com
 - [ ] Check Dashboard → **Expiring Soon** (contact athletes expiring in 7 days)
 - [ ] Verify kiosk tablet is on and logged in at `/kiosk`
 - [ ] Check Today's Check-ins count on Dashboard
@@ -193,4 +193,4 @@ Memorize it as a backup if you don't have your phone.
 
 ---
 
-*NorthSouth Fight Sports — GymRM Quick Reference v2.0 — July 2026*
+*FlowForceRM — GymRM Quick Reference v2.0 — July 2026*

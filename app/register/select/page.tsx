@@ -98,7 +98,7 @@ function SelectContent() {
         logging: false,
       });
       const link = document.createElement("a");
-      link.download = "northsouth-booking-confirmation.png";
+      link.download = "flowforcerm-booking-confirmation.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
     } finally {
@@ -326,7 +326,7 @@ function SelectContent() {
     return (
       <div className="w-full max-w-sm">
         <div ref={confirmationRef} className="bg-white rounded-2xl shadow-sm border border-zinc-100 px-6 py-8">
-          <img src="/NS LOGO.png" alt="NorthSouth" className="h-10 w-10 rounded-full object-cover mx-auto mb-4" />
+          <img src="/NS LOGO.png" alt="FlowForceRM" className="h-10 w-10 rounded-full object-cover mx-auto mb-4" />
           <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
           <h2 className="font-bold text-2xl text-center mb-2">You're booked, {firstName}! 🥋</h2>
           <p className="text-sm text-zinc-500 text-center leading-relaxed mb-4">
@@ -364,7 +364,7 @@ function SelectContent() {
       <Card>
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
         <h2 className="font-bold text-xl text-center mb-2">Something went wrong</h2>
-        <p className="text-sm text-zinc-500 text-center">Please contact our front desk at members@northsouth.com.ph</p>
+        <p className="text-sm text-zinc-500 text-center">Please contact our front desk at members@flowforcerm.com</p>
       </Card>
     );
   }
@@ -378,7 +378,7 @@ function SelectContent() {
         <div className="flex items-center gap-3">
           <img src="/NS LOGO.png" alt="NS" className="h-9 w-9 rounded-full object-cover" />
           <div>
-            <p className="text-white font-bold text-sm uppercase tracking-wide">NorthSouth Fight Sports</p>
+            <p className="text-white font-bold text-sm uppercase tracking-wide">FlowForceRM</p>
             <p className="text-zinc-400 text-xs">Hi {firstName}! Choose your free class{totalSelected > 1 ? "es" : ""}.</p>
           </div>
         </div>

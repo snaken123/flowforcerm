@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-const BASE = 'https://app.northsouth.com.ph';
+const BASE = 'https://flowforcerm.com';
 const browser = await chromium.launch({ headless: true });
 
 async function ss(page, name) {
@@ -41,7 +41,7 @@ async function go(page, path, name, wait) {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(BASE + '/login');
   await page.waitForSelector('input[type="email"]');
-  await page.fill('input[type="email"]', 'store@northsouth.com.ph');
+  await page.fill('input[type="email"]', 'store@flowforcerm.com');
   await page.fill('input[type="password"]', 'Store2024');
   await page.click('button[type="submit"]');
   await page.waitForTimeout(4000);
@@ -72,7 +72,7 @@ async function go(page, path, name, wait) {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(BASE + '/login');
   await page.waitForSelector('input[type="email"]');
-  await page.fill('input[type="email"]', 'kiosk@northsouth.com.ph');
+  await page.fill('input[type="email"]', 'kiosk@flowforcerm.com');
   await page.fill('input[type="password"]', 'Kiosk123');
   await page.click('button[type="submit"]');
   await page.waitForTimeout(4000);

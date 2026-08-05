@@ -1,6 +1,6 @@
 # GymRM Developer Documentation
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Version: Current as of July 2026*
 
 ---
@@ -110,7 +110,7 @@ gym-crm/
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
-| `NEXTAUTH_URL` | Yes | Full app URL (e.g., `https://app.northsouth.com.ph`) |
+| `NEXTAUTH_URL` | Yes | Full app URL (e.g., `https://flowforcerm.com`) |
 | `NEXTAUTH_SECRET` | Yes | JWT signing secret |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth for login + Gmail |
 | `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth secret |
@@ -428,7 +428,7 @@ The response includes `link` (webViewLink for embedding) and `imageUrl` (Drive t
 
 ### Transactional Emails (`lib/email.ts`)
 
-Uses Resend for system emails. Skips sending to `@northsouth.local` addresses (system accounts).
+Uses Resend for system emails. Skips sending to `@flowforcerm.local` addresses (system accounts).
 
 ```typescript
 import { sendActivationEmail, sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";

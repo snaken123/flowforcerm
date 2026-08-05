@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const totp = new OTPAuth.TOTP({
-    issuer: "NorthSouth Fight Sports",
+    issuer: "FlowForceRM",
     algorithm: "SHA1",
     digits: 6,
     period: 30,

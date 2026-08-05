@@ -1,6 +1,6 @@
 # GymRM Documentation Consistency Report
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Audit date: July 2026*
 
 This report identifies inconsistencies between different parts of the codebase, between implementation and observed behaviour, and cross-cutting concerns that affect documentation accuracy.

@@ -55,7 +55,7 @@ function printPDF(rows: any[], total: number, label: string) {
       tfoot td { font-weight: bold; background: #f8fafc; border-top: 2px solid #e2e8f0; }
       @media print { button { display: none; } }
     </style></head><body>
-    <h2>NorthSouth Fight Sports</h2>
+    <h2>FlowForceRM</h2>
     <p>${label}</p>
     <table>
       <thead><tr><th>Member #</th><th>Name</th><th>Service</th><th>Method</th><th>Date/Time</th><th style="text-align:right">Amount</th></tr></thead>

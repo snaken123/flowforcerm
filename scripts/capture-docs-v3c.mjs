@@ -3,7 +3,7 @@
  */
 import { chromium } from '@playwright/test';
 
-const BASE = 'https://app.northsouth.com.ph';
+const BASE = 'https://flowforcerm.com';
 const OUT = 'docs/screenshots';
 
 const browser = await chromium.launch({ headless: true });
@@ -65,7 +65,7 @@ async function loginAdmin(page) {
   await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
   await page.waitForSelector('input[type="email"]');
   await page.focus('input[type="email"]');
-  await page.keyboard.type('kiosk@northsouth.com.ph');
+  await page.keyboard.type('kiosk@flowforcerm.com');
   await page.focus('input[type="password"]');
   await page.keyboard.type('Kiosk2024');
   await page.keyboard.press('Enter');

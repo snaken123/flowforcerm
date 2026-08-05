@@ -4,8 +4,8 @@ import { Resend } from "resend";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://app.northsouth.com.ph";
-const FROM = "NorthSouth Fight Sports <no-reply@northsouth.com.ph>";
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
+const FROM = "FlowForceRM <noreply@flowforcerm.com>";
 
 async function getSetting(key: string) {
   const row = await prisma.systemSetting.findUnique({ where: { key } });
@@ -32,24 +32,24 @@ function textToHtml(text: string) {
 const DEFAULT_WARN_SUBJECT = "Your {{service_name}} membership expires in {{warn_days}} day(s)";
 const DEFAULT_WARN_BODY = `Hi {{member_name}},
 
-This is a reminder that your {{service_name}} membership at NorthSouth Fight Sports will expire on {{expiry_date}} — that's {{warn_days}} day(s) from now.
+This is a reminder that your {{service_name}} membership at FlowForceRM will expire on {{expiry_date}} — that's {{warn_days}} day(s) from now.
 
 {{sessions_remaining}}
 
 To renew, please visit the gym or contact us.
 
 See you on the mats!
-NorthSouth Fight Sports`;
+FlowForceRM`;
 
 const DEFAULT_EXPIRED_SUBJECT = "Your {{service_name}} membership has expired";
 const DEFAULT_EXPIRED_BODY = `Hi {{member_name}},
 
-This is a reminder that {{expiry_reason}} for your {{service_name}} membership at NorthSouth Fight Sports.
+This is a reminder that {{expiry_reason}} for your {{service_name}} membership at FlowForceRM.
 
 We'd love to have you continue training with us! Please visit the gym or reach out to renew.
 
 See you soon!
-NorthSouth Fight Sports`;
+FlowForceRM`;
 
 export async function GET(req: NextRequest) {
   // Vercel cron calls this with Authorization header
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
 
       await resend.emails.send({
         from: FROM,
-        replyTo: "members@northsouth.com.ph",
+        replyTo: "members@flowforcerm.com",
         to: email,
         subject,
         html: bodyHtml,
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
 
       await resend.emails.send({
         from: FROM,
-        replyTo: "members@northsouth.com.ph",
+        replyTo: "members@flowforcerm.com",
         to: email,
         subject,
         html: bodyHtml,

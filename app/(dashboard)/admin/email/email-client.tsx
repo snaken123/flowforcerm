@@ -170,7 +170,7 @@ export function EmailClient({ integration }: { integration: any | null }) {
         <div>
           <h1 className="text-2xl font-bold">Connect Your Email</h1>
           <p className="text-muted-foreground mt-2">
-            Connect Gmail to read and reply to member emails directly from NorthSouth Fight Sports.
+            Connect Gmail to read and reply to member emails directly from FlowForceRM.
           </p>
         </div>
         <ConnectEmailButton />

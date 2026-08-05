@@ -1,5 +1,5 @@
 # GymRM Trainer Guide
-## NorthSouth Fight Sports — Staff Training Facilitator Reference
+## FlowForceRM — Staff Training Facilitator Reference
 
 *Last updated: July 2026*
 
@@ -15,7 +15,7 @@ This guide is for the person running the GymRM staff training session. It provid
 
 ### Setup Checklist
 - [ ] Projector or screen sharing is working
-- [ ] Demo environment is accessible at `app.northsouth.com.ph`
+- [ ] Demo environment is accessible at `flowforcerm.com`
 - [ ] Test accounts are confirmed working:
   - Admin: `admin@mygym.com` / `admin123`
   - Staff: `staff@mygym.com` / `staff123`
@@ -44,7 +44,7 @@ This guide is for the person running the GymRM staff training session. It provid
 - The system is used simultaneously by front desk, kiosk, and store terminal
 
 ### Live Demonstration
-1. Open `app.northsouth.com.ph` on the projector
+1. Open `flowforcerm.com` on the projector
 2. Log in as Admin — show the full sidebar
 3. Log out and log in as Staff — show what disappears (Reports, Settings, Web Integration)
 4. Show the Dashboard metrics (today's check-ins, expiring memberships)
@@ -248,7 +248,7 @@ Allow trainees to work individually. Circulate to assist. Do not give answers �
 - Quick Reference Guides: `docs/training/quick-reference-guides.md`
 - FAQ: `docs/training/faq.md`
 - Troubleshooting Guide: `docs/training/troubleshooting-guide.md`
-- Live app: `app.northsouth.com.ph`
+- Live app: `flowforcerm.com`
 
 ### Questions from Trainees
 Record any questions that cannot be answered during the session and escalate to admin.
@@ -267,4 +267,4 @@ Record any questions that cannot be answered during the session and escalate to 
 
 ---
 
-*NorthSouth Fight Sports — GymRM Trainer Guide v2.0 — July 2026*
+*FlowForceRM — GymRM Trainer Guide v2.0 — July 2026*

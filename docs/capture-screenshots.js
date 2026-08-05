@@ -1,5 +1,5 @@
 /**
- * NorthSouth GymRM – Screenshot capture script
+ * FlowForceRM GymRM – Screenshot capture script
  * Uses system Chrome with existing user profile (has Vercel auth cookies).
  * Run: node docs/capture-screenshots.js
  */
@@ -13,7 +13,7 @@ const OUT  = path.join(__dirname, 'screenshots');
 
 const CREDS = {
   admin: { email: 'admin@mygym.com',         password: 'admin123'  },
-  coach: { email: 'coach@northsouth.com.ph', password: 'Coach2024' },
+  coach: { email: 'coach@flowforcerm.com', password: 'Coach2024' },
 };
 
 async function login(page, creds) {

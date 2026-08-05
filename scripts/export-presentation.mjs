@@ -74,9 +74,9 @@ const pptx = new PptxGenJS();
 // Standard widescreen 16:9 (inches)
 pptx.defineLayout({ name: 'WIDESCREEN', width: 13.33, height: 7.5 });
 pptx.layout = 'WIDESCREEN';
-pptx.title = 'NorthSouth GymRM – Product Overview';
+pptx.title = 'FlowForceRM GymRM – Product Overview';
 pptx.subject = 'GymRM v3.0';
-pptx.author = 'NorthSouth Fight Sports';
+pptx.author = 'FlowForceRM';
 
 for (let i = 0; i < slidePaths.length; i++) {
   const imgData = fs.readFileSync(slidePaths[i]).toString('base64');

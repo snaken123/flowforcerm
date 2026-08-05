@@ -1,5 +1,5 @@
 # GymRM Undocumented Features
-## NorthSouth Fight Sports
+## FlowForceRM
 
 *Features confirmed in the codebase that are not covered or are only partially covered in existing documentation.*
 
@@ -202,4 +202,4 @@ These are lower-confidence findings that require further investigation before do
 
 ---
 
-*NorthSouth Fight Sports — Undocumented Features v2.0 — July 2026*
+*FlowForceRM — Undocumented Features v2.0 — July 2026*

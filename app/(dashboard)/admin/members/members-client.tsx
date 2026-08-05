@@ -244,7 +244,7 @@ export function MembersClient({
                               </span>
                             )}
                           </div>
-                          {member.user?.email && !member.user.email.endsWith("@northsouth.local") && (
+                          {member.user?.email && !member.user.email.endsWith("@flowforcerm.local") && (
                             <p className="text-xs text-muted-foreground">{member.user.email}</p>
                           )}
                         </div>
@@ -293,7 +293,7 @@ export function MembersClient({
                     <td className="px-4 py-3 hidden lg:table-cell">
                       {(() => {
                         const email = member.user?.email;
-                        const isLocal = !email || email.endsWith("@northsouth.local");
+                        const isLocal = !email || email.endsWith("@flowforcerm.local");
                         if (isLocal) return <span className="text-muted-foreground text-xs">—</span>;
                         const isBadFormat = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
                         const isBounced = bouncedSet.has(email.toLowerCase());

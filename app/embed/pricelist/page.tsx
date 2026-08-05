@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 
 export const revalidate = 300;
-export const metadata = { title: "Membership Pricing — NorthSouth Fight Sports" };
+export const metadata = { title: "Membership Pricing — FlowForceRM" };
 
 export default async function PricelistEmbedPage({ searchParams }: { searchParams: { packages?: string; order?: string } }) {
   const allowedPkgIds = searchParams.packages
@@ -99,7 +99,7 @@ export default async function PricelistEmbedPage({ searchParams }: { searchParam
 
       <div className="ns-wrap">
         <div className="ns-header">
-          <p className="ns-eyebrow">NorthSouth Fight Sports</p>
+          <p className="ns-eyebrow">FlowForceRM</p>
           <h1 className="ns-title">Membership Pricing</h1>
           <p className="ns-sub">Member prices listed · Contact us for more details</p>
         </div>
@@ -157,7 +157,7 @@ export default async function PricelistEmbedPage({ searchParams }: { searchParam
         </div>
 
         <div className="ns-footer">
-          <p>Prices are subject to change without notice · <a href="https://northsouth.com.ph" target="_blank" rel="noopener noreferrer">northsouth.com.ph</a></p>
+          <p>Prices are subject to change without notice · <a href="https://flowforcerm.com" target="_blank" rel="noopener noreferrer">flowforcerm.com</a></p>
         </div>
       </div>
     </>

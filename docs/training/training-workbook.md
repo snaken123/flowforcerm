@@ -1,5 +1,5 @@
 # GymRM Hands-On Training Workbook
-## NorthSouth Fight Sports — Staff Training Exercises
+## FlowForceRM — Staff Training Exercises
 
 *Last updated: July 2026*
 
@@ -27,7 +27,7 @@ A new athlete, Maria Santos, has just walked into the gym for the first time. Sh
 Add Maria Santos as a new member in GymRM.
 
 ### Steps
-- [ ] 1. Log in as Staff at `app.northsouth.com.ph`
+- [ ] 1. Log in as Staff at `flowforcerm.com`
 - [ ] 2. Click **Athletes** in the left sidebar
 - [ ] 3. Click the **Add Athlete** button (top right)
 - [ ] 4. Enter First Name: `Maria`
@@ -282,4 +282,4 @@ After completing all exercises, confirm you can perform these tasks independentl
 
 ---
 
-*NorthSouth Fight Sports — GymRM Training Workbook v2.0 — July 2026*
+*FlowForceRM — GymRM Training Workbook v2.0 — July 2026*

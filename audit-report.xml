@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <audit-report>
   <meta>
-    <project>NorthSouth Fight Sports Gym CRM</project>
+    <project>FlowForceRM Gym CRM</project>
     <generated>2026-07-26</generated>
     <stack>Next.js 14 App Router · TypeScript · Prisma 5 · PostgreSQL (Neon) · NextAuth 4 · Vercel</stack>
     <summary>

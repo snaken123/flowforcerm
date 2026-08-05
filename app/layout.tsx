@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 const khand = Khand({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: "NorthSouth Fight Sports", template: "%s | NorthSouth" },
-  description: "NorthSouth Fight Sports — Gym Management System",
+  title: { default: "FlowForceRM", template: "%s | FlowForceRM" },
+  description: "FlowForceRM — Gym Management System",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "NorthSouth",
+    title: "FlowForceRM",
   },
 };
 

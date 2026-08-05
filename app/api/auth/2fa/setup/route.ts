@@ -16,7 +16,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const totp = new OTPAuth.TOTP({
-    issuer: "NorthSouth Fight Sports",
+    issuer: "FlowForceRM",
     label: user.email!,
     algorithm: "SHA1",
     digits: 6,

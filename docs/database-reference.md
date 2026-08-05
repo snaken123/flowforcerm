@@ -1,6 +1,6 @@
 # GymRM Database Reference
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Version: Current as of July 2026*
 *Database: Neon Serverless PostgreSQL via Prisma 5*
 

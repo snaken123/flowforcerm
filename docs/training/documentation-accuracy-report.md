@@ -1,5 +1,5 @@
 # GymRM Documentation Accuracy Report
-## NorthSouth Fight Sports
+## FlowForceRM
 
 *Verification report for the July 2026 documentation package.*
 *Last updated: July 2026*
@@ -28,7 +28,7 @@ Documentation accuracy was verified using three methods:
 All API route handlers, Prisma schema, and UI components were read and cross-referenced with documentation claims. This is the primary source of truth for permissions, business rules, and data structures.
 
 ### 1b. Live application data
-The live application at `app.northsouth.com.ph` was accessed and page text was captured using `get_page_text`. This confirmed:
+The live application at `flowforcerm.com` was accessed and page text was captured using `get_page_text`. This confirmed:
 - Real member counts: 1,246 total (1,238 active)
 - Real service names: Annual Membership, Boxing, BJJ, Employee Rate and Guests, Flexi Pass, Gym Use, Judo, Karate, Kid's Judo and BJJ, Muay Thai, Taekwondo, Yoga, Zumba
 - Real store inventory: Gatorade (₱50), Water (₱25), Kopiko (₱0), Merchandise
@@ -78,7 +78,7 @@ The following permissions were verified against actual route-level guards in the
 
 ### Captured Screenshots (July 2026)
 
-Screenshots were captured using Playwright (automated) and the Chrome browser extension. All screenshots reflect live data from `app.northsouth.com.ph`.
+Screenshots were captured using Playwright (automated) and the Chrome browser extension. All screenshots reflect live data from `flowforcerm.com`.
 
 | File | Page | Method | Status |
 |------|------|--------|--------|
@@ -200,4 +200,4 @@ The following terms are used consistently across all documentation and match the
 
 ---
 
-*NorthSouth Fight Sports — Documentation Accuracy Report v2.0 — July 2026*
+*FlowForceRM — Documentation Accuracy Report v2.0 — July 2026*

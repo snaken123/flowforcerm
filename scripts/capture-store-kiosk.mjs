@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import fs from 'fs';
-const BASE = 'https://app.northsouth.com.ph';
+const BASE = 'https://flowforcerm.com';
 const browser = await chromium.launch({ headless: true });
 
 async function loginTyped(page, email, password) {
@@ -20,7 +20,7 @@ async function loginTyped(page, email, password) {
 {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await loginTyped(page, 'store@northsouth.com.ph', 'Store2024');
+  await loginTyped(page, 'store@flowforcerm.com', 'Store2024');
   await page.screenshot({ path: 'docs/screenshots/18-store-pos.png', fullPage: false });
   console.log('  ✓ 18-store-pos.png');
   // Also capture inventory tab
@@ -46,7 +46,7 @@ async function loginTyped(page, email, password) {
 {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await loginTyped(page, 'kiosk@northsouth.com.ph', 'Kiosk123');
+  await loginTyped(page, 'kiosk@flowforcerm.com', 'Kiosk123');
   await page.screenshot({ path: 'docs/screenshots/19-kiosk-checkin.png', fullPage: false });
   console.log('  ✓ 19-kiosk-checkin.png  url:', page.url());
   await page.close();

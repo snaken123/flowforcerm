@@ -1,6 +1,6 @@
 # GymRM API Documentation
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Version: Current as of July 2026*
 
 ---
@@ -16,7 +16,7 @@ Include session cookies (set by NextAuth) on every request. Unauthenticated requ
 ### Base URL
 
 ```
-https://app.northsouth.com.ph
+https://flowforcerm.com
 ```
 
 ---
@@ -1292,7 +1292,7 @@ Persists the pricelist widget configuration to `SystemSetting`. Either field may
 }
 ```
 
-**Business logic:** Batches of 50 via Resend batch API. Excludes members without user accounts or `@northsouth.local` emails.
+**Business logic:** Batches of 50 via Resend batch API. Excludes members without user accounts or `@flowforcerm.local` emails.
 
 **Response 200:** `{ "sent": number, "failed": number }`  
 **Errors:** 400 (missing fields or no recipients), 403

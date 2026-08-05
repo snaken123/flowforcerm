@@ -1,4 +1,4 @@
-export const metadata = { title: "Free Trial Registration — NorthSouth Fight Sports" };
+export const metadata = { title: "Free Trial Registration — FlowForceRM" };
 
 export default function RegisterLayout({ children }: { children: React.ReactNode }) {
   return (

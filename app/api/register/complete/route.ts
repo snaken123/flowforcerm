@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://app.northsouth.com.ph";
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 
 type SelectedClass = {
   serviceId: string;
@@ -126,13 +126,13 @@ export async function POST(req: NextRequest) {
 
   // Confirmation email to registrant
   await resend.emails.send({
-    from: "NorthSouth Fight Sports <no-reply@northsouth.com.ph>",
-    replyTo: "members@northsouth.com.ph",
+    from: "FlowForceRM <noreply@flowforcerm.com>",
+    replyTo: "members@flowforcerm.com",
     to: freeTrialToken.email,
-    subject: "You're booked! Free trial at NorthSouth Fight Sports",
+    subject: "You're booked! Free trial at FlowForceRM",
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#111">
-        <div style="margin-bottom:24px"><strong style="font-size:18px">NorthSouth Fight Sports</strong></div>
+        <div style="margin-bottom:24px"><strong style="font-size:18px">FlowForceRM</strong></div>
         <h2 style="margin:0 0 12px">You're all set, ${freeTrialToken.firstName}! 🥋</h2>
         <p style="font-size:15px;line-height:1.6;color:#444">
           Your free trial class${selections.length > 1 ? "es have" : " has"} been reserved:
@@ -146,15 +146,15 @@ export async function POST(req: NextRequest) {
           Questions? Reply to this email or call us. We can't wait to see you on the mats!
         </p>
         <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb"/>
-        <p style="font-size:12px;color:#aaa">NorthSouth Fight Sports · members@northsouth.com.ph</p>
+        <p style="font-size:12px;color:#aaa">FlowForceRM · members@flowforcerm.com</p>
       </div>
     `,
   });
 
   // Staff notification
   await resend.emails.send({
-    from: "NorthSouth Fight Sports <no-reply@northsouth.com.ph>",
-    to: "members@northsouth.com.ph",
+    from: "FlowForceRM <noreply@flowforcerm.com>",
+    to: "members@flowforcerm.com",
     subject: `New free trial registration — ${freeTrialToken.firstName} ${freeTrialToken.lastName}`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#111">

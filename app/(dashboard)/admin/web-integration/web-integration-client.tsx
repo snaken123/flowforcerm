@@ -203,7 +203,7 @@ function ReorderList({
   );
 }
 
-const DEFAULT_WELCOME = "Join NorthSouth Fight Sports for a FREE trial class! Try Yoga, Judo, or Brazilian Jiujitsu — no experience needed. Sign up below and we'll send you a link to reserve your spot.";
+const DEFAULT_WELCOME = "Join FlowForceRM for a FREE trial class! Try Yoga, Judo, or Brazilian Jiujitsu — no experience needed. Sign up below and we'll send you a link to reserve your spot.";
 
 function RegistrationCard({ baseUrl }: { baseUrl: string }) {
   const [welcomeMsg, setWelcomeMsg] = useState(DEFAULT_WELCOME);
@@ -238,7 +238,7 @@ function RegistrationCard({ baseUrl }: { baseUrl: string }) {
   }
 
   const directUrl = `${baseUrl}/register/widget`;
-  const embedCode = `<!-- NorthSouth Free Trial Registration Button -->
+  const embedCode = `<!-- FlowForceRM Free Trial Registration Button -->
 <script>
 (function() {
   var btn = document.createElement('button');
@@ -303,7 +303,7 @@ function RegistrationCard({ baseUrl }: { baseUrl: string }) {
 }
 
 export function WebIntegrationClient({ services }: { services: Service[] }) {
-  const baseUrl = "https://app.northsouth.com.ph";
+  const baseUrl = "https://flowforcerm.com";
 
   const servicesWithPkgs = useMemo(() => services.filter((s) => s.packages.length > 0), [services]);
   const allPkgIds = useMemo(() => services.flatMap((s) => s.packages.map((p) => p.id)), [services]);
@@ -429,10 +429,10 @@ export function WebIntegrationClient({ services }: { services: Service[] }) {
     return `${baseUrl}/embed/pricelist${qs ? "?" + qs : ""}`;
   }, [selectedPkgIds, allPkgIds.length, cardOrder, defaultOrder]);
 
-  const pricelistEmbed = `<iframe\n  src="${pricelistUrl}"\n  width="100%"\n  height="800"\n  style="border:none;border-radius:8px;"\n  title="NorthSouth Fight Sports — Membership Pricing"\n></iframe>`;
+  const pricelistEmbed = `<iframe\n  src="${pricelistUrl}"\n  width="100%"\n  height="800"\n  style="border:none;border-radius:8px;"\n  title="FlowForceRM — Membership Pricing"\n></iframe>`;
 
   const scheduleUrl = `${baseUrl}/embed/schedule`;
-  const scheduleEmbed = `<iframe\n  src="${scheduleUrl}"\n  width="100%"\n  height="600"\n  style="border:none;border-radius:8px;"\n  title="NorthSouth Fight Sports — Class Schedule"\n></iframe>`;
+  const scheduleEmbed = `<iframe\n  src="${scheduleUrl}"\n  width="100%"\n  height="600"\n  style="border:none;border-radius:8px;"\n  title="FlowForceRM — Class Schedule"\n></iframe>`;
 
   const hiddenCount = allPkgIds.length - selectedPkgIds.size;
 

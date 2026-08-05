@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 
 const KEY = "registration_welcome_message";
-const DEFAULT = "Join NorthSouth Fight Sports for a FREE trial class! Try Yoga, Judo, or Brazilian Jiujitsu — no experience needed. Sign up below and we'll send you a link to reserve your spot.";
+const DEFAULT = "Join FlowForceRM for a FREE trial class! Try Yoga, Judo, or Brazilian Jiujitsu — no experience needed. Sign up below and we'll send you a link to reserve your spot.";
 
 export async function GET() {
   const setting = await prisma.systemSetting.findUnique({ where: { key: KEY } });

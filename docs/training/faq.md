@@ -1,5 +1,5 @@
 # GymRM Frequently Asked Questions
-## NorthSouth Fight Sports — Staff & Member FAQ
+## FlowForceRM — Staff & Member FAQ
 
 *Last updated: July 2026*
 
@@ -8,10 +8,10 @@
 ## General
 
 **Q: What is GymRM?**
-GymRM is NorthSouth Fight Sports' member management platform. It tracks memberships, class schedules, check-ins, payments, and store sales for the gym.
+GymRM is FlowForceRM' member management platform. It tracks memberships, class schedules, check-ins, payments, and store sales for the gym.
 
 **Q: How do I access it?**
-Go to **app.northsouth.com.ph** in any web browser. It works on phones, tablets, and computers.
+Go to **flowforcerm.com** in any web browser. It works on phones, tablets, and computers.
 
 **Q: What are the different login roles?**
 - **Admin** — full access to everything
@@ -183,4 +183,4 @@ This is a server-side error. Note what you were doing and contact admin. Try the
 
 ---
 
-*NorthSouth Fight Sports — GymRM FAQ v2.0 — July 2026*
+*FlowForceRM — GymRM FAQ v2.0 — July 2026*

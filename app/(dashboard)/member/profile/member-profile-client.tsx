@@ -168,7 +168,7 @@ export function MemberProfileClient({ member }: { member: any }) {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
-            {member.user?.email && !member.user.email.endsWith("@northsouth.local") && (
+            {member.user?.email && !member.user.email.endsWith("@flowforcerm.local") && (
               <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{member.user.email}</span>
             )}
             {member.phone && (

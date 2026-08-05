@@ -1,6 +1,6 @@
 # GymRM Administrator Guide
 
-**NorthSouth Fight Sports — GymRM**
+**FlowForceRM — GymRM**
 *Version: Current as of July 2026*
 
 ---
@@ -320,14 +320,14 @@ GymRM provides three embeddable widgets for your public website.
 
 ### Class Schedule Widget
 
-- **Direct link**: `https://app.northsouth.com.ph/embed/schedule`
+- **Direct link**: `https://flowforcerm.com/embed/schedule`
 - Embed with an `<iframe>` on your website
 - Shows the public weekly class schedule
 - Updates automatically
 
 ### Free Trial Registration Widget
 
-- **Direct link**: `https://app.northsouth.com.ph/register/widget`
+- **Direct link**: `https://flowforcerm.com/register/widget`
 - Embed as an overlay button using the provided JavaScript snippet
 - Visitors submit their name, email, phone, and preferred class
 - Submissions appear in GymRM as free-trial leads (red badge on Athletes menu)

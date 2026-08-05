@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  NorthSouth GymRM – User Manual (XML Format)
+  FlowForceRM GymRM – User Manual (XML Format)
   Version 1.0 | July 2026
   This document mirrors user-manual.html in structured XML for system integration,
   printing, or conversion to other formats.
 -->
 <manual>
   <metadata>
-    <title>NorthSouth GymRM User Manual</title>
+    <title>FlowForceRM GymRM User Manual</title>
     <subtitle>Complete Guide for All Users</subtitle>
-    <gym>NorthSouth Fight Sports</gym>
+    <gym>FlowForceRM</gym>
     <version>1.0</version>
     <date>July 2026</date>
     <language>English</language>
@@ -25,12 +25,12 @@
        SECTION 1: GETTING STARTED
   ══════════════════════════════ -->
   <section id="getting-started" audience="all">
-    <heading>Getting Started with NorthSouth GymRM</heading>
+    <heading>Getting Started with FlowForceRM GymRM</heading>
     <intro>Everything you need to know before you log in for the first time.</intro>
 
     <chapter id="what-is-gymrm">
-      <heading>What is NorthSouth GymRM?</heading>
-      <body>NorthSouth GymRM is the official management system of NorthSouth Fight Sports. It tracks all members, class schedules, payments, and attendance in one place — accessible from any device with an internet connection. No installation required. It works through any web browser such as Google Chrome or Safari.</body>
+      <heading>What is FlowForceRM GymRM?</heading>
+      <body>FlowForceRM GymRM is the official management system of FlowForceRM. It tracks all members, class schedules, payments, and attendance in one place — accessible from any device with an internet connection. No installation required. It works through any web browser such as Google Chrome or Safari.</body>
     </chapter>
 
     <chapter id="who-uses">
@@ -61,7 +61,7 @@
       <steps>
         <step number="1">Open your web browser. On Android phones, this is usually Google Chrome. On iPhones, it is Safari.</step>
         <step number="2">Type the gym's web address in the address bar at the top and press Go or Enter.</step>
-        <step number="3">The NorthSouth login page will appear with the logo and a Sign In form.</step>
+        <step number="3">The FlowForceRM login page will appear with the logo and a Sign In form.</step>
       </steps>
       <tip>Save the address as a bookmark or add it to your phone's home screen so you can open it with one tap.</tip>
       <screenshots>
@@ -86,7 +86,7 @@
       <steps>
         <step number="1">On the login page, tap Forgot password? (found above the password field).</step>
         <step number="2">Enter your email address and tap Send Reset Link.</step>
-        <step number="3">Check your email inbox for a reset link from NorthSouth.</step>
+        <step number="3">Check your email inbox for a reset link from FlowForceRM.</step>
         <step number="4">Tap the link in the email and follow the instructions to create a new password.</step>
       </steps>
       <tip>Check your Spam or Junk folder if you do not see the email. If still missing after 5 minutes, contact the front desk.</tip>
@@ -289,7 +289,7 @@
   ══════════════════════════════ -->
   <section id="coach" audience="coach">
     <heading>Coach Guide</heading>
-    <intro>For NorthSouth coaches who need to view their classes and check who is coming in today.</intro>
+    <intro>For FlowForceRM coaches who need to view their classes and check who is coming in today.</intro>
 
     <chapter id="coach-dashboard">
       <heading>1. Your Dashboard – Today's Classes</heading>
@@ -390,9 +390,9 @@
 
     <chapter id="member-setup">
       <heading>1. Setting Up Your Account</heading>
-      <intro>When you join NorthSouth, gym staff will register you in the system. You will receive an email to set up your app account.</intro>
+      <intro>When you join FlowForceRM, gym staff will register you in the system. You will receive an email to set up your app account.</intro>
       <steps>
-        <step number="1">Check your email for a message from NorthSouth with the subject "Activate your GymRM account."</step>
+        <step number="1">Check your email for a message from FlowForceRM with the subject "Activate your GymRM account."</step>
         <step number="2">Tap the link in the email. It will open GymRM and ask you to create a password.</step>
         <step number="3">Type a password you can remember. Tap Save.</step>
         <step number="4">Your account is active. Log in with your email and new password.</step>

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM ?? "NorthSouth Fight Sports <noreply@northsouth.com.ph>";
+const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
 export async function GET() {
   const session = await getAuthSession();
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       select: { firstName: true, user: { select: { email: true } } },
     });
 
-    const recipients = members.flatMap((m) => m.user ? [{ name: m.firstName, email: m.user.email! }] : []).filter((r) => !!r.email && !r.email.endsWith("@northsouth.local"));
+    const recipients = members.flatMap((m) => m.user ? [{ name: m.firstName, email: m.user.email! }] : []).filter((r) => !!r.email && !r.email.endsWith("@flowforcerm.local"));
     if (recipients.length === 0) return NextResponse.json({ error: "No recipients found" }, { status: 400 });
 
     const results = { sent: 0, failed: 0, error: "" };
@@ -51,15 +51,15 @@ export async function POST(req: NextRequest) {
       try {
         const sendResult = await resend.batch.send(batch.map((r) => ({
           from: FROM,
-          replyTo: "members@northsouth.com.ph",
+          replyTo: "members@flowforcerm.com",
           to: r.email,
           subject,
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#111">
-              <div style="margin-bottom:24px"><strong style="font-size:16px">NorthSouth Fight Sports</strong></div>
+              <div style="margin-bottom:24px"><strong style="font-size:16px">FlowForceRM</strong></div>
               <div style="white-space:pre-wrap;font-size:15px;line-height:1.6;color:#333">${body.replace(/\n/g, "<br/>")}</div>
               <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb"/>
-              <p style="font-size:12px;color:#9ca3af">You received this email because you are a member of NorthSouth Fight Sports.</p>
+              <p style="font-size:12px;color:#9ca3af">You received this email because you are a member of FlowForceRM.</p>
             </div>
           `,
         })));

@@ -5,7 +5,7 @@
 import { chromium } from '@playwright/test';
 import path from 'path';
 
-const BASE = 'https://app.northsouth.com.ph';
+const BASE = 'https://flowforcerm.com';
 const OUT = 'docs/screenshots';
 
 const browser = await chromium.launch({ headless: true });
@@ -185,7 +185,7 @@ console.log('\n🥋 Coach pages...');
 {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await login(page, 'coach@northsouth.com.ph', 'Coach2024');
+  await login(page, 'coach@flowforcerm.com', 'Coach2024');
   await page.waitForTimeout(1200);
   console.log('  coach landed:', page.url());
   await ss(page, 'v3-17-coach-dashboard');
@@ -232,7 +232,7 @@ console.log('\n🛒 Store pages...');
 {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await login(page, 'store@northsouth.com.ph', 'Store2024');
+  await login(page, 'store@flowforcerm.com', 'Store2024');
   await page.waitForTimeout(1500);
   console.log('  store landed:', page.url());
   await ss(page, 'v3-20-store-pos');
