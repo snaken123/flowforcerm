@@ -157,7 +157,7 @@ export default function LoginPage() {
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <div className="h-24 w-24 rounded-full overflow-hidden">
-              <img src="/logo-reverse.jpg" alt="FlowForceRM" className="h-full w-full object-cover" />
+              <img src="/logo.png" alt="FlowForceRM" className="h-full w-full object-cover" />
             </div>
           </div>
           <h1 className="text-3xl font-bold uppercase tracking-widest text-white">FlowForceRM</h1>

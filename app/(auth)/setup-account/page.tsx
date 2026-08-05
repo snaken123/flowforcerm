@@ -473,7 +473,7 @@ export default function SetupAccountPage() {
       <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/NS LOGO.png" alt="NS Logo" className="h-9 w-9 rounded-full object-cover" />
+            <img src="/logo.png" alt="FlowForceRM" className="h-9 w-9 rounded-full object-cover" />
             <div>
               <p className="font-bold text-sm leading-none">FlowForceRM</p>
               <p className="text-xs text-muted-foreground mt-0.5">Account Setup</p>

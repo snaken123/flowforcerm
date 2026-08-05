@@ -498,7 +498,7 @@ function ReadyScreen({ onLookup }: { onLookup: (code: string) => void }) {
     <div className="flex-1 flex">
       {/* Left branding panel */}
       <div className="w-64 shrink-0 bg-gray-950 flex flex-col items-center justify-center gap-4 px-8">
-        <img src="/NS LOGO.png" alt="FlowForceRM" className="h-24 w-24 object-contain" />
+        <img src="/logo.png" alt="FlowForceRM" className="h-24 w-24 object-contain" />
         <div className="text-center">
           <p className="text-white font-bold text-xl leading-tight">FlowForceRM</p>
           <p className="text-white font-bold text-xl leading-tight">Manage Less. Train More.</p>

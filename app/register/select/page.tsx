@@ -326,7 +326,7 @@ function SelectContent() {
     return (
       <div className="w-full max-w-sm">
         <div ref={confirmationRef} className="bg-white rounded-2xl shadow-sm border border-zinc-100 px-6 py-8">
-          <img src="/NS LOGO.png" alt="FlowForceRM" className="h-10 w-10 rounded-full object-cover mx-auto mb-4" />
+          <img src="/logo.png" alt="FlowForceRM" className="h-10 w-10 rounded-full object-cover mx-auto mb-4" />
           <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
           <h2 className="font-bold text-2xl text-center mb-2">You're booked, {firstName}! 🥋</h2>
           <p className="text-sm text-zinc-500 text-center leading-relaxed mb-4">
@@ -376,7 +376,7 @@ function SelectContent() {
       {/* Header */}
       <div className="bg-zinc-950 rounded-2xl px-8 py-5 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/NS LOGO.png" alt="NS" className="h-9 w-9 rounded-full object-cover" />
+          <img src="/logo.png" alt="FlowForceRM" className="h-9 w-9 rounded-full object-cover" />
           <div>
             <p className="text-white font-bold text-sm uppercase tracking-wide">FlowForceRM</p>
             <p className="text-zinc-400 text-xs">Hi {firstName}! Choose your free class{totalSelected > 1 ? "es" : ""}.</p>
@@ -552,7 +552,7 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
       <div className="flex justify-center mb-2">
-        <img src="/NS LOGO.png" alt="NS" className="h-10 w-10 rounded-full object-cover" />
+        <img src="/logo.png" alt="FlowForceRM" className="h-10 w-10 rounded-full object-cover" />
       </div>
       {children}
     </div>

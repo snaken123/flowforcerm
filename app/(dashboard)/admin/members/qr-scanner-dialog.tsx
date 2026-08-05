@@ -408,7 +408,7 @@ export function QRScannerDialog({ open, onClose }: QRScannerDialogProps) {
               {/* Left: branding panel */}
               <div className="w-64 shrink-0 flex flex-col items-center justify-center gap-4 px-8">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/NS LOGO.png" alt="FlowForceRM" width={96} height={96} className="rounded-full object-cover shadow-lg" />
+                <img src="/logo.png" alt="FlowForceRM" width={96} height={96} className="rounded-full object-cover shadow-lg" />
                 <div className="text-center">
                   <p className="text-white font-bold text-xl leading-tight">FlowForceRM</p>
                   <p className="text-white font-bold text-xl leading-tight">Manage Less. Train More.</p>

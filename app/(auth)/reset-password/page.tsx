@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <img src="/NS LOGO.png" alt="FlowForceRM" className="h-16 w-16 object-cover rounded-full" />
+            <img src="/logo.png" alt="FlowForceRM" className="h-16 w-16 object-cover rounded-full" />
           </div>
           <h1 className="text-3xl font-bold uppercase tracking-widest text-white">FlowForceRM</h1>
           <p className="text-[#666] uppercase tracking-[0.2em] text-xs">Manage Less. Train More.</p>

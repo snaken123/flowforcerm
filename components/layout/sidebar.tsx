@@ -119,7 +119,7 @@ export function Sidebar() {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b px-5">
-        <img src="/NS LOGO.png" alt="NS" className="h-8 w-8 object-cover rounded-full" />
+        <img src="/logo.png" alt="FlowForceRM" className="h-8 w-8 object-cover rounded-full" />
         <div className="leading-none">
           <p className="text-sm font-bold uppercase tracking-widest">FlowForceRM</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Manage Less. Train More.</p>
