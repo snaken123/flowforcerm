@@ -478,6 +478,20 @@ CREATE TABLE "MemberNumberSequence" (
 );
 
 -- CreateTable
+CREATE TABLE "TenantBranding" (
+    "id" TEXT NOT NULL DEFAULT 'singleton',
+    "gymName" TEXT NOT NULL,
+    "logoUrl" TEXT,
+    "primaryColor" TEXT,
+    "accentColor" TEXT,
+    "emailFromName" TEXT,
+    "smsSenderName" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TenantBranding_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "KioskDevice" (
     "id" TEXT NOT NULL,
     "token" TEXT NOT NULL,

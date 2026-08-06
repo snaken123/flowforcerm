@@ -108,6 +108,9 @@ export async function provisionTenant(input: ProvisionTenantInput) {
           mustChangePassword: true,
         },
       });
+      await tenantPrisma.tenantBranding.create({
+        data: { id: "singleton", gymName: input.gymName },
+      });
     } finally {
       await tenantPrisma.$disconnect();
     }

@@ -612,6 +612,22 @@ model MemberNumberSequence {
   lastVal Int    @default(0)
 }
 
+// One row per tenant database (the isolation boundary is the database itself, so no
+// tenantId column is needed here). primaryColor/accentColor are hex strings (#RRGGBB),
+// converted to the app's HSL CSS custom properties at render time. Editable from
+// Settings; on save, gymName/logoUrl/primaryColor are also pushed to the control-plane
+// Tenant row's denormalized cache so middleware/messaging never need to open this DB.
+model TenantBranding {
+  id            String   @id @default("singleton")
+  gymName       String
+  logoUrl       String?
+  primaryColor  String?
+  accentColor   String?
+  emailFromName String?
+  smsSenderName String?
+  updatedAt     DateTime @updatedAt
+}
+
 // Registered kiosk devices — only devices with a valid token can use the kiosk check-in
 model KioskDevice {
   id        String   @id @default(cuid())

@@ -55,7 +55,7 @@ const settingsNavItems: NavItem[] = [
   { label: "Special Logins", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
 ];
 
-export function Sidebar() {
+export function Sidebar({ brandName, logoUrl }: { brandName?: string | null; logoUrl?: string | null }) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -119,9 +119,9 @@ export function Sidebar() {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b px-5">
-        <img src="/logo.png" alt="FlowForceRM" className="h-8 w-8 object-contain rounded-full" />
+        <img src={logoUrl || "/logo.png"} alt={brandName || "FlowForceRM"} className="h-8 w-8 object-contain rounded-full" />
         <div className="leading-none">
-          <p className="text-sm font-bold tracking-widest">FlowForceRM</p>
+          <p className="text-sm font-bold tracking-widest">{brandName || "FlowForceRM"}</p>
           <p className="text-[10px] text-muted-foreground tracking-wider">Manage Less. Train More.</p>
         </div>
       </div>

@@ -8,13 +8,217 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   KeyRound, Monitor, ShoppingBag, Eye, EyeOff,
-  Tablet, Plus, Trash2, Copy, Check, AlertCircle,
+  Tablet, Plus, Trash2, Copy, Check, AlertCircle, Palette, Loader2, ImageUp,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
 type AccountInfo = { email: string; updatedAt: string } | null;
+
+type Branding = {
+  gymName: string;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
+  emailFromName: string | null;
+  smsSenderName: string | null;
+};
+
+function BrandingSection() {
+  const [branding, setBranding] = useState<Branding>({
+    gymName: "",
+    logoUrl: null,
+    primaryColor: "#2563eb",
+    accentColor: "#f1f5f9",
+    emailFromName: "",
+    smsSenderName: "",
+  });
+  const [loaded, setLoaded] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/branding")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.branding) {
+          setBranding({
+            gymName: data.branding.gymName ?? "",
+            logoUrl: data.branding.logoUrl,
+            primaryColor: data.branding.primaryColor ?? "#2563eb",
+            accentColor: data.branding.accentColor ?? "#f1f5f9",
+            emailFromName: data.branding.emailFromName ?? "",
+            smsSenderName: data.branding.smsSenderName ?? "",
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/branding/logo", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Upload failed."); return; }
+      setBranding((b) => ({ ...b, logoUrl: data.url }));
+    } catch {
+      setError("Network error during upload.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+    if (!branding.gymName.trim()) { setError("Gym name is required."); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/branding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(branding),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to save."); return; }
+      setSuccess(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Palette className="h-4 w-4" />
+          Branding
+        </CardTitle>
+        <CardDescription>Your gym's name, logo, and brand colors across the app.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSave} className="space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-full border overflow-hidden flex items-center justify-center bg-muted shrink-0">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt="Logo" className="h-full w-full object-contain" />
+              ) : (
+                <ImageUp className="h-6 w-6 text-muted-foreground" />
+              )}
+            </div>
+            <div>
+              <Label htmlFor="logo-upload" className="cursor-pointer">
+                <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted transition-colors">
+                  {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {uploading ? "Uploading…" : "Upload Logo"}
+                </span>
+              </Label>
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={handleLogoChange}
+                disabled={uploading}
+              />
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WEBP, or SVG.</p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Gym Name</Label>
+            <Input
+              value={branding.gymName}
+              onChange={(e) => setBranding((b) => ({ ...b, gymName: e.target.value }))}
+              placeholder="Iron Fist BJJ"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Primary Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={branding.primaryColor ?? "#2563eb"}
+                  onChange={(e) => setBranding((b) => ({ ...b, primaryColor: e.target.value }))}
+                  className="h-9 w-10 rounded border cursor-pointer bg-transparent"
+                />
+                <Input
+                  value={branding.primaryColor ?? ""}
+                  onChange={(e) => setBranding((b) => ({ ...b, primaryColor: e.target.value }))}
+                  placeholder="#2563eb"
+                  className="font-mono text-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Accent Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={branding.accentColor ?? "#f1f5f9"}
+                  onChange={(e) => setBranding((b) => ({ ...b, accentColor: e.target.value }))}
+                  className="h-9 w-10 rounded border cursor-pointer bg-transparent"
+                />
+                <Input
+                  value={branding.accentColor ?? ""}
+                  onChange={(e) => setBranding((b) => ({ ...b, accentColor: e.target.value }))}
+                  placeholder="#f1f5f9"
+                  className="font-mono text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Email Sender Name</Label>
+              <Input
+                value={branding.emailFromName ?? ""}
+                onChange={(e) => setBranding((b) => ({ ...b, emailFromName: e.target.value }))}
+                placeholder="Iron Fist BJJ"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>SMS Sender Name</Label>
+              <Input
+                value={branding.smsSenderName ?? ""}
+                onChange={(e) => setBranding((b) => ({ ...b, smsSenderName: e.target.value }))}
+                placeholder="IronFist"
+                maxLength={20}
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {success && <p className="text-sm text-emerald-600">Branding saved.</p>}
+
+          <Button type="submit" disabled={saving || uploading}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {saving ? "Saving…" : "Save Branding"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 
 function PasswordForm({ account, label, icon: Icon, email }: {
   account: "kiosk" | "store";
@@ -324,6 +528,11 @@ export function SettingsClient() {
           Settings
         </h1>
         <p className="text-muted-foreground mt-1">Manage system account credentials and devices.</p>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Branding</h2>
+        <BrandingSection />
       </div>
 
       <div>

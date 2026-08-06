@@ -13,6 +13,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:bootstrap-sql": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > control-plane/bootstrap/tenant-schema.sql",
+    "db:push-tenants": "tsx --env-file=.env.local scripts/push-schema-to-tenants.ts",
     "download-models": "node scripts/download-face-models.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Khand } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { Providers } from "./providers";
+import { prisma } from "@/lib/db";
+import { hexToHslTriplet, pickForegroundHsl } from "@/lib/color";
 
 const khand = Khand({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
@@ -32,9 +35,39 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Superadmin and the bare marketing domain never resolve a tenant (see middleware.ts),
+// so this is a no-op there and every tenant page gets its own colors automatically —
+// no per-route opt-in needed.
+async function getBrandStyle(): Promise<React.CSSProperties> {
+  const tenantId = headers().get("x-tenant-id");
+  if (!tenantId) return {};
+
+  const branding = await prisma.tenantBranding.findFirst().catch(() => null);
+  if (!branding) return {};
+
+  const style: Record<string, string> = {};
+  if (branding.primaryColor) {
+    const hsl = hexToHslTriplet(branding.primaryColor);
+    if (hsl) {
+      style["--primary"] = hsl;
+      style["--ring"] = hsl;
+      style["--primary-foreground"] = pickForegroundHsl(branding.primaryColor);
+    }
+  }
+  if (branding.accentColor) {
+    const hsl = hexToHslTriplet(branding.accentColor);
+    if (hsl) {
+      style["--accent"] = hsl;
+      style["--accent-foreground"] = pickForegroundHsl(branding.accentColor);
+    }
+  }
+  return style as React.CSSProperties;
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const brandStyle = await getBrandStyle();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning style={brandStyle}>
       <body className={khand.className}>
         <Providers>{children}</Providers>
       </body>
