@@ -27,7 +27,7 @@ type NavItem = {
 
 const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "STAFF", "MEMBER"] },
-  { label: "Athletes", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] },
+  { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] },
   { label: "Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"] },
   { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] },
   { label: "Store", href: "/admin/shop", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] },
@@ -52,7 +52,7 @@ const settingsNavItems: NavItem[] = [
   { label: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard, roles: ["ADMIN"] },
   { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"] },
   { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
-  { label: "Special Logins", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
+  { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
 ];
 
 export function Sidebar({ brandName, logoUrl }: { brandName?: string | null; logoUrl?: string | null }) {

@@ -153,7 +153,7 @@ export function MembersClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Athletes</h1>
+          <h1 className="text-2xl font-bold">Members</h1>
           <p className="text-muted-foreground">{total} total athletes</p>
         </div>
         <div className="flex gap-2">
@@ -183,7 +183,7 @@ export function MembersClient({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Athletes</SelectItem>
+            <SelectItem value="ALL">All Members</SelectItem>
             <SelectItem value="FREE_TRIAL">🎯 Free Trial Leads</SelectItem>
             <SelectItem value="ACTIVATED">App Activated</SelectItem>
             <SelectItem value="NOT_ACTIVATED">Not Activated</SelectItem>

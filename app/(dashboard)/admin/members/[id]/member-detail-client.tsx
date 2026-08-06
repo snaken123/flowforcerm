@@ -809,7 +809,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/members"><ArrowLeft className="h-4 w-4 mr-1" />Athletes</Link>
+          <Link href="/admin/members"><ArrowLeft className="h-4 w-4 mr-1" />Members</Link>
         </Button>
       </div>
 

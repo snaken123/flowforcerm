@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { MembersClient } from "./members-client";
 
-export const metadata = { title: "Athletes" };
+export const metadata = { title: "Members" };
 export const revalidate = 60; // refresh at most every 60 seconds
 
 const PAGE_SIZE = 50;

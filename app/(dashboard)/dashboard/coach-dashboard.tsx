@@ -151,7 +151,7 @@ function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayS
         {/* Booked athletes list */}
         {booked > 0 ? (
           <div className="space-y-1">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Athletes</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Members</p>
             <ul className="space-y-1.5">
               {schedule.students.map((b) => {
                 if (!b.member) return null;

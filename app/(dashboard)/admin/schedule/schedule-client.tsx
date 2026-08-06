@@ -1257,7 +1257,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                   <option value="Mezzanine">Mezzanine</option>
                 </select>
               </div>
-              <div className="space-y-1"><Label>Max Athletes</Label><Input type="number" placeholder="e.g. 20" value={form.maxCapacity} onChange={(e) => setForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Max Members</Label><Input type="number" placeholder="e.g. 20" value={form.maxCapacity} onChange={(e) => setForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
             </div>
             <div className="space-y-1">
               <Label>Coach(es)</Label>
@@ -1698,7 +1698,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                   <option value="Mezzanine">Mezzanine</option>
                 </select>
               </div>
-              <div className="space-y-1"><Label>Max Athletes</Label><Input type="number" placeholder="e.g. 20" value={editForm.maxCapacity} onChange={(e) => setEditForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Max Members</Label><Input type="number" placeholder="e.g. 20" value={editForm.maxCapacity} onChange={(e) => setEditForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
             </div>
             <div className="space-y-1">
               <Label>Coach(es)</Label>
