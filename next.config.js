@@ -1,9 +1,16 @@
 // Set timezone globally for all server-side code — app is Philippines-only
 process.env.TZ = "Asia/Manila";
 
+// Temporarily disabled everywhere (was previously only disabled in development) --
+// next-pwa's webpack plugin is a suspected cause of a "__dirname is not defined"
+// crash in every request on Vercel's Edge Runtime that survived two other targeted
+// fixes. PWA/offline support isn't essential to the app functioning; re-enable once
+// this is confirmed as the actual cause and a working combination is found (e.g.
+// the maintained @ducanh2912/next-pwa fork, or explicitly excluding it from the
+// edge compilation pass).
 const withPWA = require("next-pwa")({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: true,
   register: true,
   skipWaiting: true,
 });
