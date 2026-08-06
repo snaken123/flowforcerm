@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSuperAdminSession } from "@/control-plane/lib/superadmin-auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
+import { NewTenantForm } from "./new-tenant-form";
 
 export default async function SuperAdminDashboard() {
   const session = await getSuperAdminSession();
@@ -13,9 +14,12 @@ export default async function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white p-8">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold uppercase tracking-widest">Tenants</h1>
-          <p className="text-[#666] text-sm mt-1">Every gym running on FlowForceRM</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold uppercase tracking-widest">Tenants</h1>
+            <p className="text-[#666] text-sm mt-1">Every gym running on FlowForceRM</p>
+          </div>
+          <NewTenantForm />
         </div>
 
         {tenants.length === 0 ? (
