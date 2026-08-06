@@ -620,6 +620,7 @@ model MemberNumberSequence {
 model TenantBranding {
   id            String   @id @default("singleton")
   gymName       String
+  slogan        String?
   logoUrl       String?
   primaryColor  String?
   accentColor   String?

@@ -18,6 +18,7 @@ type AccountInfo = { email: string; updatedAt: string } | null;
 
 type Branding = {
   gymName: string;
+  slogan: string | null;
   logoUrl: string | null;
   primaryColor: string | null;
   accentColor: string | null;
@@ -28,6 +29,7 @@ type Branding = {
 function BrandingSection() {
   const [branding, setBranding] = useState<Branding>({
     gymName: "",
+    slogan: "",
     logoUrl: null,
     primaryColor: "#2563eb",
     accentColor: "#f1f5f9",
@@ -47,6 +49,7 @@ function BrandingSection() {
         if (data.branding) {
           setBranding({
             gymName: data.branding.gymName ?? "",
+            slogan: data.branding.slogan ?? "",
             logoUrl: data.branding.logoUrl,
             primaryColor: data.branding.primaryColor ?? "#2563eb",
             accentColor: data.branding.accentColor ?? "#f1f5f9",
@@ -148,6 +151,17 @@ function BrandingSection() {
               onChange={(e) => setBranding((b) => ({ ...b, gymName: e.target.value }))}
               placeholder="Iron Fist BJJ"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Slogan</Label>
+            <Input
+              value={branding.slogan ?? ""}
+              onChange={(e) => setBranding((b) => ({ ...b, slogan: e.target.value }))}
+              placeholder="Manage Less. Train More."
+              maxLength={120}
+            />
+            <p className="text-xs text-muted-foreground">Shown under your gym name in the sidebar. Leave blank to use the default.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

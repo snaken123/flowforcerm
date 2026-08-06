@@ -481,6 +481,7 @@ CREATE TABLE "MemberNumberSequence" (
 CREATE TABLE "TenantBranding" (
     "id" TEXT NOT NULL DEFAULT 'singleton',
     "gymName" TEXT NOT NULL,
+    "slogan" TEXT,
     "logoUrl" TEXT,
     "primaryColor" TEXT,
     "accentColor" TEXT,

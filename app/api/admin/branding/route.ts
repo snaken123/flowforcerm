@@ -9,6 +9,7 @@ const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 const brandingSchema = z.object({
   gymName: z.string().min(1).max(100),
+  slogan: z.string().max(120).nullable().optional(),
   logoUrl: z.string().url().nullable().optional(),
   primaryColor: z.string().regex(HEX_COLOR, "Must be a hex color like #1a73e8").nullable().optional(),
   accentColor: z.string().regex(HEX_COLOR, "Must be a hex color like #1a73e8").nullable().optional(),
