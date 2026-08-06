@@ -13,6 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { PhotoCropDialog } from "@/components/photo-crop-dialog";
 
 type AccountInfo = { email: string; updatedAt: string } | null;
 
@@ -41,6 +42,7 @@ function BrandingSection() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/branding")
@@ -62,14 +64,21 @@ function BrandingSection() {
       .finally(() => setLoaded(true));
   }, []);
 
-  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError("");
+    setCropSrc(URL.createObjectURL(file));
+    e.target.value = "";
+  }
+
+  async function handleCropConfirm(blob: Blob) {
+    setCropSrc(null);
     setUploading(true);
     setError("");
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", new File([blob], "logo.png", { type: "image/png" }));
       const res = await fetch("/api/admin/branding/logo", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Upload failed."); return; }
@@ -78,7 +87,6 @@ function BrandingSection() {
       setError("Network error during upload.");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   }
 
@@ -230,6 +238,17 @@ function BrandingSection() {
           </Button>
         </form>
       </CardContent>
+
+      {cropSrc && (
+        <PhotoCropDialog
+          open={!!cropSrc}
+          src={cropSrc}
+          format="image/png"
+          title="Crop Logo"
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
     </Card>
   );
 }

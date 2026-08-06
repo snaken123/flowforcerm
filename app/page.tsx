@@ -13,7 +13,9 @@ export default async function RootPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-8 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="FlowForceRM" className="h-10 w-10 object-contain rounded-full" />
+          <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center">
+            <img src="/logo.png" alt="FlowForceRM" className="h-[75%] w-[75%] object-contain" />
+          </div>
         </div>
         <Link
           href="/login"
@@ -26,8 +28,8 @@ export default async function RootPage() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-8 pt-24 pb-28 text-center">
         <div className="flex justify-center mb-10">
-          <div className="h-28 w-28 rounded-full overflow-hidden opacity-90">
-            <img src="/logo.png" alt="" className="h-full w-full object-contain" />
+          <div className="h-28 w-28 rounded-full overflow-hidden opacity-90 flex items-center justify-center">
+            <img src="/logo.png" alt="" className="h-[75%] w-[75%] object-contain" />
           </div>
         </div>
         <h1 className="text-6xl sm:text-7xl font-bold tracking-tight leading-none mb-4">
