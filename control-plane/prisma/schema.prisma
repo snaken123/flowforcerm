@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("CONTROL_PLANE_DATABASE_URL")
+  directUrl = env("CONTROL_PLANE_DIRECT_URL")
+}
+
+enum TenantStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  FAILED
+}
+
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String
+  subdomain   String       @unique
+  status      TenantStatus @default(PROVISIONING)
+
+  // Envelope-encrypted (AES-256-GCM) connection strings for this tenant's own Neon database.
+  // Decrypted only inside control-plane/lib/crypto.ts — never logged, never returned to a client.
+  databaseUrlEnc String @db.Text
+  directUrlEnc   String @db.Text
+  neonProjectId  String
+
+  // Denormalized branding cache (source of truth is the tenant's own TenantBranding row).
+  // Kept here so edge/middleware tenant resolution and messaging never need to open the
+  // tenant's own database just to know its display name/logo/color/timezone.
+  brandName    String?
+  logoUrl      String?
+  primaryColor String?
+  timezone     String  @default("Asia/Manila")
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  provisionedAt     DateTime?
+  createdBySuperAdminId String?
+
+  provisioningLogs ProvisioningLog[]
+
+  @@index([status])
+}
+
+model SuperAdmin {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  totpSecret  String?
+  totpEnabled Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model ProvisioningLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  step      String
+  status    String
+  detail    String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
