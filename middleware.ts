@@ -94,6 +94,13 @@ export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const host = req.headers.get("host") ?? "";
 
+  // Tenant resolution itself calls this route on a cache miss — if it went through
+  // tenant resolution too, that self-fetch would re-enter the middleware and recurse
+  // forever. It has its own shared-secret auth, so it doesn't need x-tenant-* headers.
+  if (pathname.startsWith("/api/internal/")) {
+    return NextResponse.next();
+  }
+
   // superadmin.flowforcerm.com never goes through tenant resolution or gym auth —
   // it's a wholly separate system (see control-plane/lib/superadmin-auth.ts).
   if (isSuperAdminHost(host)) {
