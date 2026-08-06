@@ -1,4 +1,5 @@
 import { controlPlanePrisma } from "./db";
+import { decryptSecret } from "./crypto";
 
 export type ResolvedTenant = {
   id: string;
@@ -28,4 +29,28 @@ export async function findTenantBySubdomain(subdomain: string): Promise<Resolved
     },
   });
   return tenant;
+}
+
+// Decrypted connection info for a specific tenant's own database — used by lib/db.ts's
+// per-tenant Prisma client resolver. Never cache/log the decrypted values beyond
+// constructing a PrismaClient with them.
+export async function getTenantConnectionInfo(tenantId: string): Promise<{ databaseUrl: string; directUrl: string } | null> {
+  const tenant = await controlPlanePrisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { databaseUrlEnc: true, directUrlEnc: true },
+  });
+  if (!tenant) return null;
+  return {
+    databaseUrl: decryptSecret(tenant.databaseUrlEnc),
+    directUrl: decryptSecret(tenant.directUrlEnc),
+  };
+}
+
+// Every ACTIVE tenant — used by crons/jobs that need to run their logic once per gym
+// instead of resolving from a request's subdomain (there is none for a cron trigger).
+export async function getActiveTenants(): Promise<{ id: string; subdomain: string; brandName: string | null }[]> {
+  return controlPlanePrisma.tenant.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, subdomain: true, brandName: true },
+  });
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { PrismaClient } from "@prisma/client";
+import { getPrismaClientForTenant } from "@/lib/db";
+import { getActiveTenants } from "@/control-plane/lib/tenant-resolution";
 import { Resend } from "resend";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 
@@ -7,7 +9,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = "FlowForceRM <noreply@flowforcerm.com>";
 
-async function getSetting(key: string) {
+async function getSetting(prisma: PrismaClient, key: string) {
   const row = await prisma.systemSetting.findUnique({ where: { key } });
   return row?.value ?? null;
 }
@@ -51,23 +53,21 @@ We'd love to have you continue training with us! Please visit the gym or reach o
 See you soon!
 FlowForceRM`;
 
-export async function GET(req: NextRequest) {
-  // Vercel cron calls this with Authorization header
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+// Runs the full expiry-warning / expired / unfreeze pass against one tenant's own
+// database. Called once per ACTIVE tenant by GET below — there is no request subdomain
+// for a cron trigger to resolve a tenant from, so each tenant's client is obtained
+// explicitly via getPrismaClientForTenant() instead of the shared prisma import.
+async function runForTenant(prisma: PrismaClient): Promise<string[]> {
   const [warnEnabled, warnDaysStr, expiredEnabled,
     warnSubjectTpl, warnBodyTpl, expiredSubjectTpl, expiredBodyTpl,
   ] = await Promise.all([
-    getSetting("expiry_warning_enabled"),
-    getSetting("expiry_warning_days"),
-    getSetting("expired_notification_enabled"),
-    getSetting("expiry_warning_subject"),
-    getSetting("expiry_warning_body"),
-    getSetting("expired_notification_subject"),
-    getSetting("expired_notification_body"),
+    getSetting(prisma, "expiry_warning_enabled"),
+    getSetting(prisma, "expiry_warning_days"),
+    getSetting(prisma, "expired_notification_enabled"),
+    getSetting(prisma, "expiry_warning_subject"),
+    getSetting(prisma, "expiry_warning_body"),
+    getSetting(prisma, "expired_notification_subject"),
+    getSetting(prisma, "expired_notification_body"),
   ]);
 
   const warnDays = parseInt(warnDaysStr ?? "7", 10);
@@ -269,5 +269,33 @@ export async function GET(req: NextRequest) {
     frozenExpired.forEach((sub) => results.push(`unfreeze:${sub.id}`));
   }
 
-  return NextResponse.json({ ok: true, sent: results.length, results });
+  return results;
+}
+
+export async function GET(req: NextRequest) {
+  // Vercel cron calls this with Authorization header
+  const auth = req.headers.get("authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tenants = await getActiveTenants();
+  const byTenant: Record<string, string[] | { error: string }> = {};
+
+  for (const tenant of tenants) {
+    try {
+      const tenantPrisma = await getPrismaClientForTenant(tenant.id);
+      byTenant[tenant.subdomain] = await runForTenant(tenantPrisma);
+    } catch (e) {
+      console.error(`[cron] membership-notifications failed for tenant ${tenant.subdomain}:`, e);
+      byTenant[tenant.subdomain] = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  const totalSent = Object.values(byTenant).reduce(
+    (sum, r) => sum + (Array.isArray(r) ? r.length : 0),
+    0
+  );
+
+  return NextResponse.json({ ok: true, sent: totalSent, byTenant });
 }
