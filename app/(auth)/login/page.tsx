@@ -111,7 +111,7 @@ function LoginForm() {
         const session = await res.json();
         const role = session?.user?.role;
         const athleteIdAsHome = session?.user?.athleteIdAsHome !== false;
-        router.push(role === "MEMBER" ? (athleteIdAsHome ? "/member/athlete-id" : "/dashboard") : role === "STORE" ? "/admin/shop" : "/dashboard");
+        router.push(role === "MEMBER" ? (athleteIdAsHome ? "/member/athlete-id" : "/dashboard") : role === "STORE" ? "/admin/store" : "/dashboard");
       }
     }
   }

@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
   { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] },
   { label: "Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"] },
   { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] },
-  { label: "Store", href: "/admin/shop", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] },
+  { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] },
   // Member-only
   { label: "Athlete ID", href: "/member/athlete-id", icon: IdCard, roles: ["MEMBER"] },
   { label: "My Profile", href: "/member/profile", icon: Users, roles: ["MEMBER"] },
@@ -130,8 +130,8 @@ export function Sidebar({ brandName, logoUrl }: { brandName?: string | null; log
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
         {filteredMain.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const showBadge = (item.href === "/admin/members" && freeTrialCount > 0) || (item.href === "/admin/shop" && storePendingCount > 0);
-          const badgeCount = item.href === "/admin/members" ? freeTrialCount : item.href === "/admin/shop" ? storePendingCount : 0;
+          const showBadge = (item.href === "/admin/members" && freeTrialCount > 0) || (item.href === "/admin/store" && storePendingCount > 0);
+          const badgeCount = item.href === "/admin/members" ? freeTrialCount : item.href === "/admin/store" ? storePendingCount : 0;
           return (
             <Link
               key={item.href}

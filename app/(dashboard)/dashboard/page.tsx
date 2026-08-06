@@ -194,7 +194,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   const role = (session.user as any).role;
-  if (role === "STORE") redirect("/admin/shop");
+  if (role === "STORE") redirect("/admin/store");
   const userId = (session.user as any).id;
   const employeeTypes: string[] = (session.user as any).employeeTypes ?? [];
   const employeeId: string | null = (session.user as any).employeeId ?? null;
