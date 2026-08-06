@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
+import { isValidTimeZone } from "@/lib/time";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
@@ -15,6 +16,7 @@ const brandingSchema = z.object({
   accentColor: z.string().regex(HEX_COLOR, "Must be a hex color like #1a73e8").nullable().optional(),
   emailFromName: z.string().max(100).nullable().optional(),
   smsSenderName: z.string().max(20).nullable().optional(),
+  timezone: z.string().refine(isValidTimeZone, "Not a recognized timezone").optional(),
 });
 
 async function requireAdmin() {
@@ -50,7 +52,12 @@ export async function POST(req: NextRequest) {
     await controlPlanePrisma.tenant
       .update({
         where: { id: tenantId },
-        data: { brandName: branding.gymName, logoUrl: branding.logoUrl, primaryColor: branding.primaryColor },
+        data: {
+          brandName: branding.gymName,
+          logoUrl: branding.logoUrl,
+          primaryColor: branding.primaryColor,
+          timezone: branding.timezone,
+        },
       })
       .catch((err) => console.error("[branding] failed to sync control-plane cache", err));
   }

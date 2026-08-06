@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ReportsClient } from "./reports-client";
-import { manilaDateStr } from "@/lib/time";
+import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
+import { getTenantTimezone } from "@/lib/tenant-context";
 
 export const metadata = { title: "Reports" };
 export const revalidate = 300;
@@ -13,16 +14,17 @@ export default async function ReportsPage() {
   if ((session.user as any).role !== "ADMIN") redirect("/dashboard");
 
   const now = new Date();
+  const tenantTimeZone = getTenantTimezone();
 
   // Date range for the 6-month member window
   const sixMonthsStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  // Date range for the 7-day check-in window (Manila day boundaries)
+  // Date range for the 7-day check-in window (tenant-local day boundaries)
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  const checkInStart = new Date(`${manilaDateStr(sevenDaysAgo)}T00:00:00+08:00`);
-  const checkInEnd = new Date(`${manilaDateStr(now)}T23:59:59.999+08:00`);
+  const checkInStart = manilaDayBoundaries(manilaDateStr(sevenDaysAgo, tenantTimeZone), tenantTimeZone).start;
+  const checkInEnd = manilaDayBoundaries(manilaDateStr(now, tenantTimeZone), tenantTimeZone).end;
 
   const [memberRecords, checkInRecords, services, statusGroups, totalRevenue] =
     await Promise.all([
@@ -59,7 +61,7 @@ export default async function ReportsPage() {
     ).length;
     return {
       month: month.toLocaleDateString("en-US", {
-        timeZone: "Asia/Manila",
+        timeZone: tenantTimeZone,
         month: "short",
         year: "2-digit",
       }),
@@ -71,14 +73,13 @@ export default async function ReportsPage() {
   const checkInData = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(now);
     d.setDate(d.getDate() - (6 - i));
-    const dayStr = manilaDateStr(d);
-    const start = new Date(`${dayStr}T00:00:00+08:00`);
-    const end = new Date(`${dayStr}T23:59:59.999+08:00`);
+    const dayStr = manilaDateStr(d, tenantTimeZone);
+    const { start, end } = manilaDayBoundaries(dayStr, tenantTimeZone);
     const count = checkInRecords.filter(
       (c) => c.checkedInAt >= start && c.checkedInAt <= end
     ).length;
     return {
-      day: start.toLocaleDateString("en-US", { timeZone: "Asia/Manila", weekday: "short" }),
+      day: start.toLocaleDateString("en-US", { timeZone: tenantTimeZone, weekday: "short" }),
       checkIns: count,
     };
   });

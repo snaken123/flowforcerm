@@ -8,6 +8,7 @@ import { controlPlanePrisma } from "./db";
 import { encryptSecret } from "./crypto";
 import { createTenantNeonProject, deleteTenantNeonProject } from "./neon-api";
 import { sendActivationEmail } from "@/lib/email";
+import { isValidTimeZone } from "@/lib/time";
 
 const RESERVED_SUBDOMAINS = new Set(["www", "superadmin", "app", "admin", "api", "flowforcerm"]);
 
@@ -40,6 +41,7 @@ export type ProvisionTenantInput = {
   adminEmail: string;
   adminName: string;
   createdBySuperAdminId: string;
+  timezone?: string;
 };
 
 // Orchestrates onboarding a brand new gym: create its control-plane record, spin up a
@@ -49,6 +51,8 @@ export type ProvisionTenantInput = {
 // charge -- that gate gets added once Xendit exists.
 export async function provisionTenant(input: ProvisionTenantInput) {
   validateSubdomain(input.subdomain);
+
+  const timezone = input.timezone && isValidTimeZone(input.timezone) ? input.timezone : "Asia/Manila";
 
   const existing = await controlPlanePrisma.tenant.findUnique({ where: { subdomain: input.subdomain } });
   if (existing) throw new ProvisionValidationError(`Subdomain "${input.subdomain}" is already taken.`);
@@ -62,6 +66,7 @@ export async function provisionTenant(input: ProvisionTenantInput) {
       directUrlEnc: "",
       neonProjectId: "",
       brandName: input.gymName,
+      timezone,
       createdBySuperAdminId: input.createdBySuperAdminId,
     },
   });
@@ -109,7 +114,7 @@ export async function provisionTenant(input: ProvisionTenantInput) {
         },
       });
       await tenantPrisma.tenantBranding.create({
-        data: { id: "singleton", gymName: input.gymName },
+        data: { id: "singleton", gymName: input.gymName, timezone },
       });
     } finally {
       await tenantPrisma.$disconnect();

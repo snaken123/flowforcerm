@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { PhotoCropDialog } from "@/components/photo-crop-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type AccountInfo = { email: string; updatedAt: string } | null;
 
@@ -25,7 +26,24 @@ type Branding = {
   accentColor: string | null;
   emailFromName: string | null;
   smsSenderName: string | null;
+  timezone: string;
 };
+
+// Falls back to a fixed list on older engines without Intl.supportedValuesOf.
+function listTimeZones(): string[] {
+  try {
+    const zones = (Intl as any).supportedValuesOf?.("timeZone");
+    if (Array.isArray(zones) && zones.length > 0) return zones;
+  } catch {
+    // fall through to the static list
+  }
+  return [
+    "Asia/Manila", "UTC", "America/New_York", "America/Chicago", "America/Denver",
+    "America/Los_Angeles", "America/Sao_Paulo", "Europe/London", "Europe/Paris",
+    "Europe/Berlin", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Hong_Kong",
+    "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Australia/Sydney", "Pacific/Auckland",
+  ];
+}
 
 function BrandingSection() {
   const [branding, setBranding] = useState<Branding>({
@@ -36,7 +54,9 @@ function BrandingSection() {
     accentColor: "#f1f5f9",
     emailFromName: "",
     smsSenderName: "",
+    timezone: "Asia/Manila",
   });
+  const [timeZones] = useState<string[]>(listTimeZones);
   const [loaded, setLoaded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,6 +77,7 @@ function BrandingSection() {
             accentColor: data.branding.accentColor ?? "#f1f5f9",
             emailFromName: data.branding.emailFromName ?? "",
             smsSenderName: data.branding.smsSenderName ?? "",
+            timezone: data.branding.timezone ?? "Asia/Manila",
           });
         }
       })
@@ -227,6 +248,24 @@ function BrandingSection() {
                 maxLength={20}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Timezone</Label>
+            <Select
+              value={branding.timezone}
+              onValueChange={(v) => setBranding((b) => ({ ...b, timezone: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {timeZones.map((tz) => (
+                  <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Used for schedules, reports, and check-in windows.</p>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

@@ -16,9 +16,25 @@ const schema = z.object({
     .regex(/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/, "Lowercase letters, numbers, hyphens only"),
   adminEmail: z.string().email("Invalid email"),
   adminName: z.string().min(2, "Required"),
+  timezone: z.string().min(1, "Required"),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function listTimeZones(): string[] {
+  try {
+    const zones = (Intl as any).supportedValuesOf?.("timeZone");
+    if (Array.isArray(zones) && zones.length > 0) return zones;
+  } catch {
+    // fall through to the static list
+  }
+  return [
+    "Asia/Manila", "UTC", "America/New_York", "America/Chicago", "America/Denver",
+    "America/Los_Angeles", "America/Sao_Paulo", "Europe/London", "Europe/Paris",
+    "Europe/Berlin", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Hong_Kong",
+    "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Australia/Sydney", "Pacific/Auckland",
+  ];
+}
 
 export function NewTenantForm() {
   const router = useRouter();
@@ -26,13 +42,14 @@ export function NewTenantForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ subdomain: string; adminEmail: string; tempPassword: string; emailSent: boolean } | null>(null);
+  const [timeZones] = useState<string[]>(listTimeZones);
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { timezone: "Asia/Manila" } });
 
   async function onSubmit(data: FormValues) {
     setSubmitting(true);
@@ -147,6 +164,18 @@ export function NewTenantForm() {
             className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
           />
           {errors.adminEmail && <p className="text-xs text-destructive">{errors.adminEmail.message}</p>}
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-[#888]">Timezone</label>
+          <select
+            {...register("timezone")}
+            className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white"
+          >
+            {timeZones.map((tz) => (
+              <option key={tz} value={tz}>{tz}</option>
+            ))}
+          </select>
+          {errors.timezone && <p className="text-xs text-destructive">{errors.timezone.message}</p>}
         </div>
 
         {error && (

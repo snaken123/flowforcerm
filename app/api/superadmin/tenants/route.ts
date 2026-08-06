@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSuperAdmin } from "@/control-plane/lib/superadmin-auth";
 import { provisionTenant, ProvisionValidationError } from "@/control-plane/lib/provision-tenant";
+import { isValidTimeZone } from "@/lib/time";
 
 const createTenantSchema = z.object({
   gymName: z.string().min(2).max(100),
   subdomain: z.string().min(2).max(32),
   adminEmail: z.string().email(),
   adminName: z.string().min(2).max(100),
+  timezone: z.string().refine(isValidTimeZone, "Not a recognized timezone").optional(),
 });
 
 export async function POST(req: Request) {
@@ -25,6 +27,7 @@ export async function POST(req: Request) {
       subdomain: parsed.data.subdomain.toLowerCase(),
       adminEmail: parsed.data.adminEmail,
       adminName: parsed.data.adminName,
+      timezone: parsed.data.timezone,
       createdBySuperAdminId: (session.user as { id: string }).id,
     });
     return NextResponse.json(result);

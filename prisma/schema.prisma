@@ -626,6 +626,7 @@ model TenantBranding {
   accentColor   String?
   emailFromName String?
   smsSenderName String?
+  timezone      String   @default("Asia/Manila")
   updatedAt     DateTime @updatedAt
 }
 

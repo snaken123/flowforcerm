@@ -487,6 +487,7 @@ CREATE TABLE "TenantBranding" (
     "accentColor" TEXT,
     "emailFromName" TEXT,
     "smsSenderName" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TenantBranding_pkey" PRIMARY KEY ("id")

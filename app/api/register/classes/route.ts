@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { manilaDayOfWeek } from "@/lib/time";
+import { manilaDayOfWeek, manilaDateStr } from "@/lib/time";
 
 const KIDS_KEYWORDS = ["kid", "children", "youth", "junior"];
 
@@ -10,17 +10,13 @@ function hasFreeTrialPackage(packages: { name: string; isActive: boolean }[]) {
   );
 }
 
-function toManilaDateStr(d: Date): string {
-  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // YYYY-MM-DD
-}
-
 function generateDates(dayOfWeek: number, startDate: Date | null, endDate: Date | null, exceptions: Date[]): Date[] {
   const dates: Date[] = [];
   const now = new Date();
   const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() + 14);
 
-  const exSet = new Set(exceptions.map((d) => toManilaDateStr(d)));
+  const exSet = new Set(exceptions.map((d) => manilaDateStr(d)));
 
   // Start from tomorrow
   const cursor = new Date(now);
@@ -29,7 +25,7 @@ function generateDates(dayOfWeek: number, startDate: Date | null, endDate: Date 
 
   while (cursor <= cutoff) {
     if (manilaDayOfWeek(cursor) === dayOfWeek) {
-      const key = toManilaDateStr(cursor);
+      const key = manilaDateStr(cursor);
       const afterStart = !startDate || cursor >= startDate;
       const beforeEnd = !endDate || cursor <= endDate;
       if (afterStart && beforeEnd && !exSet.has(key)) {
@@ -119,7 +115,7 @@ export async function GET(req: NextRequest) {
           scheduleId: schedule.id,
           classSessionId: ac.classSessionId,
           className: ac.classSession.name,
-          date: toManilaDateStr(date),
+          date: manilaDateStr(date),
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           location: schedule.location,
