@@ -164,7 +164,9 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon|manifest|sw\\.js|workbox-|icons/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|json|js|css|woff2?)$).*)",
-  ],
+  // DIAGNOSTIC: replaced the single complex negative-lookahead regex with a plain
+  // catch-all to test whether Next.js's own matcher-evaluation code (not this
+  // file's logic) is the actual source of a persistent __dirname crash that
+  // survived five other fixes, including a completely empty middleware function.
+  matcher: ["/:path*"],
 };
