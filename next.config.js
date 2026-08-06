@@ -25,7 +25,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.uploadthing.com https://utfs.io https://lh3.googleusercontent.com https://avatars.githubusercontent.com",
+              "img-src 'self' data: blob: https://*.uploadthing.com https://utfs.io https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.public.blob.vercel-storage.com",
               "connect-src 'self'",
               "frame-ancestors 'none'",
             ].join("; "),
