@@ -52,7 +52,7 @@ export default async function PricelistEmbedPage({ searchParams }: { searchParam
         .ns-header { text-align: center; margin-bottom: 40px; }
         .ns-eyebrow {
           font-size: 12px; font-weight: 600;
-          letter-spacing: 0.1em; text-transform: uppercase;
+          letter-spacing: 0.1em;
           color: #6b7280; margin-bottom: 8px;
         }
         .ns-title { font-size: 28px; font-weight: 800; color: #111827; line-height: 1.2; }

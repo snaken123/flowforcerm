@@ -108,8 +108,8 @@ export function AthleteIdClient({ profiles, athleteIdAsHome }: { profiles: Profi
           <div className="flex items-center gap-4 w-full">
             <img src="/logo.png" alt="FlowForceRM" className="h-20 w-20 object-contain shrink-0" />
             <div className="leading-tight">
-              <p className="text-2xl font-extrabold uppercase tracking-widest text-gray-900">FlowForceRM</p>
-              <p className="text-sm uppercase tracking-[0.2em] text-gray-400">Manage Less. Train More.</p>
+              <p className="text-2xl font-extrabold tracking-widest text-gray-900">FlowForceRM</p>
+              <p className="text-sm tracking-[0.2em] text-gray-400">Manage Less. Train More.</p>
             </div>
           </div>
 

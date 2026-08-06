@@ -49,9 +49,9 @@ export default function RegisterWidget() {
     <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="bg-zinc-950 px-8 py-6 text-center">
-        <img src="/logo.png" alt="FlowForceRM" className="h-12 w-12 rounded-full object-cover mx-auto mb-3" />
-        <p className="text-white font-bold text-lg tracking-wide uppercase">FlowForceRM</p>
-        <p className="text-zinc-400 text-xs uppercase tracking-widest">Manage Less. Train More.</p>
+        <img src="/logo.png" alt="FlowForceRM" className="h-12 w-12 rounded-full object-contain mx-auto mb-3" />
+        <p className="text-white font-bold text-lg tracking-wide">FlowForceRM</p>
+        <p className="text-zinc-400 text-xs tracking-widest">Manage Less. Train More.</p>
       </div>
 
       <div className="px-8 py-6">

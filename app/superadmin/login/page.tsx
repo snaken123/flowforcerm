@@ -76,7 +76,7 @@ export default function SuperAdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#0d0d0d] p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
-          <h1 className="text-2xl font-bold uppercase tracking-widest text-white">FlowForceRM</h1>
+          <h1 className="text-2xl font-bold tracking-widest text-white">FlowForceRM</h1>
           <p className="text-[#666] uppercase tracking-[0.2em] text-xs">Platform Control</p>
         </div>
         <Card className="bg-[#111] border-white/10 text-white">
