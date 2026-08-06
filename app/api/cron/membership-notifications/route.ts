@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getPrismaClientForTenant } from "@/lib/db";
 import { getActiveTenants } from "@/control-plane/lib/tenant-resolution";
-import { Resend } from "resend";
+import { getResend } from "@/lib/email";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = "FlowForceRM <noreply@flowforcerm.com>";
 
@@ -119,7 +118,7 @@ async function runForTenant(prisma: PrismaClient): Promise<string[]> {
       const bodyHtml = textToHtml(render(bodyTpl, vars)) +
         `\n<hr/><p style="font-size:12px;color:#888;">Manage your account at <a href="${APP_URL}">${APP_URL}</a></p>`;
 
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM,
         replyTo: "members@flowforcerm.com",
         to: email,
@@ -202,7 +201,7 @@ async function runForTenant(prisma: PrismaClient): Promise<string[]> {
       const bodyHtml = textToHtml(render(expBodyTpl, vars)) +
         `\n<hr/><p style="font-size:12px;color:#888;">Manage your account at <a href="${APP_URL}">${APP_URL}</a></p>`;
 
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM,
         replyTo: "members@flowforcerm.com",
         to: email,

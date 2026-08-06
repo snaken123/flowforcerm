@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { Resend } from "resend";
+import { getResend } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 
 type SelectedClass = {
@@ -125,7 +124,7 @@ export async function POST(req: NextRequest) {
   }).join("");
 
   // Confirmation email to registrant
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
     replyTo: "members@flowforcerm.com",
     to: freeTrialToken.email,
@@ -152,7 +151,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Staff notification
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
     to: "members@flowforcerm.com",
     subject: `New free trial registration — ${freeTrialToken.firstName} ${freeTrialToken.lastName}`,

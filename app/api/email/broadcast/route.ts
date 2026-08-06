@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { Resend } from "resend";
+import { getResend } from "@/lib/email";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
 export async function GET() {
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < recipients.length; i += 50) {
       const batch = recipients.slice(i, i + 50);
       try {
-        const sendResult = await resend.batch.send(batch.map((r) => ({
+        const sendResult = await getResend().batch.send(batch.map((r) => ({
           from: FROM,
           replyTo: "members@flowforcerm.com",
           to: r.email,

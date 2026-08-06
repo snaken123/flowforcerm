@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { Resend } from "resend";
+import { getResend } from "@/lib/email";
 import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 import crypto from "crypto";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 
 export async function POST(req: NextRequest) {
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   const verifyUrl = `${APP_URL}/register/select?token=${token}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
     replyTo: "members@flowforcerm.com",
     to: email,

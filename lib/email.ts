@@ -1,8 +1,17 @@
 import { Resend } from "resend";
 
-const apiKey = process.env.RESEND_API_KEY;
-if (!apiKey) console.error("[email] RESEND_API_KEY is not set");
-const resend = new Resend(apiKey);
+// Lazy singleton — constructed on first send, not at module load, so builds/routes
+// that merely import this file don't crash when RESEND_API_KEY isn't set yet.
+let resendClient: Resend | null = null;
+export function getResend(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) console.error("[email] RESEND_API_KEY is not set");
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
+
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
@@ -16,7 +25,7 @@ export async function sendActivationEmail({
   tempPassword: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
-  const result = await resend.emails.send({
+  const result = await getResend().emails.send({
     from: FROM,
     to,
     subject: "FlowForceRM — Activate Your Account",
@@ -57,7 +66,7 @@ export async function sendActivationLinkEmail({
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const setupUrl = `${APP_URL}/reset-password?token=${token}`;
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to,
     subject: "FlowForceRM — Set Up Your Account",
@@ -90,7 +99,7 @@ export async function sendPasswordResetEmail({
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to,
     subject: "FlowForceRM — Reset Your Password",
@@ -122,7 +131,7 @@ export async function sendWelcomeEmail({
   tempPassword: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to,
     subject: "Welcome to FlowForceRM — Your Account is Ready",
