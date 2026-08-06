@@ -10,6 +10,22 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { nextRuntime }) => {
+    // next-auth pulls in openid-client (a Node-only OAuth library used for the
+    // Google provider's sign-in flow) even into the Edge Runtime bundle that
+    // middleware.ts uses for getToken() — which never needs it, since getToken
+    // only decodes an already-issued JWT session cookie. openid-client references
+    // __dirname internally, which doesn't exist on Edge, crashing every request
+    // at module-load time. Stub it out of the edge build specifically; the Node
+    // runtime (route handlers, the actual NextAuth OAuth callback) keeps it.
+    if (nextRuntime === "edge") {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "openid-client": false,
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {
