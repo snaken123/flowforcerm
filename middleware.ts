@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getEdgeToken } from "@/lib/edge-jwt";
 
-// DIAGNOSTIC step 2 of isolating the __dirname crash: with middleware.ts entirely
-// absent, the crash disappeared (confirmed -- became a normal 404). This step adds
-// back only the next-auth/jwt import and an actual getToken() call, nothing else,
-// to test whether that specific import is the real cause now that Next.js has been
-// upgraded (the earlier "even an empty middleware crashes" finding was on the old
-// Next.js version, before the upgrade -- never re-tested in isolation afterward).
+// DIAGNOSTIC step 3: swapped next-auth/jwt's getToken() for a custom jose-based
+// decoder (lib/edge-jwt.ts) that bypasses next-auth/jwt's module graph entirely,
+// which was confirmed as the actual crash source in the previous test.
 export default async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getEdgeToken(req);
   return NextResponse.next();
 }
 
