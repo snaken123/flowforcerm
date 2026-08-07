@@ -1,7 +1,7 @@
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { MemberCalendar } from "./member-calendar";
+import { MemberScheduleTabsClient } from "./schedule-tabs-client";
 
 export const metadata = { title: "My Schedule" };
 
@@ -56,7 +56,7 @@ export default async function MemberSchedulePage() {
   });
 
   return (
-    <MemberCalendar
+    <MemberScheduleTabsClient
       schedules={JSON.parse(JSON.stringify(schedules))}
       hasActiveMembership={serviceIds.length > 0}
       memberId={member?.id ?? ""}

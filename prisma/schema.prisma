@@ -495,6 +495,21 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 }
 
+// One row per (day, category) that has ever been saved for the Training Plan board.
+// Days/categories with no row yet render an implicit default empty grid client-side --
+// nothing is written until an editor actually saves content. date is a tenant-timezone
+// "YYYY-MM-DD" string (see lib/time.ts's manilaDateStr), not a DateTime, so week-range
+// fetches are cheap, timezone-free string comparisons.
+model TrainingPlanCard {
+  id          String   @id @default(cuid())
+  date        String   // "YYYY-MM-DD" in tenant timezone
+  categoryKey String   // "warmup" | "strength" | "metcon" | "accessory" | "coach_note"
+  rows        Json     // Cell[][]: fixed 4-wide rows of { text, bold, italic }
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date, categoryKey])
+}
+
 model FreeTrialToken {
   id        String    @id @default(cuid())
   token     String    @unique

@@ -384,6 +384,17 @@ CREATE TABLE "SystemSetting" (
 );
 
 -- CreateTable
+CREATE TABLE "TrainingPlanCard" (
+    "id" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "categoryKey" TEXT NOT NULL,
+    "rows" JSONB NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TrainingPlanCard_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "FreeTrialToken" (
     "id" TEXT NOT NULL,
     "token" TEXT NOT NULL,
@@ -628,6 +639,9 @@ CREATE INDEX "RankRecord_memberId_idx" ON "RankRecord"("memberId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmailIntegration_userId_key" ON "EmailIntegration"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TrainingPlanCard_date_categoryKey_key" ON "TrainingPlanCard"("date", "categoryKey");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "FreeTrialToken_token_key" ON "FreeTrialToken"("token");
