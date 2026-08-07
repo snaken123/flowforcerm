@@ -1,9 +1,9 @@
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { MemberScheduleTabsClient } from "./schedule-tabs-client";
+import { MemberCalendar } from "./member-calendar";
 
-export const metadata = { title: "My Schedule" };
+export const metadata = { title: "Available Classes" };
 
 export default async function MemberSchedulePage() {
   const session = await getAuthSession();
@@ -56,7 +56,7 @@ export default async function MemberSchedulePage() {
   });
 
   return (
-    <MemberScheduleTabsClient
+    <MemberCalendar
       schedules={JSON.parse(JSON.stringify(schedules))}
       hasActiveMembership={serviceIds.length > 0}
       memberId={member?.id ?? ""}

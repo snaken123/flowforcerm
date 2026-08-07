@@ -26,37 +26,57 @@ type NavItem = {
   exact?: boolean; // skip prefix-matching for active-highlight (needed when another sibling's href starts with this one's)
 };
 
-const mainNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "STAFF", "MEMBER"] },
-  { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] },
-  { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] },
-  { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] },
+type NavEntry =
+  | { type: "link"; item: NavItem }
+  | { type: "group"; key: string; label: string; icon: React.ElementType; items: NavItem[]; hiddenForCoachOnly?: boolean };
+
+// One ordered list (instead of separate "main" + "collapsible" arrays rendered in two
+// passes) so a group can sit in its natural position relative to surrounding links --
+// e.g. Schedule between Members and Reports -- rather than always trailing after every
+// flat link regardless of where it conceptually belongs.
+const navEntries: NavEntry[] = [
+  { type: "link", item: { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "STAFF", "MEMBER"] } },
+  { type: "link", item: { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] } },
+  {
+    type: "group", key: "schedule", label: "Schedule", icon: Calendar,
+    items: [
+      { label: "Class Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"], exact: true },
+      { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
+    ],
+  },
+  { type: "link", item: { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] } },
+  { type: "link", item: { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] } },
   // Member-only
-  { label: "Athlete ID", href: "/member/athlete-id", icon: IdCard, roles: ["MEMBER"] },
-  { label: "My Profile", href: "/member/profile", icon: Users, roles: ["MEMBER"] },
-  { label: "My Schedule", href: "/member/schedule", icon: Calendar, roles: ["MEMBER"] },
-  { label: "My Billing", href: "/member/billing", icon: CreditCard, roles: ["MEMBER"] },
-  { label: "Security", href: "/member/security", icon: Lock, roles: ["MEMBER"] },
-  { label: "Privacy & Data", href: "/member/privacy", icon: ShieldCheck, roles: ["MEMBER"] },
-];
-
-const scheduleNavItems: NavItem[] = [
-  { label: "Class Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"], exact: true },
-  { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
-];
-
-const commsNavItems: NavItem[] = [
-  { label: "Broadcast", href: "/admin/communications", icon: Megaphone, roles: ["ADMIN"] },
-  { label: "Email", href: "/admin/email", icon: Mail, roles: ["ADMIN"] },
-];
-
-const settingsNavItems: NavItem[] = [
-  { label: "Employees", href: "/admin/employees", icon: UserCog, roles: ["ADMIN"] },
-  { label: "Memberships", href: "/admin/services", icon: Dumbbell, roles: ["ADMIN"] },
-  { label: "Classes", href: "/admin/classes", icon: GraduationCap, roles: ["ADMIN"] },
-  { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"] },
-  { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
-  { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
+  { type: "link", item: { label: "Athlete ID", href: "/member/athlete-id", icon: IdCard, roles: ["MEMBER"] } },
+  { type: "link", item: { label: "My Profile", href: "/member/profile", icon: Users, roles: ["MEMBER"] } },
+  {
+    type: "group", key: "member-schedule", label: "My Schedule", icon: Calendar,
+    items: [
+      { label: "Available Classes", href: "/member/schedule", icon: Calendar, roles: ["MEMBER"], exact: true },
+      { label: "Training Plan", href: "/member/schedule/training-plan", icon: ListChecks, roles: ["MEMBER"] },
+    ],
+  },
+  { type: "link", item: { label: "My Billing", href: "/member/billing", icon: CreditCard, roles: ["MEMBER"] } },
+  { type: "link", item: { label: "Security", href: "/member/security", icon: Lock, roles: ["MEMBER"] } },
+  { type: "link", item: { label: "Privacy & Data", href: "/member/privacy", icon: ShieldCheck, roles: ["MEMBER"] } },
+  {
+    type: "group", key: "comms", label: "Communications", icon: Mail, hiddenForCoachOnly: true,
+    items: [
+      { label: "Broadcast", href: "/admin/communications", icon: Megaphone, roles: ["ADMIN"] },
+      { label: "Email", href: "/admin/email", icon: Mail, roles: ["ADMIN"] },
+    ],
+  },
+  {
+    type: "group", key: "settings", label: "Settings", icon: Settings, hiddenForCoachOnly: true,
+    items: [
+      { label: "Employees", href: "/admin/employees", icon: UserCog, roles: ["ADMIN"] },
+      { label: "Memberships", href: "/admin/services", icon: Dumbbell, roles: ["ADMIN"] },
+      { label: "Classes", href: "/admin/classes", icon: GraduationCap, roles: ["ADMIN"] },
+      { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"] },
+      { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
+      { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
+    ],
+  },
 ];
 
 export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | null; logoUrl?: string | null; slogan?: string | null }) {
@@ -85,46 +105,38 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .catch(() => {});
   }, [role]);
 
-  const scheduleHrefs = scheduleNavItems.map((i) => i.href);
-  const scheduleActive = scheduleHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
-  const [scheduleOpen, setScheduleOpen] = useState(scheduleActive);
+  const isEntryActive = (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/"));
 
-  const commsHrefs = commsNavItems.map((i) => i.href);
-  const commsActive = commsHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
-  const [commsOpen, setCommsOpen] = useState(commsActive);
-
-  const settingsHrefs = settingsNavItems.map((i) => i.href);
-  const settingsActive = settingsHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
-  const [settingsOpen, setSettingsOpen] = useState(settingsActive);
-
+  // isCoachOnly (pure coaches, no ADMIN/STAFF employeeType tag) keep Dashboard and both
+  // Schedule groups, but never see Comms/Settings.
   const coachAllowedHrefs = ["/dashboard"];
-  const filteredMain = mainNavItems
-    .filter((item) => item.roles.includes(role))
-    .filter((item) => !isCoachOnly || coachAllowedHrefs.includes(item.href));
-  // Schedule stays visible for coach-only employees (they have full Training Plan access
-  // and still need Class Schedule) — unlike Comms/Settings, which are hidden for them.
-  const filteredSchedule = scheduleNavItems.filter((item) => item.roles.includes(role));
-  const filteredComms = isCoachOnly ? [] : commsNavItems.filter((item) => item.roles.includes(role));
-  const filteredSettings = isCoachOnly ? [] : settingsNavItems.filter((item) => item.roles.includes(role));
+  const visibleEntries = navEntries
+    .map((entry) => {
+      if (entry.type === "link") return entry;
+      const items = entry.items.filter((item) => item.roles.includes(role));
+      return { ...entry, items };
+    })
+    .filter((entry) => {
+      if (entry.type === "link") {
+        if (!entry.item.roles.includes(role)) return false;
+        if (isCoachOnly && !coachAllowedHrefs.includes(entry.item.href)) return false;
+        return true;
+      }
+      if (entry.items.length === 0) return false;
+      if (isCoachOnly && entry.hiddenForCoachOnly) return false;
+      return true;
+    });
 
-  const SubNavLink = ({ item }: { item: NavItem }) => {
-    const active = item.exact ? pathname === item.href : (pathname === item.href || pathname.startsWith(item.href + "/"));
-    return (
-      <Link
-        href={item.href}
-        onClick={() => setMobileOpen(false)}
-        className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          active
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-        )}
-      >
-        <item.icon className="h-4 w-4 shrink-0" />
-        {item.label}
-      </Link>
-    );
-  };
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const entry of navEntries) {
+      if (entry.type === "group") {
+        initial[entry.key] = entry.items.some((item) => isEntryActive(item));
+      }
+    }
+    return initial;
+  });
+  const toggleGroup = (key: string) => setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const NavContent = () => (
     <div className="flex h-full flex-col">
@@ -139,90 +151,72 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
 
       {/* Nav links */}
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-        {filteredMain.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const showBadge = (item.href === "/admin/members" && freeTrialCount > 0) || (item.href === "/admin/store" && storePendingCount > 0);
-          const badgeCount = item.href === "/admin/members" ? freeTrialCount : item.href === "/admin/store" ? storePendingCount : 0;
+        {visibleEntries.map((entry) => {
+          if (entry.type === "link") {
+            const item = entry.item;
+            const active = isEntryActive(item);
+            const showBadge = (item.href === "/admin/members" && freeTrialCount > 0) || (item.href === "/admin/store" && storePendingCount > 0);
+            const badgeCount = item.href === "/admin/members" ? freeTrialCount : item.href === "/admin/store" ? storePendingCount : 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {badgeCount}
+                  </span>
+                )}
+              </Link>
+            );
+          }
+
+          const open = !!openGroups[entry.key];
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            <div key={entry.key} className="pt-2">
+              <button
+                onClick={() => toggleGroup(entry.key)}
+                className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                <entry.icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">{entry.label}</span>
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+              </button>
+              {open && (
+                <div className="mt-1 space-y-1 pl-3">
+                  {entry.items.map((item) => {
+                    const active = isEntryActive(item);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {showBadge && (
-                <span className="h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {badgeCount}
-                </span>
-              )}
-            </Link>
+            </div>
           );
         })}
-
-
-        {/* Schedule section */}
-        {filteredSchedule.length > 0 && (
-          <div className="pt-2">
-            <button
-              onClick={() => setScheduleOpen((o) => !o)}
-              className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            >
-              <Calendar className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Schedule</span>
-              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", scheduleOpen && "rotate-180")} />
-            </button>
-            {scheduleOpen && (
-              <div className="mt-1 space-y-1 pl-3">
-                {filteredSchedule.map((item) => <SubNavLink key={item.href} item={item} />)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Communications section */}
-        {filteredComms.length > 0 && (
-          <div className="pt-2">
-            <button
-              onClick={() => setCommsOpen((o) => !o)}
-              className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            >
-              <Mail className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Communications</span>
-              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", commsOpen && "rotate-180")} />
-            </button>
-            {commsOpen && (
-              <div className="mt-1 space-y-1 pl-3">
-                {filteredComms.map((item) => <SubNavLink key={item.href} item={item} />)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Settings section */}
-        {filteredSettings.length > 0 && (
-          <div className="pt-2">
-            <button
-              onClick={() => setSettingsOpen((o) => !o)}
-              className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            >
-              <Settings className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Settings</span>
-              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", settingsOpen && "rotate-180")} />
-            </button>
-            {settingsOpen && (
-              <div className="mt-1 space-y-1 pl-3">
-                {filteredSettings.map((item) => <SubNavLink key={item.href} item={item} />)}
-              </div>
-            )}
-          </div>
-        )}
       </nav>
 
       {/* User footer */}
