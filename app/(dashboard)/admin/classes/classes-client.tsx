@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Plus, GraduationCap, Loader2, Pencil, Trash2, ChevronDown, Check, Copy } from "lucide-react";
+import { Plus, GraduationCap, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, ChevronsUpDown, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,9 +180,33 @@ export function ClassesClient({
   const [loading, setLoading] = useState(false);
   const [addAllowedIds, setAddAllowedIds] = useState<string[]>([]);
   const [editAllowedIds, setEditAllowedIds] = useState<string[]>([]);
+  const [sortCol, setSortCol] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const addForm = useForm<SessionFormData>({ resolver: zodResolver(sessionSchema) });
   const editForm = useForm<SessionFormData>({ resolver: zodResolver(sessionSchema) });
+
+  function toggleSort(col: string) {
+    if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir("asc"); }
+  }
+
+  function SortIcon({ col }: { col: string }) {
+    if (sortCol !== col) return <ChevronsUpDown className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />;
+    return sortDir === "asc"
+      ? <ChevronUp className="h-3.5 w-3.5 ml-1" />
+      : <ChevronDown className="h-3.5 w-3.5 ml-1" />;
+  }
+
+  const sorted = [...initial].sort((a, b) => {
+    let aVal: any, bVal: any;
+    if (sortCol === "name") { aVal = a.name?.toLowerCase() ?? ""; bVal = b.name?.toLowerCase() ?? ""; }
+    else if (sortCol === "location") { aVal = a.location?.toLowerCase() ?? ""; bVal = b.location?.toLowerCase() ?? ""; }
+    else { aVal = ""; bVal = ""; }
+    if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
 
   function toggleAdd(id: string) {
     setAddAllowedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -290,15 +314,19 @@ export function ClassesClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium">Class Name</th>
-                <th className="px-4 py-3 text-left font-medium">Location</th>
+                <th className="px-4 py-3 text-left font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("name")}>
+                  <span className="inline-flex items-center">Class Name<SortIcon col="name" /></span>
+                </th>
+                <th className="px-4 py-3 text-left font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("location")}>
+                  <span className="inline-flex items-center">Location<SortIcon col="location" /></span>
+                </th>
                 <th className="px-4 py-3 text-left font-medium">Allowed Memberships</th>
                 <th className="px-4 py-3 text-left font-medium">Notes</th>
                 {isAdmin && <th className="px-4 py-3" />}
               </tr>
             </thead>
             <tbody>
-              {initial.map((s, i) => {
+              {sorted.map((s, i) => {
                 const membershipNames = (s.allowedServices ?? []).map((a: any) => a.service?.name).filter(Boolean);
                 return (
                   <tr key={s.id} className={`border-b last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
