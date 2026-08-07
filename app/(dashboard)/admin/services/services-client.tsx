@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Dumbbell, Users, Loader2, Pencil, ToggleLeft, ToggleRight, Trash2, ChevronDown, ChevronRight, Save, FlaskConical } from "lucide-react";
+import { Plus, Dumbbell, Users, Loader2, Pencil, ToggleLeft, ToggleRight, Trash2, ChevronDown, ChevronRight, Save, FlaskConical, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +94,39 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
   const [addPackageFor, setAddPackageFor] = useState<any | null>(null);
   const [editingPkg, setEditingPkg] = useState<{ serviceId: string; pkg: any } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState(initial);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  useEffect(() => setItems(initial), [initial]);
+
+  async function persistOrder(next: any[]) {
+    try {
+      const res = await fetch("/api/admin/settings/service-order", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: next.map((s) => s.id) }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      toast({ variant: "destructive", title: "Could not save the new order" });
+      setItems(initial);
+    }
+  }
+
+  function handleDrop(targetId: string) {
+    if (!draggedId || draggedId === targetId) { setDraggedId(null); return; }
+    setItems((prev) => {
+      const from = prev.findIndex((s) => s.id === draggedId);
+      const to = prev.findIndex((s) => s.id === targetId);
+      if (from === -1 || to === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      persistOrder(next);
+      return next;
+    });
+    setDraggedId(null);
+  }
 
   const addForm = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -323,14 +356,25 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {initial.map((service) => (
-          <Card key={service.id} className="overflow-hidden">
+        {items.map((service) => (
+          <Card
+            key={service.id}
+            draggable
+            onDragStart={() => setDraggedId(service.id)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(service.id)}
+            onDragEnd={() => setDraggedId(null)}
+            className={`overflow-hidden transition-opacity ${draggedId === service.id ? "opacity-50" : ""}`}
+          >
             <div className="h-2" style={{ backgroundColor: service.color }} />
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-base">{service.name}</CardTitle>
-                  <Badge variant="secondary" className="mt-1 text-xs">{service.category}</Badge>
+                <div className="flex items-start gap-1.5">
+                  <GripVertical className="h-4 w-4 mt-1 shrink-0 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+                  <div>
+                    <CardTitle className="text-base">{service.name}</CardTitle>
+                    <Badge variant="secondary" className="mt-1 text-xs">{service.category}</Badge>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(service)} title="Edit">
@@ -409,7 +453,7 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
             </CardContent>
           </Card>
         ))}
-        {initial.length === 0 && (
+        {items.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
             <Dumbbell className="mx-auto h-10 w-10 mb-3 opacity-30" />
             <p>No services yet. Add your first one.</p>
