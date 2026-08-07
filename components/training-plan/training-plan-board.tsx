@@ -8,9 +8,14 @@ import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { dateStrInZone } from "@/lib/timezone-offset";
 import { toast } from "@/lib/use-toast";
 import { TrainingPlanCardModal } from "./training-plan-card-modal";
+import { TrainingPlanReadOnlyView } from "./training-plan-read-only-view";
 import type { TrainingPlanCell } from "@/lib/training-plan";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Caps how tall any one board card can render before it scrolls internally, so the
+// row it's in (which native CSS grid auto-sizes to its tallest cell) can't grow
+// unbounded from a single outlier -- see the flat category-major grid below.
+const CARD_MAX_HEIGHT = 440;
 
 function getWeekStart(date: Date) {
   const d = new Date(date);
@@ -31,16 +36,6 @@ function todayMidnight() {
 
 type Category = { key: string; label: string; color: string; sortOrder: number };
 type Card = { date: string; categoryKey: string; rows: TrainingPlanCell[][]; notes?: string };
-
-function previewText(rows?: TrainingPlanCell[][]) {
-  if (!rows) return "";
-  for (const row of rows) {
-    for (const cell of row) {
-      if (cell.text.trim()) return cell.text.trim();
-    }
-  }
-  return "";
-}
 
 // Shared week/day calendar for the Training Plan board — used by both the admin
 // "Class Schedule"/"Training Plan" tabs and the member "My Schedule" page, in edit or
@@ -198,39 +193,56 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
         </div>
       </div>
 
-      {/* Board */}
-      <div className={`grid gap-3 ${viewMode === "week" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-7" : "grid-cols-1"}`}>
+      {/* Board — one flat CSS grid, day headers then category rows in row-major order
+          (day-header cells first, then every day's card for category 1, then category
+          2, ...). Native CSS grid auto-sizes each implicit row to its tallest cell, so
+          every card in a category's row across all days matches the size of the
+          largest one for free, with no manual height math. */}
+      <div className="grid gap-3 items-stretch" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
         {days.map((day) => {
           const dateStr = dateStrInZone(day, timeZone);
           const isToday = dateStr === todayStr;
           return (
-            <div key={dateStr} className="rounded-md border overflow-hidden">
-              <div className={`px-2 py-1.5 text-center border-b ${isToday ? "bg-primary/10" : "bg-muted/40"}`}>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{DAY_NAMES[day.getDay()]}</p>
-                <p className="text-sm font-bold">{day.getDate()}</p>
-              </div>
-              <div className="p-1.5 space-y-1.5">
-                {categories.map((cat) => {
-                  const card = cardFor(dateStr, cat.key);
-                  const preview = previewText(card?.rows);
-                  return (
-                    <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => setSelected({ date: dateStr, category: cat })}
-                      className="w-full text-left rounded px-2 py-1.5 text-white text-xs transition-[filter] hover:brightness-110"
-                      style={{ backgroundColor: cat.color }}
-                    >
-                      <div className="font-semibold truncate">{cat.label}</div>
-                      {preview && <div className="text-[10px] opacity-90 truncate">{preview}</div>}
-                    </button>
-                  );
-                })}
-                {categories.length === 0 && <p className="text-[11px] text-muted-foreground text-center py-2">—</p>}
-              </div>
+            <div key={dateStr} className={`rounded-md px-2 py-1.5 text-center ${isToday ? "bg-primary/10" : "bg-muted/40"}`}>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{DAY_NAMES[day.getDay()]}</p>
+              <p className="text-sm font-bold">{day.getDate()}</p>
             </div>
           );
         })}
+
+        {categories.flatMap((cat) =>
+          days.map((day) => {
+            const dateStr = dateStrInZone(day, timeZone);
+            const card = cardFor(dateStr, cat.key);
+            return (
+              <div
+                key={`${cat.key}-${dateStr}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelected({ date: dateStr, category: cat })}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected({ date: dateStr, category: cat }); } }}
+                className="flex flex-col rounded-md border overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
+              >
+                <div className="px-2 py-1 text-white text-xs font-semibold truncate shrink-0" style={{ backgroundColor: cat.color }}>
+                  {cat.label}
+                </div>
+                <div className="p-2 flex-1 min-h-0">
+                  <TrainingPlanReadOnlyView
+                    rows={card?.rows ?? []}
+                    notes={card?.notes ?? ""}
+                    color={cat.color}
+                    maxHeight={CARD_MAX_HEIGHT}
+                    emptyMessage="—"
+                  />
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {categories.length === 0 && (
+          <p className="col-span-full text-sm text-muted-foreground text-center py-6">—</p>
+        )}
       </div>
 
       {selected && (

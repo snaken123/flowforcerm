@@ -1,57 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, NotebookPen, Pencil } from "lucide-react";
+import { Loader2, Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/lib/use-toast";
 import { FIXED_COLS, MAX_ROWS, defaultGrid, type TrainingPlanCell } from "@/lib/training-plan";
 import { TrainingPlanCellSelect } from "./training-plan-cell-select";
+import { TrainingPlanReadOnlyView } from "./training-plan-read-only-view";
 
 type Category = { key: string; label: string; color: string; sortOrder: number };
-
-function cellClass(cell: TrainingPlanCell) {
-  return `${cell.bold ? "font-bold" : ""} ${cell.italic ? "italic" : ""}`;
-}
-
-// Read-only presentation: a clean, printed-card-like list rather than a grid of empty
-// bordered form fields -- rows nobody filled in are simply not shown, and each remaining
-// row reads as one line (quantity/label on the left, description on the right) instead
-// of two disconnected boxes.
-function TrainingPlanReadOnlyView({ rows, notes, color }: { rows: TrainingPlanCell[][]; notes: string; color: string }) {
-  const visibleRows = rows.filter((row) => row.some((cell) => cell.text.trim()));
-
-  if (visibleRows.length === 0 && !notes.trim()) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">Nothing programmed for this yet.</p>;
-  }
-
-  return (
-    <div className="space-y-4">
-      {visibleRows.length > 0 && (
-        <div className="rounded-lg border overflow-hidden" style={{ borderLeft: `3px solid ${color}` }}>
-          <div className="divide-y divide-border">
-            {visibleRows.map((row, i) => (
-              <div key={i} className="flex items-baseline gap-4 px-4 py-2.5 odd:bg-muted/30">
-                <span className={`w-20 shrink-0 text-right text-sm text-foreground/90 ${cellClass(row[0])}`}>{row[0].text}</span>
-                <span className={`flex-1 text-sm text-foreground ${cellClass(row[1])}`}>{row[1].text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {notes.trim() && (
-        <div className="flex gap-2.5 rounded-lg bg-muted/40 p-3.5">
-          <NotebookPen className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-0.5">Coach's Notes</p>
-            <p className="text-sm whitespace-pre-wrap">{notes}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function TrainingPlanCardModal({
   open,
