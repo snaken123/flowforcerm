@@ -17,9 +17,8 @@ export function getResend(): Resend {
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
-// Platform owner's inbox — gets notified of business-relevant events that need a human
-// (new sales leads, etc).
-export const NOTIFY_EMAIL = "snaken123@gmail.com";
+// Sales-lead inbox — gets notified of new marketing-site contact-form submissions.
+export const NOTIFY_EMAIL = "marketing@flowforcerm.com";
 
 // Platform owner's action-item inbox — for things that need the owner to go do something
 // manually in a third-party dashboard (e.g. approving an SMS sender name in Semaphore).
