@@ -14,13 +14,26 @@ const globalForTenantClients = globalThis as unknown as { tenantClients?: Map<st
 const tenantClients = globalForTenantClients.tenantClients ?? new Map<string, CacheEntry>();
 if (process.env.NODE_ENV !== "production") globalForTenantClients.tenantClients = tenantClients;
 
+// Without an explicit connection_limit, Prisma defaults to (num_cpus * 2 + 1), which on
+// Vercel's serverless functions resolves to a small, environment-dependent number (we've
+// seen it exhaust at "connection limit: 5" under moderate concurrent load on one tenant).
+// databaseUrl already points at Neon's PgBouncer-pooled endpoint, so per Prisma/Neon's own
+// serverless guidance we pin a small, predictable pool per tenant client here rather than
+// relying on that implicit guess, and give bursts more room before timing out loudly.
+function withPoolTuning(databaseUrl: string): string {
+  const url = new URL(databaseUrl);
+  if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "3");
+  if (!url.searchParams.has("pool_timeout")) url.searchParams.set("pool_timeout", "20");
+  return url.toString();
+}
+
 async function createClientForTenant(tenantId: string): Promise<PrismaClient> {
   const connectionInfo = await getTenantConnectionInfo(tenantId);
   if (!connectionInfo) {
     throw new Error(`No connection info found for tenant ${tenantId} — cannot construct a database client`);
   }
   return new PrismaClient({
-    datasources: { db: { url: connectionInfo.databaseUrl } },
+    datasources: { db: { url: withPoolTuning(connectionInfo.databaseUrl) } },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
