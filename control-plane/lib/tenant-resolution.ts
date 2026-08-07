@@ -9,7 +9,26 @@ export type ResolvedTenant = {
   logoUrl: string | null;
   primaryColor: string | null;
   timezone: string;
+  activeFlags: string[];
 };
+
+const RESOLVED_TENANT_SELECT = {
+  id: true,
+  subdomain: true,
+  status: true,
+  brandName: true,
+  logoUrl: true,
+  primaryColor: true,
+  timezone: true,
+  featureFlags: { select: { flagKey: true } },
+} as const;
+
+function toResolvedTenant<T extends { featureFlags: { flagKey: string }[] }>(
+  tenant: T
+): Omit<T, "featureFlags"> & { activeFlags: string[] } {
+  const { featureFlags, ...rest } = tenant;
+  return { ...rest, activeFlags: featureFlags.map((f) => f.flagKey) };
+}
 
 // Looked up by the internal /api/internal/resolve-tenant route (Node runtime — this
 // file touches the control-plane Prisma client, which can't run on the Edge runtime
@@ -18,17 +37,19 @@ export type ResolvedTenant = {
 export async function findTenantBySubdomain(subdomain: string): Promise<ResolvedTenant | null> {
   const tenant = await controlPlanePrisma.tenant.findUnique({
     where: { subdomain },
-    select: {
-      id: true,
-      subdomain: true,
-      status: true,
-      brandName: true,
-      logoUrl: true,
-      primaryColor: true,
-      timezone: true,
-    },
+    select: RESOLVED_TENANT_SELECT,
   });
-  return tenant;
+  return tenant ? toResolvedTenant(tenant) : null;
+}
+
+// Same shape, looked up by id — used by the superadmin flag-toggle route to rebuild the
+// cache entry immediately after a change, without waiting out the Redis TTL.
+export async function findTenantById(id: string): Promise<ResolvedTenant | null> {
+  const tenant = await controlPlanePrisma.tenant.findUnique({
+    where: { id },
+    select: RESOLVED_TENANT_SELECT,
+  });
+  return tenant ? toResolvedTenant(tenant) : null;
 }
 
 // Decrypted connection info for a specific tenant's own database — used by lib/db.ts's

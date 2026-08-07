@@ -9,6 +9,7 @@ type ResolvedTenant = {
   logoUrl: string | null;
   primaryColor: string | null;
   timezone: string;
+  activeFlags: string[];
 };
 
 const ROOT_DOMAIN_HOSTS = new Set([
@@ -128,6 +129,7 @@ export default async function middleware(req: NextRequest) {
   requestHeaders.set("x-tenant-subdomain", tenant.subdomain);
   requestHeaders.set("x-tenant-brand-name", tenant.brandName ?? "");
   requestHeaders.set("x-tenant-timezone", tenant.timezone);
+  requestHeaders.set("x-tenant-flags", tenant.activeFlags.join(","));
 
   if (needsTenantAuthCheck(pathname)) {
     const token = await getEdgeToken(req);

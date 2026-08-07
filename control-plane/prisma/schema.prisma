@@ -42,6 +42,7 @@ model Tenant {
   createdBySuperAdminId String?
 
   provisioningLogs ProvisioningLog[]
+  featureFlags     TenantFeatureFlag[]
 
   @@index([status])
 }
@@ -64,5 +65,29 @@ model ProvisioningLog {
   detail    String?  @db.Text
   createdAt DateTime @default(now())
 
+  @@index([tenantId])
+}
+
+// Fixed registry of known flags — created by a superadmin, not tenants themselves.
+model FeatureFlag {
+  key         String   @id
+  description String?
+  createdAt   DateTime @default(now())
+
+  tenants TenantFeatureFlag[]
+}
+
+// A row's mere existence means the flag is ON for that tenant — no `enabled` boolean,
+// so a new FeatureFlag needs zero backfill and defaults off for every existing tenant.
+// Toggling on = create the row, toggling off = delete it.
+model TenantFeatureFlag {
+  id        String      @id @default(cuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  flagKey   String
+  flag      FeatureFlag @relation(fields: [flagKey], references: [key])
+  createdAt DateTime    @default(now())
+
+  @@unique([tenantId, flagKey])
   @@index([tenantId])
 }

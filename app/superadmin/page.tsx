@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSuperAdminSession } from "@/control-plane/lib/superadmin-auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
 import { NewTenantForm } from "./new-tenant-form";
@@ -19,7 +20,15 @@ export default async function SuperAdminDashboard() {
             <h1 className="text-2xl font-bold uppercase tracking-widest">Tenants</h1>
             <p className="text-[#666] text-sm mt-1">Every gym running on FlowForceRM</p>
           </div>
-          <NewTenantForm />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/superadmin/flags"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Feature Flags
+            </Link>
+            <NewTenantForm />
+          </div>
         </div>
 
         {tenants.length === 0 ? (
