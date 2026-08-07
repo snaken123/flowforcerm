@@ -43,6 +43,7 @@ model Tenant {
 
   provisioningLogs ProvisioningLog[]
   featureFlags     TenantFeatureFlag[]
+  subscription     Subscription?
 
   @@index([status])
 }
@@ -90,4 +91,141 @@ model TenantFeatureFlag {
 
   @@unique([tenantId, flagKey])
   @@index([tenantId])
+}
+
+// ── Platform billing (Phase 9) ────────────────────────────────────────────────
+// Scaffolding only -- built without a live Xendit account to test against (see
+// control-plane/lib/xendit-api.ts and app/api/webhooks/xendit/route.ts). The data
+// model, promo codes, and webhook receiver work standalone; the parts that actually
+// call Xendit or act on its webhooks are inert until XENDIT_SECRET_KEY and
+// XENDIT_WEBHOOK_TOKEN are configured.
+
+enum SubscriptionStatus {
+  PENDING_FIRST_CHARGE
+  ACTIVE
+  PAST_DUE
+  SUSPENDED_PENDING
+  CANCELLED
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PromoCodeType {
+  PERCENT
+  FIXED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  VOID
+}
+
+// 1:1 with Tenant. Money fields are Int centavos (never Float) -- these are real
+// platform revenue records, unlike the gym-side Float fields used for member billing.
+model Subscription {
+  id               String             @id @default(cuid())
+  tenantId         String             @unique
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  baseRateCentavos Int
+  billingCycle     BillingCycle       @default(MONTHLY)
+  status           SubscriptionStatus @default(PENDING_FIRST_CHARGE)
+
+  xenditCustomerId String?
+  xenditPlanId     String?
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  // Snapshotted at the time the promo was applied -- editing/deactivating the
+  // PromoCode template later never retroactively changes an already-discounted tenant.
+  promoCodeId          String?
+  promoCode            PromoCode?     @relation(fields: [promoCodeId], references: [id])
+  discountSnapshotType PromoCodeType?
+  discountSnapshotValue Int?
+
+  // Optional per-tenant grace window on top of Xendit's own dunning retries, off by
+  // default. pendingSuspensionAt is set instead of suspending immediately when > 0.
+  suspensionGraceHours Int       @default(0)
+  pendingSuspensionAt  DateTime?
+
+  // A rate or promo change requires migrating to a *new* Xendit plan (amounts are
+  // effectively immutable there), not an in-place edit -- this makes a failure
+  // mid-migration visible/retryable instead of silently stuck.
+  migrationState String?
+
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  invoiceNumber  String       @unique
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+
+  baseCentavos     Int
+  discountCentavos Int @default(0)
+  vatCentavos      Int @default(0)
+  totalCentavos    Int
+
+  status            InvoiceStatus @default(PENDING)
+  xenditCycleId     String?
+  rawWebhookPayload Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subscriptionId])
+}
+
+// Atomic counter for sequential invoice numbers -- same pattern as the tenant-side
+// MemberNumberSequence.
+model InvoiceNumberSequence {
+  id      String @id @default("singleton")
+  lastVal Int    @default(0)
+}
+
+model PromoCode {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  type            PromoCodeType
+  value           Int // percent (0-100) if type=PERCENT, or centavos if type=FIXED
+  isActive        Boolean       @default(true)
+  maxRedemptions  Int?
+  redemptionCount Int           @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  createdAt       DateTime      @default(now())
+
+  subscriptions Subscription[]
+}
+
+// Idempotency + audit trail for inbound Xendit webhooks (Xendit retries delivery up to
+// 6 times on any non-2xx response, so double-processing must be a non-issue). Xendit's
+// webhook payload has no single dedicated delivery-id field -- xenditEventId is
+// constructed as `${event}:${data.id}` in the webhook route; revisit once real payloads
+// can be inspected against a sandbox account.
+model XenditWebhookEvent {
+  id            String   @id @default(cuid())
+  xenditEventId String   @unique
+  eventType     String
+  payload       Json
+  processedAt   DateTime @default(now())
+}
+
+// Small KV table, mirrors the tenant-side SystemSetting pattern. vatRegistered is a
+// switch the owner flips once actually BIR-registered -- VAT is never computed or shown
+// on invoices while it's false.
+model PlatformSetting {
+  key   String @id
+  value String
 }

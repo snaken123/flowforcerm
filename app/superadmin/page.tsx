@@ -22,6 +22,12 @@ export default async function SuperAdminDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/superadmin/billing"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Billing
+            </Link>
+            <Link
               href="/superadmin/flags"
               className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
             >
