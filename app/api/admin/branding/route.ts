@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
 import { isValidTimeZone } from "@/lib/time";
+import { sendSemaphoreSetupNotification } from "@/lib/email";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const previous = await prisma.tenantBranding.findFirst();
+
   const branding = await prisma.tenantBranding.upsert({
     where: { id: "singleton" },
     update: parsed.data,
@@ -60,6 +63,32 @@ export async function POST(req: NextRequest) {
         },
       })
       .catch((err) => console.error("[branding] failed to sync control-plane cache", err));
+  }
+
+  // Semaphore requires each SMS sender name to be pre-approved in its own dashboard, and
+  // the app has no way to verify/automate that — so whenever a gym sets or changes theirs,
+  // log it (so the request is never silently lost) and notify the platform owner directly.
+  if (tenantId && branding.smsSenderName && branding.smsSenderName !== previous?.smsSenderName) {
+    await controlPlanePrisma.provisioningLog
+      .create({
+        data: {
+          tenantId,
+          step: "sms_sender_name_changed",
+          status: "pending_manual_setup",
+          detail: branding.smsSenderName,
+        },
+      })
+      .catch((err) => console.error("[branding] failed to log sms sender change", err));
+
+    try {
+      await sendSemaphoreSetupNotification({
+        gymName: branding.gymName,
+        subdomain: headers().get("x-tenant-subdomain") ?? "",
+        senderName: branding.smsSenderName,
+      });
+    } catch (err) {
+      console.error("[branding] failed to send Semaphore setup notification", err);
+    }
   }
 
   return NextResponse.json({ branding });

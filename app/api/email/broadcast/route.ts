@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getResend } from "@/lib/email";
-
-const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
+import { getResend, resolveEmailFrom } from "@/lib/email";
 
 export async function GET() {
   const session = await getAuthSession();
@@ -44,12 +42,13 @@ export async function POST(req: NextRequest) {
     const recipients = members.flatMap((m) => m.user ? [{ name: m.firstName, email: m.user.email! }] : []).filter((r) => !!r.email && !r.email.endsWith("@flowforcerm.local"));
     if (recipients.length === 0) return NextResponse.json({ error: "No recipients found" }, { status: 400 });
 
+    const from = await resolveEmailFrom();
     const results = { sent: 0, failed: 0, error: "" };
     for (let i = 0; i < recipients.length; i += 50) {
       const batch = recipients.slice(i, i + 50);
       try {
         const sendResult = await getResend().batch.send(batch.map((r) => ({
-          from: FROM,
+          from,
           replyTo: "members@flowforcerm.com",
           to: r.email,
           subject,

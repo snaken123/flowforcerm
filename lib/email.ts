@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { prisma } from "@/lib/db";
+import { getTenantIdOrNull } from "@/lib/tenant-context";
 
 // Lazy singleton — constructed on first send, not at module load, so builds/routes
 // that merely import this file don't crash when RESEND_API_KEY isn't set yet.
@@ -14,6 +16,25 @@ export function getResend(): Resend {
 
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
+
+// Platform owner's inbox — gets notified of business-relevant events that need a human
+// (new leads, things that need manual setup in a third-party dashboard, etc).
+export const NOTIFY_EMAIL = "snaken123@gmail.com";
+
+// Resolves the display name emails should be sent from: the tenant's own TenantBranding.emailFromName
+// when this request is running in a resolved tenant context, falling back to the platform default
+// otherwise (platform-level sends, or a tenant that hasn't set a custom name).
+export async function resolveEmailFrom(): Promise<string> {
+  const tenantId = getTenantIdOrNull();
+  if (!tenantId) return FROM;
+  try {
+    const branding = await prisma.tenantBranding.findFirst();
+    if (branding?.emailFromName) return `${branding.emailFromName} <noreply@flowforcerm.com>`;
+  } catch (err) {
+    console.error("[email] failed to resolve tenant branding for FROM name", err);
+  }
+  return FROM;
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -35,7 +56,7 @@ export async function sendActivationEmail({
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const result = await getResend().emails.send({
-    from: FROM,
+    from: await resolveEmailFrom(),
     to,
     subject: "FlowForceRM — Activate Your Account",
     html: `
@@ -76,7 +97,7 @@ export async function sendActivationLinkEmail({
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const setupUrl = `${APP_URL}/reset-password?token=${token}`;
   const { error } = await getResend().emails.send({
-    from: FROM,
+    from: await resolveEmailFrom(),
     to,
     subject: "FlowForceRM — Set Up Your Account",
     html: `
@@ -109,7 +130,7 @@ export async function sendPasswordResetEmail({
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
   const { error } = await getResend().emails.send({
-    from: FROM,
+    from: await resolveEmailFrom(),
     to,
     subject: "FlowForceRM — Reset Your Password",
     html: `
@@ -169,6 +190,38 @@ export async function sendContactInquiryEmail({
   if (error) throw new Error(error.message);
 }
 
+// Semaphore requires each SMS sender name to be pre-approved in its own dashboard before
+// it can be used — the app has no API to do that itself, so this notifies the platform
+// owner with everything needed to go register it by hand, without visiting superadmin.
+export async function sendSemaphoreSetupNotification({
+  gymName,
+  subdomain,
+  senderName,
+}: {
+  gymName: string;
+  subdomain: string;
+  senderName: string;
+}) {
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: NOTIFY_EMAIL,
+    subject: `Action needed — approve SMS sender "${senderName}" in Semaphore`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
+        <h2 style="margin-bottom:16px">New SMS sender name needs Semaphore setup</h2>
+        <p style="color:#555">A gym has set a custom SMS sender name in their Settings. Semaphore requires each sender name to be registered and approved in its dashboard before messages sent with it will deliver.</p>
+        <div style="background:#f4f4f5;border-radius:8px;padding:20px 24px;margin:24px 0">
+          <p style="margin:4px 0;font-size:15px"><strong>Gym:</strong> ${escapeHtml(gymName)}</p>
+          <p style="margin:4px 0;font-size:15px"><strong>Subdomain:</strong> ${escapeHtml(subdomain)}.flowforcerm.com</p>
+          <p style="margin:4px 0;font-size:15px"><strong>Sender name to register:</strong> <code style="background:#e4e4e7;padding:2px 6px;border-radius:4px">${escapeHtml(senderName)}</code></p>
+        </div>
+        <p style="font-size:13px;color:#888">Until this is approved in Semaphore, SMS sent for this gym using this sender name may fail to deliver.</p>
+      </div>
+    `,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function sendWelcomeEmail({
   to,
   firstName,
@@ -180,7 +233,7 @@ export async function sendWelcomeEmail({
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
+    from: await resolveEmailFrom(),
     to,
     subject: "Welcome to FlowForceRM — Your Account is Ready",
     html: `

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
-import { sendContactInquiryEmail } from "@/lib/email";
+import { sendContactInquiryEmail, NOTIFY_EMAIL } from "@/lib/email";
 import { isRateLimited, getClientIp } from "@/lib/rate-limit";
-
-const NOTIFY_EMAIL = "snaken123@gmail.com";
 
 const contactSchema = z.object({
   name: z.string().min(1).max(100),
