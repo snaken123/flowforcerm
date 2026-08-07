@@ -30,7 +30,7 @@ function todayMidnight() {
 }
 
 type Category = { key: string; label: string; color: string; sortOrder: number };
-type Card = { date: string; categoryKey: string; rows: TrainingPlanCell[][] };
+type Card = { date: string; categoryKey: string; rows: TrainingPlanCell[][]; notes?: string };
 
 function previewText(rows?: TrainingPlanCell[][]) {
   if (!rows) return "";
@@ -240,6 +240,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
           date={selected.date}
           category={selected.category}
           initialRows={cardFor(selected.date, selected.category.key)?.rows}
+          initialNotes={cardFor(selected.date, selected.category.key)?.notes}
           canEdit={canEdit}
           onSaved={() => { refetchCards(); setSelected(null); }}
         />

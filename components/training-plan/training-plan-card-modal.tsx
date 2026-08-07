@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/lib/use-toast";
 import { FIXED_COLS, MAX_ROWS, defaultGrid, type TrainingPlanCell } from "@/lib/training-plan";
+import { TrainingPlanCellSelect } from "./training-plan-cell-select";
 
 type Category = { key: string; label: string; color: string; sortOrder: number };
 
@@ -16,6 +17,7 @@ export function TrainingPlanCardModal({
   date,
   category,
   initialRows,
+  initialNotes,
   canEdit,
   onSaved,
 }: {
@@ -24,33 +26,27 @@ export function TrainingPlanCardModal({
   date: string;
   category: Category;
   initialRows?: TrainingPlanCell[][];
+  initialNotes?: string;
   canEdit: boolean;
   onSaved: () => void;
 }) {
   const [rows, setRows] = useState<TrainingPlanCell[][]>(initialRows ?? defaultGrid());
+  const [notes, setNotes] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
-  }, [open, initialRows]);
+    if (open) {
+      setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
+      setNotes(initialNotes ?? "");
+    }
+  }, [open, initialRows, initialNotes]);
 
-  function updateCell(r: number, c: number, patch: Partial<TrainingPlanCell>) {
-    setRows((prev) => prev.map((row, ri) => (ri !== r ? row : row.map((cell, ci) => (ci !== c ? cell : { ...cell, ...patch })))));
+  function updateCell(r: number, c: number, cell: TrainingPlanCell) {
+    setRows((prev) => prev.map((row, ri) => (ri !== r ? row : row.map((cur, ci) => (ci !== c ? cur : cell)))));
   }
 
   function addRow() {
     setRows((prev) => (prev.length >= MAX_ROWS ? prev : [...prev, Array.from({ length: FIXED_COLS }, () => ({ text: "", bold: false, italic: false }))]));
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>, r: number, c: number) {
-    if (!e.ctrlKey && !e.metaKey) return;
-    if (e.key.toLowerCase() === "b") {
-      e.preventDefault();
-      updateCell(r, c, { bold: !rows[r][c].bold });
-    } else if (e.key.toLowerCase() === "i") {
-      e.preventDefault();
-      updateCell(r, c, { italic: !rows[r][c].italic });
-    }
   }
 
   async function handleSave() {
@@ -59,7 +55,7 @@ export function TrainingPlanCardModal({
       const res = await fetch("/api/training-plan", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, categoryKey: category.key, rows }),
+        body: JSON.stringify({ date, categoryKey: category.key, rows, notes }),
       });
       if (!res.ok) throw new Error();
       toast({ title: "Training plan saved" });
@@ -88,29 +84,16 @@ export function TrainingPlanCardModal({
         </DialogHeader>
 
         <div className="space-y-2">
-          {!canEdit && (
-            <p className="text-xs text-muted-foreground">Read-only.</p>
-          )}
+          {!canEdit && <p className="text-xs text-muted-foreground">Read-only.</p>}
           <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${FIXED_COLS}, minmax(0, 1fr))` }}>
             {rows.map((row, r) =>
               row.map((cell, c) => (
-                <div key={`${r}-${c}`}>
-                  {canEdit ? (
-                    <Textarea
-                      value={cell.text}
-                      onChange={(e) => updateCell(r, c, { text: e.target.value })}
-                      onKeyDown={(e) => handleKeyDown(e, r, c)}
-                      className={`min-h-[52px] text-sm resize-none ${cell.bold ? "font-bold" : ""} ${cell.italic ? "italic" : ""}`}
-                      placeholder="Ctrl+B bold, Ctrl+I italic"
-                    />
-                  ) : (
-                    <div
-                      className={`min-h-[52px] w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap ${cell.bold ? "font-bold" : ""} ${cell.italic ? "italic" : ""}`}
-                    >
-                      {cell.text}
-                    </div>
-                  )}
-                </div>
+                <TrainingPlanCellSelect
+                  key={`${r}-${c}`}
+                  cell={cell}
+                  onChange={(next) => updateCell(r, c, next)}
+                  canEdit={canEdit}
+                />
               ))
             )}
           </div>
@@ -124,6 +107,22 @@ export function TrainingPlanCardModal({
             </Button>
           </div>
         )}
+
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Coach's Notes</p>
+          {canEdit ? (
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[80px] text-sm"
+              placeholder="Notes for this card..."
+            />
+          ) : notes ? (
+            <div className="min-h-[80px] w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap">
+              {notes}
+            </div>
+          ) : null}
+        </div>
 
         {canEdit && (
           <DialogFooter>

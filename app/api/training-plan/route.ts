@@ -16,6 +16,7 @@ const bodySchema = z.object({
   date: z.string().regex(DATE_RE),
   categoryKey: z.enum(CATEGORY_KEYS as [string, ...string[]]),
   rows: z.array(z.array(cellSchema).length(FIXED_COLS)).min(3).max(MAX_ROWS),
+  notes: z.string().max(5000).optional().default(""),
 });
 
 export async function GET(req: NextRequest) {
@@ -53,19 +54,19 @@ export async function PUT(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
-  const { date, categoryKey, rows } = parsed.data;
+  const { date, categoryKey, rows, notes } = parsed.data;
 
   // Revert to the implicit default (no row) instead of persisting an all-empty grid --
   // keeps the table from accumulating rows for cards someone opened but never filled in.
-  if (isGridEmpty(rows as any)) {
+  if (isGridEmpty(rows as any) && !notes.trim()) {
     await prisma.trainingPlanCard.deleteMany({ where: { date, categoryKey } });
     return NextResponse.json({ card: null });
   }
 
   const card = await prisma.trainingPlanCard.upsert({
     where: { date_categoryKey: { date, categoryKey } },
-    update: { rows },
-    create: { date, categoryKey, rows },
+    update: { rows, notes },
+    create: { date, categoryKey, rows, notes },
   });
 
   return NextResponse.json({ card });

@@ -19,7 +19,7 @@ export const TRAINING_PLAN_CATEGORIES: TrainingPlanCategory[] = [
 export const CATEGORY_KEYS = TRAINING_PLAN_CATEGORIES.map((c) => c.key) as CategoryKey[];
 
 export const DEFAULT_ROWS = 3;
-export const FIXED_COLS = 4;
+export const FIXED_COLS = 2;
 export const MAX_ROWS = 50;
 
 export type TrainingPlanCell = { text: string; bold: boolean; italic: boolean };

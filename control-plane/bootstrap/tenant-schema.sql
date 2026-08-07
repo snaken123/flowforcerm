@@ -389,6 +389,7 @@ CREATE TABLE "TrainingPlanCard" (
     "date" TEXT NOT NULL,
     "categoryKey" TEXT NOT NULL,
     "rows" JSONB NOT NULL,
+    "notes" TEXT NOT NULL DEFAULT '',
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TrainingPlanCard_pkey" PRIMARY KEY ("id")

@@ -1,8 +1,7 @@
 ﻿import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { canEditTrainingPlan } from "@/lib/training-plan";
-import { ScheduleTabsClient } from "./schedule-tabs-client";
+import { ScheduleClient } from "./schedule-client";
 
 export const metadata = { title: "Schedule" };
 export const revalidate = 60;
@@ -65,17 +64,5 @@ export default async function SchedulePage() {
   const employeeTypes: string[] = (session.user as any).employeeTypes ?? [];
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
 
-  return (
-    <ScheduleTabsClient
-      schedules={schedulesWithClass}
-      classes={classes}
-      employees={employees}
-      isAdmin={role === "ADMIN"}
-      userRole={role}
-      bookingCountMap={bookingCountMap}
-      checkInCountMap={checkInCountMap}
-      coachServiceIds={isCoachOnly ? taughtServiceIds : []}
-      canEditTrainingPlan={canEditTrainingPlan(session)}
-    />
-  );
+  return <ScheduleClient schedules={schedulesWithClass} classes={classes} employees={employees} isAdmin={role === "ADMIN"} userRole={role} bookingCountMap={bookingCountMap} checkInCountMap={checkInCountMap} coachServiceIds={isCoachOnly ? taughtServiceIds : []} />;
 }

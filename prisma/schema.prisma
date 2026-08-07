@@ -504,7 +504,8 @@ model TrainingPlanCard {
   id          String   @id @default(cuid())
   date        String   // "YYYY-MM-DD" in tenant timezone
   categoryKey String   // "warmup" | "strength" | "metcon" | "accessory" | "coach_note"
-  rows        Json     // Cell[][]: fixed 4-wide rows of { text, bold, italic }
+  rows        Json     // Cell[][]: fixed-width rows of { text, bold, italic }
+  notes       String   @db.Text @default("") // freeform coach notes shown below the grid
   updatedAt   DateTime @updatedAt
 
   @@unique([date, categoryKey])

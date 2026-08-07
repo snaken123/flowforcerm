@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Users, UserCog, Dumbbell, CreditCard,
-  LayoutDashboard, Mail, BarChart2, Calendar, LogOut, Menu, X, GraduationCap, IdCard, Settings, ChevronDown, Globe, ClipboardList, Megaphone, ShoppingBag, ShieldCheck, Lock
+  LayoutDashboard, Mail, BarChart2, Calendar, LogOut, Menu, X, GraduationCap, IdCard, Settings, ChevronDown, Globe, ClipboardList, Megaphone, ShoppingBag, ShieldCheck, Lock, ListChecks
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
@@ -23,12 +23,12 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   roles: string[];
+  exact?: boolean; // skip prefix-matching for active-highlight (needed when another sibling's href starts with this one's)
 };
 
 const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "STAFF", "MEMBER"] },
   { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] },
-  { label: "Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"] },
   { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] },
   { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] },
   // Member-only
@@ -38,6 +38,11 @@ const mainNavItems: NavItem[] = [
   { label: "My Billing", href: "/member/billing", icon: CreditCard, roles: ["MEMBER"] },
   { label: "Security", href: "/member/security", icon: Lock, roles: ["MEMBER"] },
   { label: "Privacy & Data", href: "/member/privacy", icon: ShieldCheck, roles: ["MEMBER"] },
+];
+
+const scheduleNavItems: NavItem[] = [
+  { label: "Class Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"], exact: true },
+  { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
 ];
 
 const commsNavItems: NavItem[] = [
@@ -80,6 +85,10 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .catch(() => {});
   }, [role]);
 
+  const scheduleHrefs = scheduleNavItems.map((i) => i.href);
+  const scheduleActive = scheduleHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
+  const [scheduleOpen, setScheduleOpen] = useState(scheduleActive);
+
   const commsHrefs = commsNavItems.map((i) => i.href);
   const commsActive = commsHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
   const [commsOpen, setCommsOpen] = useState(commsActive);
@@ -88,15 +97,18 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const settingsActive = settingsHrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
 
-  const coachAllowedHrefs = ["/dashboard", "/admin/schedule"];
+  const coachAllowedHrefs = ["/dashboard"];
   const filteredMain = mainNavItems
     .filter((item) => item.roles.includes(role))
     .filter((item) => !isCoachOnly || coachAllowedHrefs.includes(item.href));
+  // Schedule stays visible for coach-only employees (they have full Training Plan access
+  // and still need Class Schedule) — unlike Comms/Settings, which are hidden for them.
+  const filteredSchedule = scheduleNavItems.filter((item) => item.roles.includes(role));
   const filteredComms = isCoachOnly ? [] : commsNavItems.filter((item) => item.roles.includes(role));
   const filteredSettings = isCoachOnly ? [] : settingsNavItems.filter((item) => item.roles.includes(role));
 
   const SubNavLink = ({ item }: { item: NavItem }) => {
-    const active = pathname === item.href || pathname.startsWith(item.href + "/");
+    const active = item.exact ? pathname === item.href : (pathname === item.href || pathname.startsWith(item.href + "/"));
     return (
       <Link
         href={item.href}
@@ -154,6 +166,25 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
           );
         })}
 
+
+        {/* Schedule section */}
+        {filteredSchedule.length > 0 && (
+          <div className="pt-2">
+            <button
+              onClick={() => setScheduleOpen((o) => !o)}
+              className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Schedule</span>
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", scheduleOpen && "rotate-180")} />
+            </button>
+            {scheduleOpen && (
+              <div className="mt-1 space-y-1 pl-3">
+                {filteredSchedule.map((item) => <SubNavLink key={item.href} item={item} />)}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Communications section */}
         {filteredComms.length > 0 && (
