@@ -209,7 +209,6 @@ export function MembersClient({
                     <span className="inline-flex items-center">Status<SortIcon col="status" /></span>
                   </th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Subscriptions</th>
-                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Email</th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("joinDate")}>
                     <span className="inline-flex items-center">Joined<SortIcon col="joinDate" /></span>
                   </th>
@@ -244,9 +243,20 @@ export function MembersClient({
                               </span>
                             )}
                           </div>
-                          {member.user?.email && !member.user.email.endsWith("@flowforcerm.local") && (
-                            <p className="text-xs text-muted-foreground">{member.user.email}</p>
-                          )}
+                          {member.user?.email && !member.user.email.endsWith("@flowforcerm.local") && (() => {
+                            const email = member.user.email;
+                            const isBadFormat = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                            const isBounced = bouncedSet.has(email.toLowerCase());
+                            const isBad = isBadFormat || isBounced;
+                            return (
+                              <p
+                                className={`text-xs ${isBad ? "text-red-500" : "text-muted-foreground"}`}
+                                title={isBounced ? "Bounced" : isBadFormat ? "Invalid format" : ""}
+                              >
+                                {email}
+                              </p>
+                            );
+                          })()}
                         </div>
                       </div>
                     </td>
@@ -289,21 +299,6 @@ export function MembersClient({
                           })
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      {(() => {
-                        const email = member.user?.email;
-                        const isLocal = !email || email.endsWith("@flowforcerm.local");
-                        if (isLocal) return <span className="text-muted-foreground text-xs">—</span>;
-                        const isBadFormat = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-                        const isBounced = bouncedSet.has(email.toLowerCase());
-                        const isBad = isBadFormat || isBounced;
-                        return (
-                          <span className={`text-xs ${isBad ? "text-red-500" : ""}`} title={isBounced ? "Bounced" : isBadFormat ? "Invalid format" : ""}>
-                            {email}
-                          </span>
-                        );
-                      })()}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
                       {formatDate(member.joinDate)}
@@ -360,7 +355,7 @@ export function MembersClient({
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                       No athletes found
                     </td>
                   </tr>
