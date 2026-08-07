@@ -229,3 +229,18 @@ model PlatformSetting {
   key   String @id
   value String
 }
+
+// ── Marketing site (Phase 10) ─────────────────────────────────────────────────
+
+// Contact-form submissions from the public flowforcerm.com marketing page. Always
+// persisted regardless of whether the notification email succeeds -- a real business
+// lead should never be lost just because RESEND_API_KEY isn't configured yet.
+model ContactInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  gymName   String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+}

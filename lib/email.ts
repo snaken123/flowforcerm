@@ -15,6 +15,15 @@ export function getResend(): Resend {
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function sendActivationEmail({
   to,
   firstName,
@@ -115,6 +124,45 @@ export async function sendPasswordResetEmail({
 
         <p style="font-size:13px;color:#888">This link expires in <strong>1 hour</strong>.</p>
         <p style="font-size:12px;color:#aaa;margin-top:24px">FlowForceRM · flowforcerm.com</p>
+      </div>
+    `,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// Notifies the platform owner of a new marketing-site contact-form submission. The
+// inquiry itself is always persisted to ContactInquiry regardless of whether this
+// succeeds -- see app/api/contact/route.ts -- so a down/unconfigured mail provider
+// never loses a real business lead, just delays the owner noticing it.
+export async function sendContactInquiryEmail({
+  to,
+  name,
+  gymName,
+  email,
+  phone,
+  message,
+}: {
+  to: string;
+  name: string;
+  gymName: string;
+  email: string;
+  phone?: string;
+  message: string;
+}) {
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to,
+    replyTo: email,
+    subject: `New FlowForceRM inquiry — ${gymName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
+        <h2 style="margin-bottom:16px">New inquiry from the marketing site</h2>
+        <p style="margin:4px 0;font-size:15px"><strong>Name:</strong> ${escapeHtml(name)}</p>
+        <p style="margin:4px 0;font-size:15px"><strong>Gym:</strong> ${escapeHtml(gymName)}</p>
+        <p style="margin:4px 0;font-size:15px"><strong>Email:</strong> ${escapeHtml(email)}</p>
+        ${phone ? `<p style="margin:4px 0;font-size:15px"><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ""}
+        <p style="margin:16px 0 4px 0;font-size:15px"><strong>Message:</strong></p>
+        <p style="color:#555;white-space:pre-wrap">${escapeHtml(message)}</p>
       </div>
     `,
   });
