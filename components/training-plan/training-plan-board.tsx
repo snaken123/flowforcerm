@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, LayoutGrid, Calendar, Pencil, Check, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, Calendar, Pencil, Check, X, ClipboardCopy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { dateStrInZone } from "@/lib/timezone-offset";
 import { toast } from "@/lib/use-toast";
-import { TrainingPlanCardModal } from "./training-plan-card-modal";
+import { TrainingPlanCardModal, type OtherDayCard } from "./training-plan-card-modal";
 import { TrainingPlanReadOnlyView } from "./training-plan-read-only-view";
-import type { TrainingPlanCell } from "@/lib/training-plan";
+import { DayCopyPicker } from "./day-copy-picker";
+import { defaultGrid, type TrainingPlanCell } from "@/lib/training-plan";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Caps how tall any one board card can render before it scrolls internally, so the
@@ -91,6 +92,67 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
   }
 
   const visibleDays = hideEmptyDays ? days.filter(dayHasContent) : days;
+
+  function dayLabel(day: Date) {
+    return `${DAY_NAMES[day.getDay()]} ${day.getDate()}`;
+  }
+
+  // Every other day in the current week/day view, for the "copy to other days" /
+  // "copy from" pickers -- deliberately built from the full `days` range rather than
+  // `visibleDays`, so hiding empty days from view doesn't also hide them as copy targets.
+  function otherDaysFor(currentDateStr: string, categoryKey: string): OtherDayCard[] {
+    return days
+      .map((d) => dateStrInZone(d, timeZone))
+      .filter((dateStr) => dateStr !== currentDateStr)
+      .map((dateStr) => {
+        const day = days.find((d) => dateStrInZone(d, timeZone) === dateStr)!;
+        const card = cardFor(dateStr, categoryKey);
+        return {
+          date: dateStr,
+          label: dayLabel(day),
+          hasContent: !!(card && (card.notes?.trim() || card.rows.some((row) => row.some((cell) => cell.text.trim())))),
+          rows: card?.rows ?? defaultGrid(),
+          notes: card?.notes ?? "",
+        };
+      });
+  }
+
+  // Same target-day list as otherDaysFor, but "has content" means the day has ANY
+  // category filled in (not one specific category) -- used by the whole-day copy picker.
+  function otherDaysForWholeDay(currentDateStr: string) {
+    return days
+      .filter((d) => dateStrInZone(d, timeZone) !== currentDateStr)
+      .map((d) => ({ dateStr: dateStrInZone(d, timeZone), label: dayLabel(d), hasContent: dayHasContent(d) }));
+  }
+
+  // Duplicates every non-empty category card from one day onto one or more other days,
+  // in one action -- for weeks that repeat the same full program on multiple days.
+  async function copyWholeDay(sourceDateStr: string, targetDates: string[]) {
+    const sourceCards = categories
+      .map((cat) => ({ cat, card: cardFor(sourceDateStr, cat.key) }))
+      .filter(({ card }) => card && (card.notes?.trim() || card.rows.some((row) => row.some((cell) => cell.text.trim()))));
+
+    if (sourceCards.length === 0) return;
+
+    try {
+      const results = await Promise.all(
+        targetDates.flatMap((targetDate) =>
+          sourceCards.map(({ cat, card }) =>
+            fetch("/api/training-plan", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ date: targetDate, categoryKey: cat.key, rows: card!.rows, notes: card!.notes ?? "" }),
+            })
+          )
+        )
+      );
+      if (results.some((r) => !r.ok)) throw new Error();
+      toast({ title: `Copied ${sourceCards.length} card${sourceCards.length === 1 ? "" : "s"} to ${targetDates.length} day${targetDates.length === 1 ? "" : "s"}` });
+      refetchCards();
+    } catch {
+      toast({ variant: "destructive", title: "Could not copy the whole day to all selected days" });
+    }
+  }
 
   function startRename(cat: Category) {
     setRenamingKey(cat.key);
@@ -228,10 +290,25 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
         {visibleDays.map((day) => {
           const dateStr = dateStrInZone(day, timeZone);
           const isToday = dateStr === todayStr;
+          const hasContent = dayHasContent(day);
           return (
-            <div key={dateStr} className={`rounded-md px-2 py-1.5 text-center ${isToday ? "bg-primary/10" : "bg-muted/40"}`}>
+            <div key={dateStr} className={`relative rounded-md px-2 py-1.5 text-center ${isToday ? "bg-primary/10" : "bg-muted/40"}`}>
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{DAY_NAMES[day.getDay()]}</p>
               <p className="text-sm font-bold">{day.getDate()}</p>
+              {canEdit && hasContent && (
+                <div className="absolute top-1 right-1">
+                  <DayCopyPicker
+                    align="right"
+                    days={otherDaysForWholeDay(dateStr)}
+                    onConfirm={(targets) => copyWholeDay(dateStr, targets)}
+                    trigger={
+                      <button type="button" title={`Copy ${dayLabel(day)} to other days`} className="text-muted-foreground hover:text-foreground p-0.5">
+                        <ClipboardCopy className="h-3 w-3" />
+                      </button>
+                    }
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -283,6 +360,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
           initialNotes={cardFor(selected.date, selected.category.key)?.notes}
           canEdit={canEdit}
           onSaved={() => { refetchCards(); setSelected(null); }}
+          otherDays={otherDaysFor(selected.date, selected.category.key)}
         />
       )}
     </div>
