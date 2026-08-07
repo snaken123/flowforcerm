@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, NotebookPen } from "lucide-react";
+import { Loader2, Plus, NotebookPen, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -75,13 +75,23 @@ export function TrainingPlanCardModal({
   const [rows, setRows] = useState<TrainingPlanCell[][]>(initialRows ?? defaultGrid());
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
+  // Admin/coach always land on the read-only view first, same as clicking any other
+  // detail card in this app -- editing is an explicit choice, not the default.
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   useEffect(() => {
     if (open) {
       setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
       setNotes(initialNotes ?? "");
+      setMode("view");
     }
   }, [open, initialRows, initialNotes]);
+
+  function cancelEdit() {
+    setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
+    setNotes(initialNotes ?? "");
+    setMode("view");
+  }
 
   function updateCell(r: number, c: number, cell: TrainingPlanCell) {
     setRows((prev) => prev.map((row, ri) => (ri !== r ? row : row.map((cur, ci) => (ci !== c ? cur : cell)))));
@@ -125,7 +135,7 @@ export function TrainingPlanCardModal({
           </DialogTitle>
         </DialogHeader>
 
-        {canEdit ? (
+        {canEdit && mode === "edit" ? (
           <>
             <div className="space-y-2">
               <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${FIXED_COLS}, minmax(0, 1fr))` }}>
@@ -165,13 +175,22 @@ export function TrainingPlanCardModal({
 
         {canEdit && (
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
-            </Button>
+            {mode === "edit" ? (
+              <>
+                <Button type="button" variant="outline" onClick={cancelEdit}>
+                  Cancel
+                </Button>
+                <Button type="button" onClick={handleSave} disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save
+                </Button>
+              </>
+            ) : (
+              <Button type="button" onClick={() => setMode("edit")}>
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Edit
+              </Button>
+            )}
           </DialogFooter>
         )}
       </DialogContent>
