@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LocationSelect } from "@/components/location-select";
 import { DAY_NAMES_FULL, DAY_NAMES } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
@@ -1257,13 +1258,11 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Location</Label>
-                <select value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">Select...</option>
-                  <option value="Main Mats">Main Mats</option>
-                  <option value="Boxing Area">Boxing Area</option>
-                  <option value="Weights Area">Weights Area</option>
-                  <option value="Mezzanine">Mezzanine</option>
-                </select>
+                <LocationSelect
+                  value={form.location}
+                  onChange={(v) => setForm((f) => ({ ...f, location: v }))}
+                  canManage={isAdmin}
+                />
               </div>
               <div className="space-y-1"><Label>Max Members</Label><Input type="number" placeholder="e.g. 20" value={form.maxCapacity} onChange={(e) => setForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
             </div>
@@ -1698,13 +1697,11 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Location</Label>
-                <select value={editForm.location} onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">Select...</option>
-                  <option value="Main Mats">Main Mats</option>
-                  <option value="Boxing Area">Boxing Area</option>
-                  <option value="Weights Area">Weights Area</option>
-                  <option value="Mezzanine">Mezzanine</option>
-                </select>
+                <LocationSelect
+                  value={editForm.location}
+                  onChange={(v) => setEditForm((f) => ({ ...f, location: v }))}
+                  canManage={isAdmin}
+                />
               </div>
               <div className="space-y-1"><Label>Max Members</Label><Input type="number" placeholder="e.g. 20" value={editForm.maxCapacity} onChange={(e) => setEditForm((f) => ({ ...f, maxCapacity: e.target.value }))} /></div>
             </div>

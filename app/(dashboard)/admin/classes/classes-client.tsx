@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { LocationSelect } from "@/components/location-select";
 import { toast } from "@/lib/use-toast";
 
 const sessionSchema = z.object({
@@ -131,16 +132,10 @@ function SessionForm({
 
       <div className="space-y-1">
         <Label>Location</Label>
-        <select
-          {...form.register("location")}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="">Select location...</option>
-          <option value="Main Mats">Main Mats</option>
-          <option value="Boxing Area">Boxing Area</option>
-          <option value="Weights Area">Weights Area</option>
-          <option value="Mezzanine">Mezzanine</option>
-        </select>
+        <LocationSelect
+          value={form.watch("location") ?? ""}
+          onChange={(v) => form.setValue("location", v)}
+        />
       </div>
 
       <div className="space-y-2">
