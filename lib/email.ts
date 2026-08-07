@@ -18,8 +18,12 @@ const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
 
 // Platform owner's inbox — gets notified of business-relevant events that need a human
-// (new leads, things that need manual setup in a third-party dashboard, etc).
+// (new sales leads, etc).
 export const NOTIFY_EMAIL = "snaken123@gmail.com";
+
+// Platform owner's action-item inbox — for things that need the owner to go do something
+// manually in a third-party dashboard (e.g. approving an SMS sender name in Semaphore).
+export const TODO_EMAIL = "ToDo-List@flowforcerm.com";
 
 // Resolves the display name emails should be sent from: the tenant's own TenantBranding.emailFromName
 // when this request is running in a resolved tenant context, falling back to the platform default
@@ -204,7 +208,7 @@ export async function sendSemaphoreSetupNotification({
 }) {
   const { error } = await getResend().emails.send({
     from: FROM,
-    to: NOTIFY_EMAIL,
+    to: TODO_EMAIL,
     subject: `Action needed — approve SMS sender "${senderName}" in Semaphore`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
