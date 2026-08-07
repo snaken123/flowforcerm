@@ -52,6 +52,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
   const [selected, setSelected] = useState<{ date: string; category: Category } | null>(null);
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [hideEmptyDays, setHideEmptyDays] = useState(false);
 
   const days = viewMode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [dayView];
   const startStr = dateStrInZone(days[0], timeZone);
@@ -79,6 +80,17 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
   function cardFor(dateStr: string, categoryKey: string) {
     return cards.find((c) => c.date === dateStr && c.categoryKey === categoryKey);
   }
+
+  function dayHasContent(day: Date) {
+    const dateStr = dateStrInZone(day, timeZone);
+    return categories.some((cat) => {
+      const card = cardFor(dateStr, cat.key);
+      if (!card) return false;
+      return card.notes?.trim() || card.rows.some((row) => row.some((cell) => cell.text.trim()));
+    });
+  }
+
+  const visibleDays = hideEmptyDays ? days.filter(dayHasContent) : days;
 
   function startRename(cat: Category) {
     setRenamingKey(cat.key);
@@ -190,6 +202,15 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
               <span className="hidden sm:inline">Day</span>
             </button>
           </div>
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={hideEmptyDays}
+              onChange={(e) => setHideEmptyDays(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+            />
+            Hide empty days
+          </label>
         </div>
       </div>
 
@@ -198,8 +219,13 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
           2, ...). Native CSS grid auto-sizes each implicit row to its tallest cell, so
           every card in a category's row across all days matches the size of the
           largest one for free, with no manual height math. */}
-      <div className="grid gap-3 items-stretch" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
-        {days.map((day) => {
+      {visibleDays.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-10">
+          No days with content in this range. <button type="button" className="underline" onClick={() => setHideEmptyDays(false)}>Show all days</button>
+        </p>
+      ) : (
+      <div className="grid gap-3 items-stretch" style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}>
+        {visibleDays.map((day) => {
           const dateStr = dateStrInZone(day, timeZone);
           const isToday = dateStr === todayStr;
           return (
@@ -211,7 +237,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
         })}
 
         {categories.flatMap((cat) =>
-          days.map((day) => {
+          visibleDays.map((day) => {
             const dateStr = dateStrInZone(day, timeZone);
             const card = cardFor(dateStr, cat.key);
             return (
@@ -226,13 +252,14 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
                 <div className="px-2 py-1 text-white text-xs font-semibold truncate shrink-0" style={{ backgroundColor: cat.color }}>
                   {cat.label}
                 </div>
-                <div className="p-2 flex-1 min-h-0">
+                <div className="p-1.5 flex-1 min-h-0">
                   <TrainingPlanReadOnlyView
                     rows={card?.rows ?? []}
                     notes={card?.notes ?? ""}
                     color={cat.color}
                     maxHeight={CARD_MAX_HEIGHT}
                     emptyMessage="—"
+                    compact
                   />
                 </div>
               </div>
@@ -244,6 +271,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
           <p className="col-span-full text-sm text-muted-foreground text-center py-6">—</p>
         )}
       </div>
+      )}
 
       {selected && (
         <TrainingPlanCardModal
