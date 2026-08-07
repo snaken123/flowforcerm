@@ -36,6 +36,19 @@ export function isGridEmpty(rows: TrainingPlanCell[][]): boolean {
   return rows.every((row) => row.every((cell) => !cell.text.trim() && !cell.bold && !cell.italic));
 }
 
+// Pads/truncates every row to exactly FIXED_COLS cells. Needed because FIXED_COLS was
+// changed from 4 to 2 after some cards were already saved with 4-wide rows -- applied on
+// load (so the edit grid renders correctly and old rows don't submit a mismatched shape)
+// and again server-side on save (so a stale client, or any row shape drift from a future
+// FIXED_COLS change, self-heals instead of failing validation).
+export function normalizeGrid(rows: TrainingPlanCell[][]): TrainingPlanCell[][] {
+  return rows.map((row) => {
+    if (row.length === FIXED_COLS) return row;
+    if (row.length > FIXED_COLS) return row.slice(0, FIXED_COLS);
+    return [...row, ...Array.from({ length: FIXED_COLS - row.length }, emptyCell)];
+  });
+}
+
 // role===ADMIN, or role===STAFF with the "COACH" employeeTypes tag, gets full edit
 // access to the Training Plan; everyone else (plain STAFF, MEMBER) is read-only. Mirrors
 // the isCoachOnly precedent at app/(dashboard)/admin/schedule/page.tsx:63-67, which

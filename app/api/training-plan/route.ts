@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
-import { CATEGORY_KEYS, FIXED_COLS, MAX_ROWS, canEditTrainingPlan, isGridEmpty } from "@/lib/training-plan";
+import { CATEGORY_KEYS, MAX_ROWS, canEditTrainingPlan, isGridEmpty, normalizeGrid } from "@/lib/training-plan";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -15,7 +15,10 @@ const cellSchema = z.object({
 const bodySchema = z.object({
   date: z.string().regex(DATE_RE),
   categoryKey: z.enum(CATEGORY_KEYS as [string, ...string[]]),
-  rows: z.array(z.array(cellSchema).length(FIXED_COLS)).min(3).max(MAX_ROWS),
+  // Row width isn't enforced here -- normalizeGrid() pads/truncates to FIXED_COLS below.
+  // Keeps saves from breaking if FIXED_COLS ever changes again while older cards still
+  // have rows saved at a previous width.
+  rows: z.array(z.array(cellSchema).min(1)).min(3).max(MAX_ROWS),
   notes: z.string().max(5000).optional().default(""),
 });
 
@@ -54,11 +57,12 @@ export async function PUT(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
-  const { date, categoryKey, rows, notes } = parsed.data;
+  const { date, categoryKey, notes } = parsed.data;
+  const rows = normalizeGrid(parsed.data.rows as any);
 
   // Revert to the implicit default (no row) instead of persisting an all-empty grid --
   // keeps the table from accumulating rows for cards someone opened but never filled in.
-  if (isGridEmpty(rows as any) && !notes.trim()) {
+  if (isGridEmpty(rows) && !notes.trim()) {
     await prisma.trainingPlanCard.deleteMany({ where: { date, categoryKey } });
     return NextResponse.json({ card: null });
   }

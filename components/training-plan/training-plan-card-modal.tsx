@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/lib/use-toast";
-import { FIXED_COLS, MAX_ROWS, defaultGrid, type TrainingPlanCell } from "@/lib/training-plan";
+import { FIXED_COLS, MAX_ROWS, defaultGrid, normalizeGrid, type TrainingPlanCell } from "@/lib/training-plan";
 import { TrainingPlanCellSelect } from "./training-plan-cell-select";
 import { TrainingPlanReadOnlyView } from "./training-plan-read-only-view";
 
@@ -31,7 +31,7 @@ export function TrainingPlanCardModal({
   canEdit: boolean;
   onSaved: () => void;
 }) {
-  const [rows, setRows] = useState<TrainingPlanCell[][]>(initialRows ?? defaultGrid());
+  const [rows, setRows] = useState<TrainingPlanCell[][]>(normalizeGrid(initialRows ?? defaultGrid()));
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
   // Admin/coach always land on the read-only view first, same as clicking any other
@@ -40,14 +40,16 @@ export function TrainingPlanCardModal({
 
   useEffect(() => {
     if (open) {
-      setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
+      // normalizeGrid pads/truncates rows saved under a previous FIXED_COLS width (this
+      // app shrank it from 4 columns to 2) so old cards render and re-save correctly.
+      setRows(normalizeGrid(initialRows && initialRows.length > 0 ? initialRows : defaultGrid()));
       setNotes(initialNotes ?? "");
       setMode("view");
     }
   }, [open, initialRows, initialNotes]);
 
   function cancelEdit() {
-    setRows(initialRows && initialRows.length > 0 ? initialRows : defaultGrid());
+    setRows(normalizeGrid(initialRows && initialRows.length > 0 ? initialRows : defaultGrid()));
     setNotes(initialNotes ?? "");
     setMode("view");
   }

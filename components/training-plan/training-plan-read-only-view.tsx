@@ -1,5 +1,5 @@
 import { NotebookPen } from "lucide-react";
-import type { TrainingPlanCell } from "@/lib/training-plan";
+import { emptyCell, type TrainingPlanCell } from "@/lib/training-plan";
 
 function cellClass(cell: TrainingPlanCell) {
   return `${cell.bold ? "font-bold" : ""} ${cell.italic ? "italic" : ""}`;
@@ -46,12 +46,16 @@ export function TrainingPlanReadOnlyView({
       {visibleRows.length > 0 && (
         <div className="rounded-lg border overflow-hidden" style={{ borderLeft: `3px solid ${color}` }}>
           <div className="divide-y divide-border">
-            {visibleRows.map((row, i) => (
-              <div key={i} className={`flex items-baseline ${rowGap} ${rowPad} odd:bg-muted/30`}>
-                <span className={`${labelWidth} shrink-0 break-words text-right ${textSize} text-foreground/90 ${cellClass(row[0])}`}>{row[0].text}</span>
-                <span className={`flex-1 min-w-0 break-words ${textSize} text-foreground ${cellClass(row[1])}`}>{row[1].text}</span>
-              </div>
-            ))}
+            {visibleRows.map((row, i) => {
+              const c0 = row[0] ?? emptyCell();
+              const c1 = row[1] ?? emptyCell();
+              return (
+                <div key={i} className={`flex items-baseline ${rowGap} ${rowPad} odd:bg-muted/30`}>
+                  <span className={`${labelWidth} shrink-0 break-words text-right ${textSize} text-foreground/90 ${cellClass(c0)}`}>{c0.text}</span>
+                  <span className={`flex-1 min-w-0 break-words ${textSize} text-foreground ${cellClass(c1)}`}>{c1.text}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
