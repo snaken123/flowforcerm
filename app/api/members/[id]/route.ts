@@ -218,14 +218,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   });
 
   // Delete all related records before deleting member
-  await prisma.$transaction([
-    prisma.payment.deleteMany({ where: { memberId } }),
-    prisma.checkIn.deleteMany({ where: { memberId } }),
-    prisma.rankRecord.deleteMany({ where: { memberId } }),
-    prisma.booking.deleteMany({ where: { memberId } }),
-    prisma.subscription.deleteMany({ where: { memberId } }),
-    prisma.member.delete({ where: { id: memberId } }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.deleteMany({ where: { memberId } });
+    await tx.checkIn.deleteMany({ where: { memberId } });
+    await tx.rankRecord.deleteMany({ where: { memberId } });
+    await tx.booking.deleteMany({ where: { memberId } });
+    await tx.subscription.deleteMany({ where: { memberId } });
+    await tx.member.delete({ where: { id: memberId } });
+  });
 
   await logAudit({
     userId: (session.user as any).id,

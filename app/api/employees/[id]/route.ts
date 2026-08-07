@@ -49,8 +49,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await prisma.user.delete({ where: { id: emailConflict.id } });
   }
 
-  const [updatedEmp] = await prisma.$transaction([
-    prisma.employee.update({
+  const updatedEmp = await prisma.$transaction(async (tx) => {
+    const emp = await tx.employee.update({
       where: { id: params.id },
       data: {
         firstName: parsed.data.firstName,
@@ -64,16 +64,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         belt: parsed.data.belt || null,
         certifications: parsed.data.certifications || null,
       },
-    }),
-    prisma.user.update({
+    });
+    await tx.user.update({
       where: { id: employee.userId! },
       data: {
         email: parsed.data.email,
         name: `${parsed.data.firstName} ${parsed.data.lastName}`,
         role: parsed.data.role,
       },
-    }),
-  ]);
+    });
+    return emp;
+  });
 
   // Update taught services
   if (parsed.data.taughtServiceIds !== undefined) {
