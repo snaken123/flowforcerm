@@ -46,13 +46,12 @@ const commsNavItems: NavItem[] = [
 ];
 
 const settingsNavItems: NavItem[] = [
-  { label: "Classes", href: "/admin/classes", icon: GraduationCap, roles: ["ADMIN"] },
-  { label: "Memberships", href: "/admin/services", icon: Dumbbell, roles: ["ADMIN"] },
   { label: "Employees", href: "/admin/employees", icon: UserCog, roles: ["ADMIN"] },
-  { label: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard, roles: ["ADMIN"] },
+  { label: "Memberships", href: "/admin/services", icon: Dumbbell, roles: ["ADMIN"] },
+  { label: "Classes", href: "/admin/classes", icon: GraduationCap, roles: ["ADMIN"] },
   { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"] },
-  { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
   { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
+  { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
 ];
 
 export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | null; logoUrl?: string | null; slogan?: string | null }) {
