@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
-import { manilaDateStr } from "@/lib/time";
+import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 import { isValidKioskDevice } from "@/lib/kiosk-auth";
 import { z } from "zod";
 
@@ -40,8 +40,7 @@ export async function POST(req: NextRequest) {
   // Same-day duplicate guard (Manila timezone) — warn staff, allow override with force: true
   if (!parsed.data.force) {
     const todayStr = manilaDateStr();
-    const dayStart = new Date(`${todayStr}T00:00:00+08:00`);
-    const dayEnd = new Date(`${todayStr}T23:59:59.999+08:00`);
+    const { start: dayStart, end: dayEnd } = manilaDayBoundaries(todayStr);
     const existing = await prisma.checkIn.findFirst({
       where: { memberId: parsed.data.memberId, checkedInAt: { gte: dayStart, lte: dayEnd } },
       orderBy: { checkedInAt: "desc" },
@@ -114,8 +113,7 @@ export async function GET(req: NextRequest) {
     where.scheduleId = scheduleId;
     // Use the provided date (Manila YYYY-MM-DD), or fall back to today in Manila (UTC+8)
     const str = dateParam ?? manilaDateStr();
-    const dayStart = new Date(`${str}T00:00:00+08:00`);
-    const dayEnd = new Date(`${str}T23:59:59.999+08:00`);
+    const { start: dayStart, end: dayEnd } = manilaDayBoundaries(str);
     where.checkedInAt = { gte: dayStart, lte: dayEnd };
   }
 

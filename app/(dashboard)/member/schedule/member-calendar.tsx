@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin, User, Loader2, CheckSquare, Square, 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -88,6 +89,7 @@ export function MemberCalendar({
   existingBookings: { id: string; sessionId: string; scheduleId: string | null; status: string }[];
 }) {
   const router = useRouter();
+  const timeZone = useTenantTimezone();
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const [dayView, setDayView] = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
@@ -120,15 +122,16 @@ export function MemberCalendar({
   }
 
   function isClassExpired(item: any, cellDate: Date): boolean {
-    const now = new Date();
     const cell = new Date(cellDate); cell.setHours(0,0,0,0);
     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
     if (cell < todayMidnight) return true; // past day
     if (cell.getTime() !== todayMidnight.getTime()) return false; // future day — not expired
-    // Same day: check if end time has passed
+    // Same day: check if end time has passed (tenant-local time)
     const [endH, endM] = item.endTime.split(":").map(Number);
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    return nowMinutes > endH * 60 + endM;
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+    const nowH = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
+    const nowM = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+    return nowH * 60 + nowM > endH * 60 + endM;
   }
 
   async function handleBook() {

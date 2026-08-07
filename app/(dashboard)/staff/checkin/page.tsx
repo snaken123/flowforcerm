@@ -10,8 +10,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, getInitials, timeAgo } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 export default function CheckInPage() {
+  const timeZone = useTenantTimezone();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -182,7 +184,7 @@ export default function CheckInPage() {
                     hour: "numeric",
                     minute: "2-digit",
                     hour12: true,
-                    timeZone: "Asia/Manila",
+                    timeZone,
                   })
                 : "—"}
             </span>

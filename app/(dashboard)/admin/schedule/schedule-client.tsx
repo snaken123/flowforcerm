@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DAY_NAMES_FULL, DAY_NAMES } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 function getWeekStart(date: Date) {
   const d = new Date(date);
@@ -244,6 +245,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
     "eWallet": ["GCash", "Maya"],
   };
   const router = useRouter();
+  const timeZone = useTenantTimezone();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -331,11 +333,17 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   const weekDates = DAYS.map((d) => addDays(weekStart, d));
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Current time in Manila (UTC+8) expressed as total minutes since midnight
+  // Current time in the tenant's timezone, expressed as total minutes since midnight
   const nowManilaMinutes = (() => {
-    const now = new Date();
-    const manila = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-    return manila.getHours() * 60 + manila.getMinutes();
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
+    const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+    return h * 60 + m;
   })();
 
   // Week label: "Jun 29 – Jul 5, 2026"
@@ -396,7 +404,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
     setBookingsLoading(true);
     Promise.all([
       fetch(`/api/bookings?scheduleId=${item.id}${date ? `&date=${date.toLocaleDateString("en-CA")}` : ""}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/checkins?scheduleId=${item.id}${date ? `&date=${date.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" })}` : ""}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/checkins?scheduleId=${item.id}${date ? `&date=${date.toLocaleDateString("en-CA", { timeZone })}` : ""}`).then((r) => r.ok ? r.json() : []),
     ])
       .then(([bookingData, checkInData]) => {
         setBookings(bookingData);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getResend } from "@/lib/email";
+import { manilaDayBoundaries } from "@/lib/time";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -79,8 +80,7 @@ export async function POST(req: NextRequest) {
       p.name.toLowerCase().includes("free") || p.name.toLowerCase().includes("trial")
     );
 
-    const classDate = new Date(sel.date + "T00:00:00+08:00");
-    const endOfDay = new Date(sel.date + "T23:59:59+08:00");
+    const { start: classDate, end: endOfDay } = manilaDayBoundaries(sel.date);
 
     const sub = await prisma.subscription.create({
       data: {

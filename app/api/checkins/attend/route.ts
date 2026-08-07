@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { isValidKioskDevice } from "@/lib/kiosk-auth";
+import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 
 // POST /api/checkins/attend
 // Body: { memberId, classIds: string[], scheduleId?: string, scheduledDate?: string }
@@ -39,9 +40,8 @@ export async function POST(req: NextRequest) {
   const scheduledDate = scheduledDateStr ? new Date(scheduledDateStr + "T00:00:00Z") : null;
 
   // Duplicate check-in guard — prevent double-attending the same day
-  const manilaToday = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-  const dayStart = new Date(`${manilaToday}T00:00:00+08:00`);
-  const dayEnd = new Date(`${manilaToday}T23:59:59.999+08:00`);
+  const manilaToday = manilaDateStr();
+  const { start: dayStart, end: dayEnd } = manilaDayBoundaries(manilaToday);
 
   if (scheduleId) {
     const alreadyCheckedIn = await prisma.checkIn.findFirst({

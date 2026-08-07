@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatDate, formatCurrency, timeAgo, getInitials } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
+import { getUtcOffsetString } from "@/lib/timezone-offset";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -25,6 +27,7 @@ const SUB_STATUS_COLORS: Record<string, any> = {
 
 export function MemberDetailClient({ member, services, isAdmin, isStaff }: { member: any; services: any[]; isAdmin: boolean; isStaff?: boolean }) {
   const router = useRouter();
+  const timeZone = useTenantTimezone();
   const [status, setStatus] = useState(member.status);
   const [saving, setSaving] = useState(false);
 
@@ -41,10 +44,10 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
     email: member.user?.email ?? "",
     gender: member.gender ?? "",
     phone: member.phone ?? "",
-    dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
+    dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone }) : "",
     address: member.address ?? "",
-    joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
-    activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
+    joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone }) : "",
+    activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone }) : "",
     source: member.source ?? "",
   });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -349,7 +352,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
   }
 
   function openAddRank(art: string) {
-    setRankForm({ martialArt: art, rank: "", stripes: "", awardedAt: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }), awardedBy: "" });
+    setRankForm({ martialArt: art, rank: "", stripes: "", awardedAt: new Date().toLocaleDateString("en-CA", { timeZone }), awardedBy: "" });
     setRankDialog({ mode: "add", art });
   }
 
@@ -358,7 +361,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
       martialArt: record.martialArt,
       rank: record.rank,
       stripes: record.stripes ?? "",
-      awardedAt: new Date(record.awardedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }),
+      awardedAt: new Date(record.awardedAt).toLocaleDateString("en-CA", { timeZone }),
       awardedBy: record.awardedBy ?? "",
     });
     setRankDialog({ mode: "edit", record });
@@ -600,7 +603,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
 
   // Log payment dialog
   const [showLogPayment, setShowLogPayment] = useState(false);
-  const [logPaymentForm, setLogPaymentForm] = useState({ subscriptionId: "", amount: "", method: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }), notes: "" });
+  const [logPaymentForm, setLogPaymentForm] = useState({ subscriptionId: "", amount: "", method: "", date: new Date().toLocaleDateString("en-CA", { timeZone }), notes: "" });
   const [loggingPayment, setLoggingPayment] = useState(false);
 
   async function logPayment() {
@@ -622,7 +625,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
       if (!res.ok) throw new Error();
       toast({ title: "Payment logged" });
       setShowLogPayment(false);
-      setLogPaymentForm({ subscriptionId: "", amount: "", method: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }), notes: "" });
+      setLogPaymentForm({ subscriptionId: "", amount: "", method: "", date: new Date().toLocaleDateString("en-CA", { timeZone }), notes: "" });
       router.refresh();
     } catch {
       toast({ variant: "destructive", title: "Could not log payment" });
@@ -727,10 +730,11 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
     setAssigning(true);
     try {
       // Calculate end date from package validDays
-      const startDateStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-      const startDate = new Date(startDateStr + "T00:00:00+08:00");
+      const startDateStr = new Date().toLocaleDateString("en-CA", { timeZone });
+      const startOffset = getUtcOffsetString(new Date(`${startDateStr}T12:00:00Z`), timeZone);
+      const startDate = new Date(startDateStr + "T00:00:00" + startOffset);
       const endDate = selectedPackage
-        ? new Date(new Date(startDateStr + "T00:00:00+08:00").getTime() + selectedPackage.validDays * 86400000)
+        ? new Date(startDate.getTime() + selectedPackage.validDays * 86400000)
         : undefined;
 
       const res = await fetch("/api/subscriptions", {
@@ -742,7 +746,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           packageId: selectedPackageId,
           price: finalPrice,
           startDate: startDateStr,
-          endDate: endDate ? endDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : undefined,
+          endDate: endDate ? endDate.toLocaleDateString("en-CA", { timeZone }) : undefined,
           sessionsTotal: selectedPackage?.sessions ?? null,
           paymentMethod: paymentSubMode.length ? `${paymentMode} - ${paymentSubMode.join(" & ")}` : paymentMode || undefined,
           ...(specialPriceNote ? { notes: specialPriceNote } : {}),
@@ -850,10 +854,10 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                   email: member.user?.email ?? "",
                   gender: member.gender ?? "",
                   phone: member.phone ?? "",
-                  dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
+                  dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone }) : "",
                   address: member.address ?? "",
-                  joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
-                  activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
+                  joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone }) : "",
+                  activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone }) : "",
                   source: member.source ?? "",
                 });
                 setShowEditProfile(true);
@@ -987,8 +991,8 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                             onClick={() => {
                               setEditingSubDates(sub);
                               setEditDatesForm({
-                                startDate: new Date(sub.startDate).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }),
-                                endDate: sub.endDate ? new Date(sub.endDate).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) : "",
+                                startDate: new Date(sub.startDate).toLocaleDateString("en-CA", { timeZone }),
+                                endDate: sub.endDate ? new Date(sub.endDate).toLocaleDateString("en-CA", { timeZone }) : "",
                                 sessionsRemaining: sub.sessionsTotal != null ? String(sub.sessionsTotal - sub.sessionsUsed) : "",
                                 notes: sub.notes ?? "",
                               });
@@ -1233,7 +1237,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                                 return (
                                   <>
                                     <p className="font-medium">
-                                      {date ? new Date(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" }) : "—"}
+                                      {date ? new Date(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone }) : "—"}
                                     </p>
                                     <p className="text-muted-foreground">
                                       {hasScheduleTimes
@@ -2115,7 +2119,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                     hour: "numeric",
                     minute: "2-digit",
                     hour12: true,
-                    timeZone: "Asia/Manila",
+                    timeZone,
                   })
                 : "—"}
             </span>

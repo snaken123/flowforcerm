@@ -1,6 +1,3 @@
-// Set timezone globally for all server-side code — app is Philippines-only
-process.env.TZ = "Asia/Manila";
-
 const withPWA = require("next-pwa")({
   dest: "public",
   disable: process.env.NODE_ENV === "development",

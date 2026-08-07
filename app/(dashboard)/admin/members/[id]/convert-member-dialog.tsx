@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/lib/use-toast";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 interface Service {
   id: string;
@@ -29,6 +30,7 @@ type Step = 1 | 2 | 3;
 
 export function ConvertMemberDialog({ memberId, memberName, services, open, onOpenChange, onConverted }: Props) {
   const { toast } = useToast();
+  const timeZone = useTenantTimezone();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,7 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
 
   // Step 2: subscription details
   const [serviceId, setServiceId] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
+  const [startDate, setStartDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone }));
   const [subType, setSubType] = useState<"session" | "date">("session");
   const [sessionsTotal, setSessionsTotal] = useState("10");
   const [endDate, setEndDate] = useState("");
@@ -52,7 +54,7 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
     setStep(1);
     setMemberNumber("");
     setServiceId("");
-    setStartDate(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
+    setStartDate(new Date().toLocaleDateString("en-CA", { timeZone }));
     setSubType("session");
     setSessionsTotal("10");
     setEndDate("");

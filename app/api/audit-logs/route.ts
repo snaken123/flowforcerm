@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { manilaDayBoundaries } from "@/lib/time";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -21,8 +22,8 @@ export async function GET(req: NextRequest) {
 
   function parseManilaDate(str: string, endOfDay = false): Date | null {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
-    const suffix = endOfDay ? "T23:59:59.999+08:00" : "T00:00:00+08:00";
-    const d = new Date(`${str}${suffix}`);
+    const { start, end } = manilaDayBoundaries(str);
+    const d = endOfDay ? end : start;
     return isNaN(d.getTime()) ? null : d;
   }
 

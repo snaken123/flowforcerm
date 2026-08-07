@@ -13,6 +13,7 @@ import {
   Usb, Lock, X, Check, UserSearch, ScanFace,
 } from "lucide-react";
 import { formatDate, getInitials } from "@/lib/utils";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -599,13 +600,16 @@ function ManualEntry({ onLookup }: { onLookup: (code: string) => void }) {
   );
 }
 
-function isClassExpiredNow(endTime: string): boolean {
+function isClassExpiredNow(endTime: string, timeZone: string): boolean {
   const [h, m] = endTime.split(":").map(Number);
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes() > h * 60 + m;
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  const nowH = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
+  const nowM = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  return nowH * 60 + nowM > h * 60 + m;
 }
 
 function MemberCard({ member, onScanAgain, onCheckedIn, isAdminOrStaff }: { member: any; onScanAgain: () => void; onCheckedIn: (id: string) => void; isAdminOrStaff: boolean }) {
+  const timeZone = useTenantTimezone();
   const [selectedScheduleIds, setSelectedScheduleIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -752,7 +756,7 @@ function MemberCard({ member, onScanAgain, onCheckedIn, isAdminOrStaff }: { memb
           }}>
             {classes.map((cls: any) => {
               const selected = selectedScheduleIds.includes(cls.scheduleId);
-              const expired = !isAdminOrStaff && isClassExpiredNow(cls.endTime);
+              const expired = !isAdminOrStaff && isClassExpiredNow(cls.endTime, timeZone);
               const isDisabled = submitted || expired;
               return (
                 <button

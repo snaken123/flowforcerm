@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { manilaDateStr, manilaDayBoundaries, manilaDayOfWeek } from "@/lib/time";
 
 export async function GET() {
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Manila time: UTC+8
   const now = new Date();
-  const manilaOffset = 8 * 60;
-  const manilaMs = now.getTime() + (manilaOffset - now.getTimezoneOffset()) * 60000;
-  const manila = new Date(manilaMs);
-  const dow = manila.getDay(); // 0=Sun ... 6=Sat
-
-  const todayMidnight = new Date(manila);
-  todayMidnight.setHours(0, 0, 0, 0);
+  const dow = manilaDayOfWeek(now); // 0=Sun ... 6=Sat
+  const todayStr = manilaDateStr(now);
+  const todayMidnight = manilaDayBoundaries(todayStr).start;
 
   const schedules = await prisma.classSchedule.findMany({
     where: {
@@ -42,14 +38,7 @@ export async function GET() {
 
   // Filter out exceptions for today
   const filtered = schedules.filter((s) => {
-    return !s.exceptions.some((ex) => {
-      const exDate = new Date(ex.date);
-      return (
-        exDate.getFullYear() === manila.getFullYear() &&
-        exDate.getMonth() === manila.getMonth() &&
-        exDate.getDate() === manila.getDate()
-      );
-    });
+    return !s.exceptions.some((ex) => manilaDateStr(new Date(ex.date)) === todayStr);
   });
 
   return NextResponse.json(filtered);

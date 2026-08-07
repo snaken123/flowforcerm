@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { manilaDateStr } from "@/lib/time";
 import { z } from "zod";
 
 const cancelSchema = z.object({
@@ -65,8 +66,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: "Cannot cancel a past or attended booking." }, { status: 403 });
     }
     if (booking.scheduledDate) {
-      const manilaToday = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-      const bookingDateStr = new Date(booking.scheduledDate).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+      const manilaToday = manilaDateStr();
+      const bookingDateStr = manilaDateStr(new Date(booking.scheduledDate));
       if (bookingDateStr < manilaToday) {
         return NextResponse.json({ error: "Cannot cancel a past or attended booking." }, { status: 403 });
       }

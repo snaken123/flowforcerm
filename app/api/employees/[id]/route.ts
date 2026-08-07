@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { manilaDayBoundaries } from "@/lib/time";
 import { z } from "zod";
 
 const schema = z.object({
@@ -58,8 +59,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         title: parsed.data.title || null,
         employeeTypes: parsed.data.employeeTypes,
         isActive: parsed.data.isActive,
-        hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate + "T00:00:00+08:00") : undefined,
-        dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth + "T00:00:00+08:00") : null,
+        hireDate: parsed.data.hireDate ? manilaDayBoundaries(parsed.data.hireDate).start : undefined,
+        dateOfBirth: parsed.data.dateOfBirth ? manilaDayBoundaries(parsed.data.dateOfBirth).start : null,
         belt: parsed.data.belt || null,
         certifications: parsed.data.certifications || null,
       },

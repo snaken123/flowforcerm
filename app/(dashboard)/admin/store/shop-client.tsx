@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,7 @@ export function ShopClient({
   staffId: string;
   staffName: string;
 }) {
+  const timeZone = useTenantTimezone();
   const [items, setItems] = useState<ShopItem[]>(initialItems);
   const [activeTab, setActiveTab] = useState("sales");
 
@@ -188,9 +190,9 @@ export function ShopClient({
   const [loadingSales, setLoadingSales] = useState(false);
   const [reportFrom, setReportFrom] = useState(() => {
     const d = new Date(); d.setDate(1);
-    return d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+    return d.toLocaleDateString("en-CA", { timeZone });
   });
-  const [reportTo, setReportTo] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
+  const [reportTo, setReportTo] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone }));
   const [reportCategory, setReportCategory] = useState("ALL");
   const [reportLoaded, setReportLoaded] = useState(false);
 
@@ -198,20 +200,20 @@ export function ShopClient({
   const [logSales, setLogSales] = useState<Sale[]>([]);
   const [loadingLog, setLoadingLog] = useState(false);
   const [logLoaded, setLogLoaded] = useState(false);
-  const [logFrom, setLogFrom] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
-  const [logTo, setLogTo] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }));
+  const [logFrom, setLogFrom] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone }));
+  const [logTo, setLogTo] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone }));
 
   // Add Stock dialog
   const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
   const [restockItem, setRestockItem] = useState<ShopItem | null>(null);
-  const [restockForm, setRestockForm] = useState({ qty: "", costPerUnit: "", supplier: "", notes: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) });
+  const [restockForm, setRestockForm] = useState({ qty: "", costPerUnit: "", supplier: "", notes: "", date: new Date().toLocaleDateString("en-CA", { timeZone }) });
   const [restockSize, setRestockSize] = useState<string>(""); // single selected size
   const [restockOtherText, setRestockOtherText] = useState("");
   const [savingRestock, setSavingRestock] = useState(false);
 
   function openRestock(item: ShopItem) {
     setRestockItem(item);
-    setRestockForm({ qty: "", costPerUnit: "", supplier: "", notes: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) });
+    setRestockForm({ qty: "", costPerUnit: "", supplier: "", notes: "", date: new Date().toLocaleDateString("en-CA", { timeZone }) });
     setRestockSize("");
     setRestockOtherText("");
     setSavingRestock(false);
@@ -265,7 +267,7 @@ export function ShopClient({
   useEffect(() => {
     loadLog();
     const interval = setInterval(() => {
-      const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+      const today = new Date().toLocaleDateString("en-CA", { timeZone });
       setLogFrom(today);
       setLogTo(today);
       loadLog();

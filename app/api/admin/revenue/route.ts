@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { manilaDayBoundaries } from "@/lib/time";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -17,12 +18,11 @@ export async function GET(req: NextRequest) {
 
   const pad = (n: number) => String(n).padStart(2, "0");
   if (type === "daily" && dateStr) {
-    start = new Date(`${dateStr}T00:00:00+08:00`);
-    end   = new Date(`${dateStr}T23:59:59.999+08:00`);
+    ({ start, end } = manilaDayBoundaries(dateStr));
   } else if (type === "monthly" && year && month) {
     const lastDay = new Date(year, month, 0).getDate(); // day 0 of next month = last day of this month
-    start = new Date(`${year}-${pad(month)}-01T00:00:00+08:00`);
-    end   = new Date(`${year}-${pad(month)}-${pad(lastDay)}T23:59:59.999+08:00`);
+    start = manilaDayBoundaries(`${year}-${pad(month)}-01`).start;
+    end = manilaDayBoundaries(`${year}-${pad(month)}-${pad(lastDay)}`).end;
   } else {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 });
   }

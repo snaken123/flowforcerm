@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, timeAgo } from "@/lib/utils";
 import { DashboardSearch } from "./dashboard-search";
 import { CoachDashboard } from "./coach-dashboard";
+import { manilaDateStr, manilaDayBoundaries, manilaDayOfWeek } from "@/lib/time";
+import { getTenantTimezone } from "@/lib/tenant-context";
 
 async function getCoachDashboardData(employeeId: string) {
   const now = new Date();
-  const todayDow = now.getDay(); // 0=Sun
+  const todayDow = manilaDayOfWeek(now); // 0=Sun
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
 
@@ -47,13 +49,12 @@ async function getCoachDashboardData(employeeId: string) {
   const classMap = Object.fromEntries(classDefs.map((c) => [c.id, c]));
 
   const scheduleIds = schedules.map((s) => s.id);
-  // Use Manila date explicitly so this works regardless of server TZ
-  const manilaToday = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  // Use the tenant's date explicitly so this works regardless of server TZ
+  const manilaToday = manilaDateStr(now);
   const todayUTC = new Date(manilaToday + "T00:00:00Z");
 
-  // Manila day boundaries for check-in lookup
-  const manilaTodayStart = new Date(`${manilaToday}T00:00:00+08:00`);
-  const manilaTodayEnd   = new Date(`${manilaToday}T23:59:59.999+08:00`);
+  // Tenant-local day boundaries for check-in lookup
+  const { start: manilaTodayStart, end: manilaTodayEnd } = manilaDayBoundaries(manilaToday);
 
   const [bookings, checkInCounts] = await Promise.all([
     // Fetch booking records — include those with today's date OR no specific date
@@ -88,11 +89,11 @@ async function getCoachDashboardData(employeeId: string) {
   }
   const checkInMap = Object.fromEntries(checkInCounts.map((c) => [c.scheduleId as string, c._count.id]));
 
-  // Filter out exceptions for today (Manila date, not UTC)
+  // Filter out exceptions for today (tenant-local date, not UTC)
   const todayStr = manilaToday;
   const activeSched = schedules.filter((s) =>
     !s.exceptions.some((e) =>
-      new Date(e.date).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) === todayStr
+      manilaDateStr(new Date(e.date)) === todayStr
     )
   );
   const allSchedulesWithData = activeSched.map((s) => ({
@@ -204,8 +205,8 @@ export default async function DashboardPage() {
     const coachData = await getCoachDashboardData(employeeId);
     const { employee, schedulesWithData } = coachData;
     const today = new Date();
-    const dateStr = today.toLocaleDateString("en-PH", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    const manilaToday = today.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+    const dateStr = today.toLocaleDateString("en-PH", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: getTenantTimezone() });
+    const manilaToday = manilaDateStr(today);
 
     return (
       <CoachDashboard

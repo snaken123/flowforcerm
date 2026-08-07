@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Sidebar } from "@/components/layout/sidebar";
 import { NavProgress } from "@/components/layout/nav-progress";
 import { prisma } from "@/lib/db";
+import { TenantTimezoneProvider } from "@/components/tenant-timezone-provider";
 
 async function getBranding() {
   if (!headers().get("x-tenant-id")) return null;
@@ -12,16 +13,18 @@ async function getBranding() {
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const branding = await getBranding();
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <Suspense fallback={null}>
-        <NavProgress />
-      </Suspense>
-      <Sidebar brandName={branding?.gymName} logoUrl={branding?.logoUrl} slogan={branding?.slogan} />
-      <main className="flex-1 overflow-auto">
-        <div className="container mx-auto max-w-7xl px-4 py-6 md:px-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <TenantTimezoneProvider timezone={branding?.timezone ?? "Asia/Manila"}>
+      <div className="flex min-h-screen bg-muted/30">
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
+        <Sidebar brandName={branding?.gymName} logoUrl={branding?.logoUrl} slogan={branding?.slogan} />
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto max-w-7xl px-4 py-6 md:px-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </TenantTimezoneProvider>
   );
 }

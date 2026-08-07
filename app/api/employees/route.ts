@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { sendActivationEmail } from "@/lib/email";
+import { manilaDayBoundaries } from "@/lib/time";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -93,8 +94,8 @@ export async function POST(req: NextRequest) {
           phone: parsed.data.phone || null,
           title: parsed.data.title || null,
           employeeTypes,
-          hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate + "T00:00:00+08:00") : undefined,
-          dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth + "T00:00:00+08:00") : null,
+          hireDate: parsed.data.hireDate ? manilaDayBoundaries(parsed.data.hireDate).start : undefined,
+          dateOfBirth: parsed.data.dateOfBirth ? manilaDayBoundaries(parsed.data.dateOfBirth).start : null,
           belt: parsed.data.belt || null,
           certifications: parsed.data.certifications || null,
         },

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDate, getInitials } from "@/lib/utils";
 import { PhotoCropDialog } from "@/components/photo-crop-dialog";
 import { toast } from "@/lib/use-toast";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 const TYPE_LABELS: Record<string, string> = { ADMIN: "Admin", STAFF: "Staff", COACH: "Coach" };
 const TYPE_COLORS: Record<string, string> = {
@@ -111,16 +112,16 @@ function ServiceCheckDropdown({ services, selected, onChange }: {
   );
 }
 
-function toDateInput(val: string | Date | null | undefined): string {
+function toDateInput(val: string | Date | null | undefined, timeZone: string = "Asia/Manila"): string {
   if (!val) return "";
   const d = typeof val === "string" ? new Date(val) : val;
-  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  return d.toLocaleDateString("en-CA", { timeZone });
 }
 
-function fmtBirthday(val: string | Date | null | undefined): string {
+function fmtBirthday(val: string | Date | null | undefined, timeZone: string = "Asia/Manila"): string {
   if (!val) return "";
   const d = typeof val === "string" ? new Date(val) : val;
-  return d.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric", timeZone: "Asia/Manila" });
+  return d.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric", timeZone });
 }
 
 function calcAge(val: string | Date | null | undefined): number | null {
@@ -218,6 +219,7 @@ function CoachFields({ form, setForm, services }: {
 
 export function EmployeesClient({ employees, services }: { employees: any[]; services: any[] }) {
   const router = useRouter();
+  const timeZone = useTenantTimezone();
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingEmp, setEditingEmp] = useState<any | null>(null);
@@ -232,7 +234,7 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
   const [addForm, setAddForm] = useState({
     firstName: "", lastName: "", email: "", phone: "", title: "",
     employeeTypes: ["STAFF"] as string[],
-    hireDate: toDateInput(new Date()), dateOfBirth: "",
+    hireDate: toDateInput(new Date(), timeZone), dateOfBirth: "",
     credentials: [] as Credential[], taughtServiceIds: [] as string[],
   });
 
@@ -258,8 +260,8 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
       title: emp.title ?? "",
       employeeTypes: types,
       isActive: emp.isActive,
-      hireDate: toDateInput(emp.hireDate),
-      dateOfBirth: toDateInput(emp.dateOfBirth),
+      hireDate: toDateInput(emp.hireDate, timeZone),
+      dateOfBirth: toDateInput(emp.dateOfBirth, timeZone),
       credentials: parseCredentials(emp.certifications),
       taughtServiceIds: emp.taughtServices?.map((ts: any) => ts.serviceId) ?? [],
     });
@@ -281,7 +283,7 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Failed"); }
       toast({ title: "Employee added", description: "Activation email sent." });
-      setAddForm({ firstName: "", lastName: "", email: "", phone: "", title: "", employeeTypes: ["STAFF"], hireDate: toDateInput(new Date()), dateOfBirth: "", credentials: [], taughtServiceIds: [] });
+      setAddForm({ firstName: "", lastName: "", email: "", phone: "", title: "", employeeTypes: ["STAFF"], hireDate: toDateInput(new Date(), timeZone), dateOfBirth: "", credentials: [], taughtServiceIds: [] });
       setShowAdd(false);
       router.refresh();
     } catch (err: any) {
@@ -403,7 +405,7 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
                   {emp.dateOfBirth && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Cake className="h-3.5 w-3.5 shrink-0" />
-                      {fmtBirthday(emp.dateOfBirth)}{age !== null && ` (${age} yrs)`}
+                      {fmtBirthday(emp.dateOfBirth, timeZone)}{age !== null && ` (${age} yrs)`}
                     </div>
                   )}
                 </div>

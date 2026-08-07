@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { manilaDateStr } from "@/lib/time";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -86,7 +87,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       entityType: "Subscription",
       entityId: params.id,
       entityName: `${sub.member?.firstName ?? sub.employee?.firstName ?? "?"} ${sub.member?.lastName ?? sub.employee?.lastName ?? "?"} — ${sub.service.name}`,
-      description: `Edited ${sub.service.name}. Dates: ${oldStart?.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) ?? "none"} – ${oldEnd?.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) ?? "none"} → ${parsed.data.startDate} – ${parsed.data.endDate ?? "none"}.${sessionsPart} Reason: ${parsed.data.reason}`,
+      description: `Edited ${sub.service.name}. Dates: ${oldStart ? manilaDateStr(oldStart) : "none"} – ${oldEnd ? manilaDateStr(oldEnd) : "none"} → ${parsed.data.startDate} – ${parsed.data.endDate ?? "none"}.${sessionsPart} Reason: ${parsed.data.reason}`,
       metadata: { reason: parsed.data.reason, memberId: sub.memberId, serviceId: sub.serviceId },
     });
 

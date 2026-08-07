@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { manilaNow } from "@/lib/time";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -112,15 +113,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Members cannot book classes whose end time has already passed today (PHT = UTC+8)
+  // Members cannot book classes whose end time has already passed today (tenant-local time)
   if (!["ADMIN", "STAFF", "STORE"].includes(role)) {
     const schedule = await prisma.classSchedule.findUnique({ where: { id: scheduleId }, select: { endTime: true, dayOfWeek: true } });
     if (schedule) {
-      const now = new Date();
-      const nowDay = now.getDay();
+      const { dayOfWeek: nowDay, hhmm } = manilaNow();
       const [endH, endM] = schedule.endTime.split(":").map(Number);
       const endMinutes = endH * 60 + endM;
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const [nowH, nowM] = hhmm.split(":").map(Number);
+      const nowMinutes = nowH * 60 + nowM;
       if (nowDay === schedule.dayOfWeek && nowMinutes > endMinutes) {
         return NextResponse.json({ error: "This class has already ended. You can no longer book it." }, { status: 403 });
       }
