@@ -19,6 +19,7 @@ import { getUtcOffsetString } from "@/lib/timezone-offset";
 import { MEMBER_SOURCE_OPTIONS } from "@/lib/member-source";
 import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
 import { AwardSelect } from "@/components/records/award-select";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -194,6 +195,9 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
   const [rankForm, setRankForm] = useState({ martialArt: "", rank: "", details: "", awardedAt: "", awardedBy: "", photoUrl: "" });
   const [savingRank, setSavingRank] = useState(false);
   const [uploadingRankPhoto, setUploadingRankPhoto] = useState(false);
+  const [recordsSortDir, setRecordsSortDir] = useState<"asc" | "desc">("desc");
+  const [attendanceSortDir, setAttendanceSortDir] = useState<"asc" | "desc">("desc");
+  const [paymentsSortDir, setPaymentsSortDir] = useState<"asc" | "desc">("desc");
   const [deletingRank, setDeletingRank] = useState<any | null>(null);
   const [deletingRankConfirm, setDeletingRankConfirm] = useState(false);
 
@@ -1142,8 +1146,12 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
               }
               return (
                 <div className="space-y-5">
-                  {Object.entries(groups).map(([art, records]) => {
-                    const latest = records.find((r: any) => r.status === "APPROVED") ?? records[0];
+                  {Object.entries(groups).map(([art, groupRecords]) => {
+                    const latest = groupRecords.find((r: any) => r.status === "APPROVED") ?? groupRecords[0];
+                    const records = [...groupRecords].sort((a: any, b: any) => {
+                      const diff = new Date(a.awardedAt).getTime() - new Date(b.awardedAt).getTime();
+                      return recordsSortDir === "asc" ? diff : -diff;
+                    });
                     return (
                       <div key={art}>
                         <div className="flex items-center justify-between mb-2">
@@ -1171,7 +1179,13 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                             <thead>
                               <tr className="bg-muted/50 border-b">
                                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">Rank</th>
-                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Awarded</th>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                                  <SortableHeader
+                                    label="Awarded"
+                                    direction={recordsSortDir}
+                                    onClick={() => setRecordsSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                                  />
+                                </th>
                                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">Awarded by</th>
                                 {isAdmin && <th className="px-3 py-2" />}
                               </tr>
@@ -1230,7 +1244,13 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-muted/50 border-b">
-                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Date & Time</th>
+                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                          <SortableHeader
+                            label="Date & Time"
+                            direction={attendanceSortDir}
+                            onClick={() => setAttendanceSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                          />
+                        </th>
                         <th className="text-left px-4 py-2 font-medium text-muted-foreground">Class</th>
                         <th className="text-left px-4 py-2 font-medium text-muted-foreground">Membership Used</th>
                         <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
@@ -1239,7 +1259,14 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                       </tr>
                     </thead>
                     <tbody>
-                      {(showAllBookings ? member.bookings : member.bookings.slice(0, 10)).map((b: any) => {
+                      {(() => {
+                        const bookingDate = (b: any) => b.scheduledDate ?? b.session?.startsAt ?? b.createdAt;
+                        const sorted = [...member.bookings].sort((a: any, b: any) => {
+                          const diff = new Date(bookingDate(a)).getTime() - new Date(bookingDate(b)).getTime();
+                          return attendanceSortDir === "asc" ? diff : -diff;
+                        });
+                        return showAllBookings ? sorted : sorted.slice(0, 10);
+                      })().map((b: any) => {
                         const sessionNum = sessionNumberMap[b.id];
                         const sessionsTotal = b.subscription?.sessionsTotal;
                         return (
@@ -1396,7 +1423,13 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    <SortableHeader
+                      label="Date"
+                      direction={paymentsSortDir}
+                      onClick={() => setPaymentsSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                    />
+                  </th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Package</th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Method</th>
                   <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
@@ -1404,7 +1437,10 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                 </tr>
               </thead>
               <tbody>
-                {member.payments.map((p: any) => (
+                {[...member.payments].sort((a: any, b: any) => {
+                  const diff = new Date(a.paidAt ?? a.createdAt).getTime() - new Date(b.paidAt ?? b.createdAt).getTime();
+                  return paymentsSortDir === "asc" ? diff : -diff;
+                }).map((p: any) => (
                   <tr key={p.id} className="border-b last:border-0">
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       {formatDate(p.paidAt ?? p.createdAt)}

@@ -18,6 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/utils";
+import { SortableHeader } from "@/components/ui/sortable-header";
 import {
   ShoppingBag, Plus, Pencil, Trash2, Package, GlassWater,
   ClipboardList, ShoppingCart, X, Camera, Search,
@@ -125,6 +126,7 @@ export function ShopClient({
 
   const [showLogsDialog, setShowLogsDialog] = useState(false);
   const [logs, setLogs] = useState<InventoryLog[]>([]);
+  const [invLogsSortDir, setInvLogsSortDir] = useState<"asc" | "desc">("desc");
   const [loadingLogs, setLoadingLogs] = useState(false);
 
   // --- Sales tab state ---
@@ -187,6 +189,7 @@ export function ShopClient({
 
   // --- Sales report state ---
   const [sales, setSales] = useState<Sale[]>([]);
+  const [salesSortDir, setSalesSortDir] = useState<"asc" | "desc">("desc");
   const [loadingSales, setLoadingSales] = useState(false);
   const [reportFrom, setReportFrom] = useState(() => {
     const d = new Date(); d.setDate(1);
@@ -198,6 +201,7 @@ export function ShopClient({
 
   // --- Log tab state ---
   const [logSales, setLogSales] = useState<Sale[]>([]);
+  const [logSalesSortDir, setLogSalesSortDir] = useState<"asc" | "desc">("desc");
   const [loadingLog, setLoadingLog] = useState(false);
   const [logLoaded, setLogLoaded] = useState(false);
   const [logFrom, setLogFrom] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone }));
@@ -1317,7 +1321,9 @@ export function ShopClient({
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-left px-4 py-2 font-medium">Date</th>
+                          <th className="text-left px-4 py-2 font-medium">
+                            <SortableHeader label="Date" direction={salesSortDir} onClick={() => setSalesSortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                          </th>
                           <th className="text-left px-4 py-2 font-medium">Buyer</th>
                           <th className="text-left px-4 py-2 font-medium">Items</th>
                           <th className="text-left px-4 py-2 font-medium">Payment</th>
@@ -1326,7 +1332,10 @@ export function ShopClient({
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {sales.map((sale) => {
+                        {[...sales].sort((a, b) => {
+                          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                          return salesSortDir === "asc" ? diff : -diff;
+                        }).map((sale) => {
                           const buyer = sale.buyerMember ? `${sale.buyerMember.firstName} ${sale.buyerMember.lastName}` : sale.buyerEmployee ? `${sale.buyerEmployee.firstName} ${sale.buyerEmployee.lastName}` : sale.buyerName ?? "Walk-in";
                           return (
                             <tr key={sale.id} className="hover:bg-muted/30">
@@ -1390,7 +1399,9 @@ export function ShopClient({
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                       <tr>
-                        <th className="text-left px-4 py-2 font-medium whitespace-nowrap">Date</th>
+                        <th className="text-left px-4 py-2 font-medium whitespace-nowrap">
+                          <SortableHeader label="Date" direction={logSalesSortDir} onClick={() => setLogSalesSortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                        </th>
                         <th className="text-left px-4 py-2 font-medium">Buyer</th>
                         <th className="text-left px-4 py-2 font-medium">Items</th>
                         <th className="text-left px-4 py-2 font-medium whitespace-nowrap">Payment</th>
@@ -1402,7 +1413,10 @@ export function ShopClient({
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {(showIncompleteOnly ? incompleteSales : logSales).map((sale) => {
+                      {[...(showIncompleteOnly ? incompleteSales : logSales)].sort((a, b) => {
+                        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        return logSalesSortDir === "asc" ? diff : -diff;
+                      }).map((sale) => {
                         const buyer = sale.buyerMember
                           ? `${sale.buyerMember.firstName} ${sale.buyerMember.lastName}`
                           : sale.buyerEmployee
@@ -1805,7 +1819,9 @@ export function ShopClient({
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left px-3 py-2">Date</th>
+                  <th className="text-left px-3 py-2">
+                    <SortableHeader label="Date" direction={invLogsSortDir} onClick={() => setInvLogsSortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                  </th>
                   <th className="text-left px-3 py-2">Item</th>
                   <th className="text-left px-3 py-2">Type</th>
                   <th className="text-right px-3 py-2">Qty</th>
@@ -1814,7 +1830,10 @@ export function ShopClient({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {logs.map((log) => (
+                {[...logs].sort((a, b) => {
+                  const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                  return invLogsSortDir === "asc" ? diff : -diff;
+                }).map((log) => (
                   <tr key={log.id} className="hover:bg-muted/30">
                     <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{new Date(log.createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</td>
                     <td className="px-3 py-2 font-medium">{log.shopItem.name}</td>

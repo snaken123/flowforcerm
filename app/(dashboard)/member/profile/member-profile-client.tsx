@@ -11,6 +11,7 @@ import { toast } from "@/lib/use-toast";
 import { DocumentsSection } from "./documents-section";
 import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
 import { AwardSelect } from "@/components/records/award-select";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -90,6 +91,8 @@ export function MemberProfileClient({ member }: { member: any }) {
   const [savingRank, setSavingRank] = useState(false);
   const [rankError, setRankError] = useState("");
   const [uploadingRankPhoto, setUploadingRankPhoto] = useState(false);
+  const [recordsSortDir, setRecordsSortDir] = useState<"asc" | "desc">("desc");
+  const [attendanceSortDir, setAttendanceSortDir] = useState<"asc" | "desc">("desc");
 
   function openAddRecord() {
     setRankForm({ martialArt: "", rank: "", details: "", awardedAt: new Date().toISOString().slice(0, 10), awardedBy: "", photoUrl: "" });
@@ -421,8 +424,12 @@ export function MemberProfileClient({ member }: { member: any }) {
               <p className="text-sm text-muted-foreground">No records yet.</p>
             ) : (
               <div className="space-y-5">
-                {Object.entries(rankGroups).map(([art, records]) => {
-                  const latest = records.find((r: any) => r.status === "APPROVED") ?? records[0];
+                {Object.entries(rankGroups).map(([art, groupRecords]) => {
+                  const latest = groupRecords.find((r: any) => r.status === "APPROVED") ?? groupRecords[0];
+                  const records = [...groupRecords].sort((a: any, b: any) => {
+                    const diff = new Date(a.awardedAt).getTime() - new Date(b.awardedAt).getTime();
+                    return recordsSortDir === "asc" ? diff : -diff;
+                  });
                   return (
                     <div key={art}>
                       <div className="mb-2">
@@ -437,7 +444,13 @@ export function MemberProfileClient({ member }: { member: any }) {
                           <thead>
                             <tr className="bg-muted/50 border-b">
                               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Rank</th>
-                              <th className="text-left px-3 py-2 font-medium text-muted-foreground">Awarded</th>
+                              <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                                <SortableHeader
+                                  label="Awarded"
+                                  direction={recordsSortDir}
+                                  onClick={() => setRecordsSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                                />
+                              </th>
                               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Awarded by</th>
                             </tr>
                           </thead>
@@ -480,14 +493,23 @@ export function MemberProfileClient({ member }: { member: any }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-muted/50 border-b">
-                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Date & Time</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                        <SortableHeader
+                          label="Date & Time"
+                          direction={attendanceSortDir}
+                          onClick={() => setAttendanceSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                        />
+                      </th>
                       <th className="text-left px-4 py-2 font-medium text-muted-foreground">Class</th>
                       <th className="text-left px-4 py-2 font-medium text-muted-foreground">Membership Used</th>
                       <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {member.bookings.map((b: any) => (
+                    {[...member.bookings].sort((a: any, b: any) => {
+                      const diff = new Date(a.session.startsAt).getTime() - new Date(b.session.startsAt).getTime();
+                      return attendanceSortDir === "asc" ? diff : -diff;
+                    }).map((b: any) => (
                       <tr key={b.id} className={`border-b last:border-0 ${b.status === "CANCELLED" ? "opacity-50" : ""}`}>
                         <td className="px-4 py-2.5 whitespace-nowrap">
                           <p className="font-medium">{formatDate(b.session.startsAt)}</p>

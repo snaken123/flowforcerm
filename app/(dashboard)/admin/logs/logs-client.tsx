@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw } from "lucide-react";
+import { SortableHeader } from "@/components/ui/sortable-header";
 import { format } from "date-fns";
 
 interface AuditLog {
@@ -106,6 +107,7 @@ const REASON_OPTIONS = ["Admin entry error", "Customer request", "Others"];
 
 export function LogsClient({ users, services }: { users: User[]; services: Service[] }) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
@@ -315,7 +317,9 @@ export function LogsClient({ users, services }: { users: User[]; services: Servi
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">Date & Time</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">
+                  <SortableHeader label="Date & Time" direction={sortDir} onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">By</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Member</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Action</th>
@@ -336,7 +340,10 @@ export function LogsClient({ users, services }: { users: User[]; services: Servi
                   </td>
                 </tr>
               ) : (
-                logs.map((log) => (
+                [...logs].sort((a, b) => {
+                  const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                  return sortDir === "asc" ? diff : -diff;
+                }).map((log) => (
                   <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap text-muted-foreground font-mono text-xs">
                       {format(new Date(log.createdAt), "MMM d, yyyy")}

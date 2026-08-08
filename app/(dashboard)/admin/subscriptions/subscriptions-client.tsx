@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const STATUS_BADGE: Record<string, any> = {
   ACTIVE: "success", PAUSED: "warning", EXPIRED: "secondary", CANCELLED: "destructive",
@@ -52,6 +53,14 @@ export function SubscriptionsClient({
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sort, setSort] = useState<{ field: "start" | "nextBill"; dir: "asc" | "desc" } | null>(null);
+
+  function toggleSort(field: "start" | "nextBill") {
+    setSort((prev) => {
+      if (prev?.field !== field) return { field, dir: "desc" };
+      return { field, dir: prev.dir === "asc" ? "desc" : "asc" };
+    });
+  }
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -85,9 +94,16 @@ export function SubscriptionsClient({
     }
   }
 
-  const filtered = subscriptions.filter(
-    (s) => statusFilter === "ALL" || s.status === statusFilter
-  );
+  const filtered = subscriptions
+    .filter((s) => statusFilter === "ALL" || s.status === statusFilter)
+    .sort((a, b) => {
+      if (!sort) return 0;
+      const field = sort.field === "start" ? "startDate" : "nextBillDate";
+      const aTime = a[field] ? new Date(a[field]).getTime() : -Infinity;
+      const bTime = b[field] ? new Date(b[field]).getTime() : -Infinity;
+      const diff = aTime - bTime;
+      return sort.dir === "asc" ? diff : -diff;
+    });
 
   return (
     <div className="space-y-6">
@@ -127,8 +143,12 @@ export function SubscriptionsClient({
                   <th className="text-left px-4 py-3 font-medium">Service</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Price</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Cycle</th>
-                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Start</th>
-                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Next Bill</th>
+                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
+                    <SortableHeader label="Start" direction={sort?.field === "start" ? sort.dir : null} onClick={() => toggleSort("start")} />
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
+                    <SortableHeader label="Next Bill" direction={sort?.field === "nextBill" ? sort.dir : null} onClick={() => toggleSort("nextBill")} />
+                  </th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
                 </tr>
               </thead>

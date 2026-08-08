@@ -15,6 +15,7 @@ import { formatDate, getInitials } from "@/lib/utils";
 import { PhotoCropDialog } from "@/components/photo-crop-dialog";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const TYPE_LABELS: Record<string, string> = { ADMIN: "Admin", STAFF: "Staff", COACH: "Coach" };
 const TYPE_COLORS: Record<string, string> = {
@@ -342,6 +343,13 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
 
   const isCoach = (types: string[]) => types.includes("COACH");
 
+  const [nameSortDir, setNameSortDir] = useState<"asc" | "desc">("asc");
+  const sortedEmployees = [...employees].sort((a, b) => {
+    const aName = `${a.lastName} ${a.firstName}`.toLowerCase();
+    const bName = `${b.lastName} ${b.firstName}`.toLowerCase();
+    return nameSortDir === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
+  });
+
   // ── Cards ────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -355,8 +363,15 @@ export function EmployeesClient({ employees, services }: { employees: any[]; ser
         </Button>
       </div>
 
+      <SortableHeader
+        label="Sort by Name"
+        direction={nameSortDir}
+        onClick={() => setNameSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+        className="text-sm text-muted-foreground"
+      />
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {employees.map((emp) => {
+        {sortedEmployees.map((emp) => {
           const types: string[] = emp.employeeTypes?.length ? emp.employeeTypes : [emp.employeeType ?? "STAFF"];
           const age = calcAge(emp.dateOfBirth);
           return (

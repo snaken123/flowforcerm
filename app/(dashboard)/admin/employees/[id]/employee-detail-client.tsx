@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, User, CreditCard, CheckCircle2, Clock, XCircle } from "lucide-react";
 import Link from "next/link";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const STATUS_STYLES: Record<string, { label: string; icon: any; className: string }> = {
   ACTIVE: { label: "Active", icon: CheckCircle2, className: "bg-green-100 text-green-800 border-green-200" },
@@ -19,6 +20,7 @@ const STATUS_STYLES: Record<string, { label: string; icon: any; className: strin
 export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isAdmin: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState("info");
+  const [historySortDir, setHistorySortDir] = useState<"asc" | "desc">("desc");
 
   const activeSubscriptions = employee.subscriptions.filter((s: any) => s.status === "ACTIVE");
   const pastSubscriptions = employee.subscriptions.filter((s: any) => s.status !== "ACTIVE");
@@ -164,12 +166,17 @@ export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isA
                           <th className="text-left px-4 py-2 font-medium">Service</th>
                           <th className="text-left px-4 py-2 font-medium">Status</th>
                           <th className="text-right px-4 py-2 font-medium">Sessions</th>
-                          <th className="text-left px-4 py-2 font-medium">Period</th>
+                          <th className="text-left px-4 py-2 font-medium">
+                            <SortableHeader label="Period" direction={historySortDir} onClick={() => setHistorySortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                          </th>
                           <th className="text-right px-4 py-2 font-medium">Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {pastSubscriptions.map((sub: any) => {
+                        {[...pastSubscriptions].sort((a: any, b: any) => {
+                          const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                          return historySortDir === "asc" ? diff : -diff;
+                        }).map((sub: any) => {
                           const st = STATUS_STYLES[sub.status] ?? STATUS_STYLES.EXPIRED;
                           return (
                             <tr key={sub.id} className="hover:bg-muted/30 opacity-70">

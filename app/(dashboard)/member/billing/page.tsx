@@ -3,16 +3,10 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { PaymentHistoryTable } from "./payment-history-table";
 
 export const metadata = { title: "My Billing" };
-
-const PAYMENT_BADGE: Record<string, any> = {
-  PAID: "success",
-  PENDING: "warning",
-  OVERDUE: "destructive",
-  WAIVED: "secondary",
-};
 
 export default async function MemberBillingPage() {
   const session = await getAuthSession();
@@ -99,57 +93,7 @@ export default async function MemberBillingPage() {
           {member.payments.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No payment history yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-xs text-muted-foreground">
-                    <th className="text-left py-2 pr-4 font-medium">Package</th>
-                    <th className="text-left py-2 pr-4 font-medium">Sessions</th>
-                    <th className="text-left py-2 pr-4 font-medium">Date</th>
-                    <th className="text-left py-2 pr-4 font-medium">Method</th>
-                    <th className="text-right py-2 pr-4 font-medium">Amount</th>
-                    <th className="text-left py-2 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {member.payments.map((payment) => {
-                    const sub = (payment as any).subscription;
-                    const sessionsLabel = sub?.sessionsTotal != null
-                      ? `${sub.sessionsTotal} sessions`
-                      : "Unlimited";
-                    return (
-                      <tr key={payment.id} className="text-sm">
-                        <td className="py-2.5 pr-4">
-                          <div className="flex items-center gap-2">
-                            {sub?.service?.color && (
-                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: sub.service.color }} />
-                            )}
-                            <span className="font-medium">{sub?.service?.name ?? "—"}</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 pr-4 text-muted-foreground">{sessionsLabel}</td>
-                        <td className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground">
-                          {formatDate((payment as any).paidAt ?? payment.createdAt)}
-                        </td>
-                        <td className="py-2.5 pr-4">
-                          {(payment as any).method
-                            ? <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium uppercase tracking-wide">{(payment as any).method}</span>
-                            : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="py-2.5 pr-4 text-right font-semibold whitespace-nowrap">
-                          {formatCurrency(payment.amount)}
-                        </td>
-                        <td className="py-2.5">
-                          <Badge variant={PAYMENT_BADGE[payment.status] ?? "secondary"} className="text-[10px]">
-                            {payment.status}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <PaymentHistoryTable payments={member.payments} />
           )}
         </CardContent>
       </Card>
