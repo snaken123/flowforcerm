@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, Calendar, CreditCard, CheckSquare, Mail, Phone, AlertTriangle, MapPin, Cake, Snowflake, Camera, Loader2, Pencil } from "lucide-react";
+import { Award, Calendar, CreditCard, CheckSquare, Mail, Phone, AlertTriangle, MapPin, Cake, Snowflake, Camera, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -87,17 +87,50 @@ export function MemberProfileClient({ member }: { member: any }) {
   }
 
   const [addRecordOpen, setAddRecordOpen] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [rankForm, setRankForm] = useState({ martialArt: "", rank: "", details: "", awardedAt: "", awardedBy: "", photoUrl: "" });
   const [savingRank, setSavingRank] = useState(false);
   const [rankError, setRankError] = useState("");
   const [uploadingRankPhoto, setUploadingRankPhoto] = useState(false);
   const [recordsSortDir, setRecordsSortDir] = useState<"asc" | "desc">("desc");
   const [attendanceSortDir, setAttendanceSortDir] = useState<"asc" | "desc">("desc");
+  const [deletingRecord, setDeletingRecord] = useState<any | null>(null);
+  const [deletingRecordBusy, setDeletingRecordBusy] = useState(false);
 
   function openAddRecord() {
+    setEditingRecordId(null);
     setRankForm({ martialArt: "", rank: "", details: "", awardedAt: new Date().toISOString().slice(0, 10), awardedBy: "", photoUrl: "" });
     setRankError("");
     setAddRecordOpen(true);
+  }
+
+  function openEditRecord(record: any) {
+    setEditingRecordId(record.id);
+    setRankForm({
+      martialArt: record.martialArt,
+      rank: record.rank,
+      details: record.details ?? "",
+      awardedAt: new Date(record.awardedAt).toISOString().slice(0, 10),
+      awardedBy: record.awardedBy ?? "",
+      photoUrl: record.photoUrl ?? "",
+    });
+    setRankError("");
+    setAddRecordOpen(true);
+  }
+
+  async function deleteRecord() {
+    if (!deletingRecord) return;
+    setDeletingRecordBusy(true);
+    try {
+      const res = await fetch(`/api/ranks/${deletingRecord.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setDeletingRecord(null);
+      router.refresh();
+    } catch {
+      toast({ variant: "destructive", title: "Could not delete record" });
+    } finally {
+      setDeletingRecordBusy(false);
+    }
   }
 
   async function handleRankPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -124,22 +157,25 @@ export function MemberProfileClient({ member }: { member: any }) {
     setSavingRank(true);
     setRankError("");
     try {
-      const res = await fetch("/api/ranks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          memberId: member.id,
-          martialArt: rankForm.martialArt,
-          rank: rankForm.rank,
-          awardedAt: rankForm.awardedAt,
-          awardedBy: rankForm.awardedBy || undefined,
-          details: rankForm.details || undefined,
-          photoUrl: rankForm.photoUrl || undefined,
-        }),
-      });
+      const isEdit = !!editingRecordId;
+      const url = isEdit ? `/api/ranks/${editingRecordId}` : "/api/ranks";
+      const method = isEdit ? "PATCH" : "POST";
+      const shared = {
+        martialArt: rankForm.martialArt,
+        rank: rankForm.rank,
+        awardedAt: rankForm.awardedAt,
+        awardedBy: rankForm.awardedBy || undefined,
+        details: rankForm.details || undefined,
+        photoUrl: rankForm.photoUrl || undefined,
+      };
+      const body = isEdit ? shared : { memberId: member.id, ...shared };
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error("Failed to save");
       setAddRecordOpen(false);
-      toast({ title: "Record submitted", description: "Pending approval from a coach or admin." });
+      toast({
+        title: isEdit ? "Record updated" : "Record submitted",
+        description: "Pending approval from a coach or admin.",
+      });
       router.refresh();
     } catch {
       setRankError("Something went wrong. Please try again.");
@@ -452,6 +488,7 @@ export function MemberProfileClient({ member }: { member: any }) {
                                 />
                               </th>
                               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Awarded by</th>
+                              <th className="px-3 py-2 w-14" />
                             </tr>
                           </thead>
                           <tbody>
@@ -465,6 +502,18 @@ export function MemberProfileClient({ member }: { member: any }) {
                                 </td>
                                 <td className="px-3 py-2 text-muted-foreground">{formatDate(r.awardedAt)}</td>
                                 <td className="px-3 py-2 text-muted-foreground">{r.awardedBy ?? "—"}</td>
+                                <td className="px-3 py-2">
+                                  <div className="flex items-center gap-1 justify-end">
+                                    {r.status !== "APPROVED" && (
+                                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" onClick={() => openEditRecord(r)} title="Edit">
+                                        <Pencil className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                    <button type="button" className="text-muted-foreground hover:text-destructive transition-colors" onClick={() => setDeletingRecord(r)} title="Delete">
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -575,8 +624,12 @@ export function MemberProfileClient({ member }: { member: any }) {
       {addRecordOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-background rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-bold">Add Record</h2>
-            <p className="text-xs text-muted-foreground -mt-2">New records are pending approval from a coach or admin.</p>
+            <h2 className="text-base font-bold">{editingRecordId ? "Edit Record" : "Add Record"}</h2>
+            <p className="text-xs text-muted-foreground -mt-2">
+              {editingRecordId
+                ? "Saving will resubmit this record for a fresh approval."
+                : "New records are pending approval from a coach or admin."}
+            </p>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Award</label>
@@ -660,7 +713,34 @@ export function MemberProfileClient({ member }: { member: any }) {
                 disabled={savingRank || !rankForm.martialArt || !rankForm.rank || !rankForm.awardedAt}
                 className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50"
               >
-                {savingRank ? "Saving…" : "Submit"}
+                {savingRank ? "Saving…" : editingRecordId ? "Save & Resubmit" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Record Confirmation */}
+      {deletingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-base font-bold">Delete Record</h2>
+            <p className="text-sm text-muted-foreground">
+              Remove <span className="font-medium text-foreground">{deletingRecord.rank}</span> ({deletingRecord.martialArt})? This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end pt-1">
+              <button
+                onClick={() => setDeletingRecord(null)}
+                className="px-4 py-2 text-sm rounded-md border hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteRecord}
+                disabled={deletingRecordBusy}
+                className="px-4 py-2 text-sm rounded-md bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {deletingRecordBusy ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
