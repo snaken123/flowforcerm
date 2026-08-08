@@ -86,6 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       phone: z.string().max(20).optional().nullable(),
       dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
       address: z.string().max(500).optional().nullable(),
+      source: z.string().min(1).max(100).optional(),
     });
     const body = await req.json();
     const parsed = memberSelfUpdateSchema.safeParse(body);

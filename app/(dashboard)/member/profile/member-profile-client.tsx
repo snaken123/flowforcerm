@@ -181,6 +181,9 @@ export function MemberProfileClient({ member }: { member: any }) {
               <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{member.address}</span>
             )}
             <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Joined {formatDate(member.joinDate)}</span>
+            {member.source && (
+              <span className="flex items-center gap-1">Heard via: {member.source}</span>
+            )}
             <button
               onClick={() => setContactEdit(true)}
               className="flex items-center gap-1 text-xs text-primary hover:underline font-medium ml-auto"

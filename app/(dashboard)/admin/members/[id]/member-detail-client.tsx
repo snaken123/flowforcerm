@@ -16,6 +16,7 @@ import { formatDate, formatCurrency, timeAgo, getInitials } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { getUtcOffsetString } from "@/lib/timezone-offset";
+import { MEMBER_SOURCE_OPTIONS } from "@/lib/member-source";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -2363,19 +2364,14 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
               <Input value={member.activatedAt ? formatDate(member.activatedAt) : "Not yet activated"} readOnly disabled className="bg-muted cursor-not-allowed" />
             </div>
             <div className="space-y-1">
-              <Label>How did they hear about us?</Label>
+              <Label>How did you hear about us?</Label>
               <Select value={editForm.source || "__none__"} onValueChange={(v) => setEditForm(f => ({ ...f, source: v === "__none__" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Select source…" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— Not specified —</SelectItem>
-                  <SelectItem value="Facebook">Facebook</SelectItem>
-                  <SelectItem value="Instagram">Instagram</SelectItem>
-                  <SelectItem value="TikTok">TikTok</SelectItem>
-                  <SelectItem value="Google">Google</SelectItem>
-                  <SelectItem value="Referral">Referral (friend/family)</SelectItem>
-                  <SelectItem value="Walk-in">Walk-in</SelectItem>
-                  <SelectItem value="Flyer / Poster">Flyer / Poster</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  {MEMBER_SOURCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
