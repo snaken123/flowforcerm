@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { SortableHeader } from "@/components/ui/sortable-header";
@@ -32,7 +33,8 @@ export function PaymentHistoryTable({ payments }: { payments: any[] }) {
             </th>
             <th className="text-left py-2 pr-4 font-medium">Method</th>
             <th className="text-right py-2 pr-4 font-medium">Amount</th>
-            <th className="text-left py-2 font-medium">Status</th>
+            <th className="text-left py-2 pr-4 font-medium">Status</th>
+            <th className="text-center py-2 font-medium">Receipt</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -61,10 +63,21 @@ export function PaymentHistoryTable({ payments }: { payments: any[] }) {
                 <td className="py-2.5 pr-4 text-right font-semibold whitespace-nowrap">
                   {formatCurrency(payment.amount)}
                 </td>
-                <td className="py-2.5">
+                <td className="py-2.5 pr-4">
                   <Badge variant={PAYMENT_BADGE[payment.status] ?? "secondary"} className="text-[10px]">
                     {payment.status}
                   </Badge>
+                </td>
+                <td className="py-2.5 text-center">
+                  {payment.receiptUrl ? (
+                    <a href={payment.receiptUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded border px-2 py-0.5 text-xs hover:bg-muted">
+                      View
+                    </a>
+                  ) : payment.needsReceipt ? (
+                    <span className="inline-flex items-center gap-1 text-orange-600 text-xs"><AlertCircle className="h-3.5 w-3.5" />Missing</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
               </tr>
             );

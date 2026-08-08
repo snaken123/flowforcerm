@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Phone, Mail, AlertTriangle, Award, Calendar, CreditCard, CheckSquare, Plus, Loader2, Snowflake, Trash2, Pencil, MapPin, Cake, Camera, X, CheckCircle2, Users, Info } from "lucide-react";
+import { ArrowLeft, Phone, Mail, AlertTriangle, Award, Calendar, CreditCard, CheckSquare, Plus, Loader2, Snowflake, Trash2, Pencil, MapPin, Cake, Camera, X, CheckCircle2, Users, Info, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1439,6 +1439,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Method</th>
                   <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
+                  <th className="text-center px-4 py-2 font-medium text-muted-foreground">Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -1470,6 +1471,17 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                         p.status === "PENDING" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
                         "bg-red-50 text-red-700 border-red-200"
                       }`}>{p.status}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      {p.receiptUrl ? (
+                        <a href={p.receiptUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded border px-2 py-0.5 text-xs hover:bg-muted">
+                          View
+                        </a>
+                      ) : p.needsReceipt ? (
+                        <span className="inline-flex items-center gap-1 text-orange-600 text-xs"><AlertCircle className="h-3.5 w-3.5" />Missing</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
