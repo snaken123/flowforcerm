@@ -53,10 +53,4 @@ export function normalizeGrid(rows: TrainingPlanCell[][]): TrainingPlanCell[][] 
 // access to the Training Plan; everyone else (plain STAFF, MEMBER) is read-only. Mirrors
 // the isCoachOnly precedent at app/(dashboard)/admin/schedule/page.tsx:63-67, which
 // blends the same two session fields for the same "is this person a coach" question.
-export function canEditTrainingPlan(session: { user?: any } | null): boolean {
-  if (!session?.user) return false;
-  const role = session.user.role;
-  if (role === "ADMIN") return true;
-  const employeeTypes: string[] = session.user.employeeTypes ?? [];
-  return role === "STAFF" && employeeTypes.includes("COACH");
-}
+export { isAdminOrCoach as canEditTrainingPlan } from "@/lib/permissions";

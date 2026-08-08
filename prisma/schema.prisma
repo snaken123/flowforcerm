@@ -116,6 +116,8 @@ model User {
   auditLogs        AuditLog[]
   shopSales        ShopSale[]
   shopInventoryLogs ShopInventoryLog[]
+  createdRankRecords  RankRecord[] @relation("RankRecordCreatedBy")
+  approvedRankRecords RankRecord[] @relation("RankRecordApprovedBy")
 }
 
 model AuditLog {
@@ -451,6 +453,12 @@ model CheckIn {
   @@index([checkedInAt])
 }
 
+enum RecordStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
 model RankRecord {
   id          String   @id @default(cuid())
   memberId    String
@@ -460,9 +468,20 @@ model RankRecord {
   stripes     Int?
   awardedAt   DateTime @default(now())
   awardedBy   String?
-  notes       String?
+  details     String?
+  photoUrl    String?
+
+  status          RecordStatus @default(APPROVED)
+  createdAt       DateTime     @default(now())
+  createdById     String?
+  createdBy       User?        @relation("RankRecordCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedById    String?
+  approvedBy      User?        @relation("RankRecordApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt      DateTime?
+  rejectionReason String?
 
   @@index([memberId])
+  @@index([status, createdAt])
 }
 
 model EmailIntegration {

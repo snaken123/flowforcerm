@@ -17,6 +17,9 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'PENDING', 'OVERDUE', 'WAIVED');
 CREATE TYPE "BookingStatus" AS ENUM ('CONFIRMED', 'CANCELLED', 'ATTENDED');
 
 -- CreateEnum
+CREATE TYPE "RecordStatus" AS ENUM ('APPROVED', 'PENDING', 'REJECTED');
+
+-- CreateEnum
 CREATE TYPE "ShopCategory" AS ENUM ('DRINKS', 'MERCHANDISE');
 
 -- CreateEnum
@@ -340,7 +343,14 @@ CREATE TABLE "RankRecord" (
     "stripes" INTEGER,
     "awardedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "awardedBy" TEXT,
-    "notes" TEXT,
+    "details" TEXT,
+    "photoUrl" TEXT,
+    "status" "RecordStatus" NOT NULL DEFAULT 'APPROVED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT,
+    "approvedById" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "rejectionReason" TEXT,
 
     CONSTRAINT "RankRecord_pkey" PRIMARY KEY ("id")
 );
@@ -640,6 +650,9 @@ CREATE INDEX "CheckIn_checkedInAt_idx" ON "CheckIn"("checkedInAt");
 CREATE INDEX "RankRecord_memberId_idx" ON "RankRecord"("memberId");
 
 -- CreateIndex
+CREATE INDEX "RankRecord_status_createdAt_idx" ON "RankRecord"("status", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EmailIntegration_userId_key" ON "EmailIntegration"("userId");
 
 -- CreateIndex
@@ -776,6 +789,12 @@ ALTER TABLE "CheckIn" ADD CONSTRAINT "CheckIn_scheduleId_fkey" FOREIGN KEY ("sch
 
 -- AddForeignKey
 ALTER TABLE "RankRecord" ADD CONSTRAINT "RankRecord_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RankRecord" ADD CONSTRAINT "RankRecord_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RankRecord" ADD CONSTRAINT "RankRecord_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EmailIntegration" ADD CONSTRAINT "EmailIntegration_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

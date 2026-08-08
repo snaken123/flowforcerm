@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, formatCurrency, getInitials } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { DocumentsSection } from "./documents-section";
+import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -135,9 +136,10 @@ export function MemberProfileClient({ member }: { member: any }) {
     rankGroups[r.martialArt].push(r);
   }
 
-  // Latest rank per art for header badges (rankRecords sorted desc by awardedAt)
+  // Latest rank per art for header badges (rankRecords sorted desc by awardedAt) — approved only
   const latestRanks: Record<string, { rank: string; stripes?: number | null }> = {};
   for (const r of member.rankRecords) {
+    if (r.status !== "APPROVED") continue;
     if (!latestRanks[r.martialArt]) latestRanks[r.martialArt] = { rank: r.rank, stripes: r.stripes };
   }
 
@@ -343,20 +345,20 @@ export function MemberProfileClient({ member }: { member: any }) {
           </div>
         )}
 
-        {/* Rank History */}
+        {/* Records */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Award className="h-4 w-4" />Rank History
+              <Award className="h-4 w-4" />Records
             </CardTitle>
           </CardHeader>
           <CardContent>
             {Object.keys(rankGroups).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No rank records yet.</p>
+              <p className="text-sm text-muted-foreground">No records yet.</p>
             ) : (
               <div className="space-y-5">
                 {Object.entries(rankGroups).map(([art, records]) => {
-                  const latest = records[0];
+                  const latest = records.find((r: any) => r.status === "APPROVED") ?? records[0];
                   return (
                     <div key={art}>
                       <div className="mb-2">
@@ -378,7 +380,12 @@ export function MemberProfileClient({ member }: { member: any }) {
                           <tbody>
                             {records.map((r: any, i: number) => (
                               <tr key={r.id} className={i !== records.length - 1 ? "border-b" : ""}>
-                                <td className="px-3 py-2 font-medium">{r.rank}{r.stripes ? ` · ${r.stripes}S` : ""}</td>
+                                <td className={`px-3 py-2 font-medium ${recordTextClass(r.status)}`}>
+                                  <span className="inline-flex items-center gap-1.5">
+                                    {r.rank}{r.stripes ? ` · ${r.stripes}S` : ""}
+                                    <RecordStatusIndicator status={r.status} rejectionReason={r.rejectionReason} />
+                                  </span>
+                                </td>
                                 <td className="px-3 py-2 text-muted-foreground">{formatDate(r.awardedAt)}</td>
                                 <td className="px-3 py-2 text-muted-foreground">{r.awardedBy ?? "—"}</td>
                               </tr>

@@ -17,6 +17,7 @@ import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { getUtcOffsetString } from "@/lib/timezone-offset";
 import { MEMBER_SOURCE_OPTIONS } from "@/lib/member-source";
+import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -893,6 +894,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           {(() => {
             const latestRanks: Record<string, { rank: string; stripes?: number | null }> = {};
             for (const r of member.rankRecords) {
+              if (r.status !== "APPROVED") continue;
               if (!latestRanks[r.martialArt]) latestRanks[r.martialArt] = { rank: r.rank, stripes: r.stripes };
             }
             const entries = Object.entries(latestRanks);
@@ -1089,21 +1091,21 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
         )}
       </div>{/* end Row 1 grid */}
 
-      {/* Row 2: Rank History — full width */}
+      {/* Row 2: Records — full width */}
       <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Award className="h-4 w-4" />Rank History
+              <Award className="h-4 w-4" />Records
             </CardTitle>
             {isAdmin && (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openAddRank("")}>
-                <Plus className="h-3 w-3 mr-1" />Add Rank
+                <Plus className="h-3 w-3 mr-1" />Add Record
               </Button>
             )}
           </CardHeader>
           <CardContent>
             {member.rankRecords.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No rank records.</p>
+              <p className="text-sm text-muted-foreground">No records.</p>
             ) : (() => {
               const groups: Record<string, any[]> = {};
               for (const r of member.rankRecords) {
@@ -1113,7 +1115,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
               return (
                 <div className="space-y-5">
                   {Object.entries(groups).map(([art, records]) => {
-                    const latest = records[0];
+                    const latest = records.find((r: any) => r.status === "APPROVED") ?? records[0];
                     return (
                       <div key={art}>
                         <div className="flex items-center justify-between mb-2">
@@ -1149,7 +1151,12 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                             <tbody>
                               {records.map((r: any, i: number) => (
                                 <tr key={r.id} className={i !== records.length - 1 ? "border-b" : ""}>
-                                  <td className="px-3 py-2 font-medium">{r.rank}{r.stripes ? ` · ${r.stripes}S` : ""}</td>
+                                  <td className={`px-3 py-2 font-medium ${recordTextClass(r.status)}`}>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      {r.rank}{r.stripes ? ` · ${r.stripes}S` : ""}
+                                      <RecordStatusIndicator status={r.status} rejectionReason={r.rejectionReason} />
+                                    </span>
+                                  </td>
                                   <td className="px-3 py-2 text-muted-foreground">{formatDate(r.awardedAt)}</td>
                                   <td className="px-3 py-2 text-muted-foreground">{r.awardedBy ?? "—"}</td>
                                   {isAdmin && (
@@ -2116,7 +2123,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
       <Dialog open={!!rankDialog} onOpenChange={(o) => { if (!o) setRankDialog(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{rankDialog?.mode === "add" ? "Add Rank Record" : "Edit Rank Record"}</DialogTitle>
+            <DialogTitle>{rankDialog?.mode === "add" ? "Add Record" : "Edit Record"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
