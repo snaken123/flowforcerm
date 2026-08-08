@@ -24,6 +24,7 @@ type NavItem = {
   icon: React.ElementType;
   roles: string[];
   exact?: boolean; // skip prefix-matching for active-highlight (needed when another sibling's href starts with this one's)
+  requiresCoach?: boolean; // only ADMIN or a COACH-tagged STAFF may see this item, even if role alone would qualify
 };
 
 type NavEntry =
@@ -44,6 +45,7 @@ const navEntries: NavEntry[] = [
       { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
     ],
   },
+  { type: "link", item: { label: "To Do", href: "/admin/records-todo", icon: ListChecks, roles: ["ADMIN", "STAFF"], requiresCoach: true } },
   { type: "link", item: { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] } },
   { type: "link", item: { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] } },
   // Member-only
@@ -86,9 +88,12 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const [showQR, setShowQR] = useState(false);
   const [freeTrialCount, setFreeTrialCount] = useState(0);
   const [storePendingCount, setStorePendingCount] = useState(0);
+  const [recordsPendingCount, setRecordsPendingCount] = useState(0);
   const role = (session?.user as any)?.role ?? "MEMBER";
   const employeeTypes: string[] = (session?.user as any)?.employeeTypes ?? [];
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
+  const isCoach = employeeTypes.includes("COACH");
+  const isAdminOrCoach = role === "ADMIN" || (role === "STAFF" && isCoach);
   const isStoreRole = role === "STORE";
 
   useEffect(() => {
@@ -105,11 +110,28 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .catch(() => {});
   }, [role]);
 
+  useEffect(() => {
+    if (!isAdminOrCoach) return;
+    fetch("/api/admin/records-pending-count")
+      .then((r) => r.json())
+      .then((d) => setRecordsPendingCount(d.count ?? 0))
+      .catch(() => {});
+  }, [isAdminOrCoach]);
+
+  const badgeCounts: Record<string, number> = {
+    "/admin/members": freeTrialCount,
+    "/admin/store": storePendingCount,
+    "/admin/records-todo": recordsPendingCount,
+  };
+
   const isEntryActive = (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/"));
 
-  // isCoachOnly (pure coaches, no ADMIN/STAFF employeeType tag) keep Dashboard and both
-  // Schedule groups, but never see Comms/Settings.
-  const coachAllowedHrefs = ["/dashboard"];
+  // isCoachOnly (pure coaches, no ADMIN/STAFF employeeType tag) keep Dashboard, both
+  // Schedule groups, and any item flagged requiresCoach, but never see Comms/Settings.
+  const coachAllowedHrefs = [
+    "/dashboard",
+    ...navEntries.filter((e): e is Extract<NavEntry, { type: "link" }> => e.type === "link" && !!e.item.requiresCoach).map((e) => e.item.href),
+  ];
   const visibleEntries = navEntries
     .map((entry) => {
       if (entry.type === "link") return entry;
@@ -119,6 +141,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
     .filter((entry) => {
       if (entry.type === "link") {
         if (!entry.item.roles.includes(role)) return false;
+        if (entry.item.requiresCoach && !isAdminOrCoach) return false;
         if (isCoachOnly && !coachAllowedHrefs.includes(entry.item.href)) return false;
         return true;
       }
@@ -155,8 +178,8 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
           if (entry.type === "link") {
             const item = entry.item;
             const active = isEntryActive(item);
-            const showBadge = (item.href === "/admin/members" && freeTrialCount > 0) || (item.href === "/admin/store" && storePendingCount > 0);
-            const badgeCount = item.href === "/admin/members" ? freeTrialCount : item.href === "/admin/store" ? storePendingCount : 0;
+            const badgeCount = badgeCounts[item.href] ?? 0;
+            const showBadge = badgeCount > 0;
             return (
               <Link
                 key={item.href}
