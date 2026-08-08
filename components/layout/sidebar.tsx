@@ -134,7 +134,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const badgeCounts: Record<string, number> = {
     "/admin/members": freeTrialCount,
     "/admin/store": storePendingCount,
-    "/admin/records-todo": recordsPendingCount + pendingReceiptsCount,
+    "/admin/records-todo": recordsPendingCount + pendingReceiptsCount + storePendingCount,
   };
 
   const isEntryActive = (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/"));

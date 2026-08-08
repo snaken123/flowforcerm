@@ -76,8 +76,8 @@ type BuyerResult = {
   sub: string;
 };
 
-const PAYMENT_MODES = ["Cash", "Credit Card", "Bank Transfer", "eWallet", "Class Pass"];
-const PAYMENT_SUB: Record<string, string[]> = {
+export const PAYMENT_MODES = ["Cash", "Credit Card", "Bank Transfer", "eWallet", "Class Pass"];
+export const PAYMENT_SUB: Record<string, string[]> = {
   "Bank Transfer": ["BDO", "BPI"],
   "eWallet": ["GCash", "Maya"],
 };

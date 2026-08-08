@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { isAdminOrCoach } from "@/lib/permissions";
 import { RecordsTodoClient } from "./records-todo-client";
 import { PendingReceiptsClient } from "./pending-receipts-client";
+import { PendingStoreSalesClient } from "./pending-store-sales-client";
 
 export const metadata = { title: "To Do" };
 
@@ -23,6 +24,12 @@ export default async function RecordsTodoPage() {
         <h2 className="text-lg font-semibold">Pending Receipts</h2>
         <p className="text-sm text-muted-foreground -mt-2">Payments flagged as needing a receipt, but none attached yet.</p>
         <PendingReceiptsClient />
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">Pending Store Sales</h2>
+        <p className="text-sm text-muted-foreground -mt-2">Sales missing a payment mode or a required receipt.</p>
+        <PendingStoreSalesClient />
       </div>
 
       <div className="space-y-3">

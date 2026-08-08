@@ -8,9 +8,14 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Matches the Log tab's own "incomplete" flag: missing payment mode always counts,
+  // but a missing receipt only counts when one was actually required.
   const count = await prisma.shopSale.count({
     where: {
-      OR: [{ paymentMode: null }, { receiptUrl: null }],
+      OR: [
+        { paymentMode: null },
+        { receiptUrl: null, needsReceipt: true },
+      ],
     },
   });
 
