@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { sendWelcomeEmail } from "@/lib/email";
+import { nextMemberNumber } from "@/lib/member-number";
 
 const createSchema = z.object({
   firstName: z.string().min(1),
@@ -74,16 +75,6 @@ export async function POST(req: NextRequest) {
   const { firstName, lastName, phone, emergencyName, emergencyPhone } = parsed.data;
   const email = parsed.data.email || undefined;
   const memberStatus = parsed.data.status ?? "ACTIVE";
-
-  // Atomic sequential member number — upserts the singleton counter and increments atomically
-  async function nextMemberNumber(): Promise<string> {
-    const seq = await (prisma as any).memberNumberSequence.upsert({
-      where: { id: "singleton" },
-      update: { lastVal: { increment: 1 } },
-      create: { id: "singleton", lastVal: 1 },
-    });
-    return `NS-${String(seq.lastVal).padStart(5, "0")}`;
-  }
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const memberNumber = await nextMemberNumber();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,13 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
 
   // Step 1: confirm identity / member number
   const [memberNumber, setMemberNumber] = useState("");
+  const [memberNumberPrefix, setMemberNumberPrefix] = useState("NS");
+  useEffect(() => {
+    fetch("/api/member-number-prefix")
+      .then((r) => r.json())
+      .then((d) => d.prefix && setMemberNumberPrefix(d.prefix))
+      .catch(() => {});
+  }, []);
 
   // Step 2: subscription details
   const [serviceId, setServiceId] = useState("");
@@ -128,7 +135,7 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
               <Label htmlFor="memberNumber">Member Number <span className="text-muted-foreground text-xs">(leave blank to auto-assign)</span></Label>
               <Input
                 id="memberNumber"
-                placeholder="NS-00001"
+                placeholder={`${memberNumberPrefix}-00001`}
                 value={memberNumber}
                 onChange={(e) => setMemberNumber(e.target.value)}
               />

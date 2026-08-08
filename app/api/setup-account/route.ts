@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { nextMemberNumber } from "@/lib/member-number";
 
 const schema = z.discriminatedUnion("step", [
   z.object({ step: z.literal("password"), newPassword: z.string().min(8) }),
@@ -43,17 +44,8 @@ export async function POST(req: NextRequest) {
   } else if (parsed.data.step === "rules") {
     await prisma.member.update({ where: { id: member.id }, data: { rulesAcknowledgedAt: now } });
   } else if (parsed.data.step === "handbook" || parsed.data.step === "welcome") {
-    // Auto-assign NS-XXXXX Athlete ID if not already set
-    let memberNumber = member.memberNumber ?? undefined;
-    if (!memberNumber) {
-      const last = await prisma.member.findFirst({
-        where: { memberNumber: { startsWith: "NS-" } },
-        orderBy: { memberNumber: "desc" },
-        select: { memberNumber: true },
-      });
-      const lastNum = last?.memberNumber ? parseInt(last.memberNumber.replace("NS-", ""), 10) : 0;
-      memberNumber = `NS-${String((isNaN(lastNum) ? 0 : lastNum) + 1).padStart(5, "0")}`;
-    }
+    // Auto-assign an Athlete ID if not already set
+    const memberNumber = member.memberNumber ?? (await nextMemberNumber());
     await prisma.member.update({
       where: { id: member.id },
       data: { handbookReadAt: now, onboardingCompletedAt: now, activatedAt: now, memberNumber },

@@ -351,6 +351,14 @@ export function KioskClient() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showClose, setShowClose] = useState(false);
 
+  const [memberNumberPrefix, setMemberNumberPrefix] = useState("NS");
+  useEffect(() => {
+    fetch("/api/member-number-prefix")
+      .then((r) => r.json())
+      .then((d) => d.prefix && setMemberNumberPrefix(d.prefix))
+      .catch(() => {});
+  }, []);
+
   // Track check-ins this session (localStorage per day)
   const checkedInRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -436,7 +444,7 @@ export function KioskClient() {
             onKeyDown={onKeyDown} className="opacity-0 h-0 absolute pointer-events-none"
             tabIndex={-1} autoComplete="off" aria-hidden="true" inputMode="none" />
 
-          {scanState === "ready" && <ReadyScreen onLookup={lookup} />}
+          {scanState === "ready" && <ReadyScreen onLookup={lookup} memberNumberPrefix={memberNumberPrefix} />}
 
           {scanState === "loading" && (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -477,7 +485,7 @@ const NUMPAD = [
   ["⌫", "0", "GO"],
 ];
 
-function ReadyScreen({ onLookup }: { onLookup: (code: string) => void }) {
+function ReadyScreen({ onLookup, memberNumberPrefix }: { onLookup: (code: string) => void; memberNumberPrefix: string }) {
   const [manual, setManual] = useState("");
 
   function handleKey(key: string) {
@@ -485,7 +493,7 @@ function ReadyScreen({ onLookup }: { onLookup: (code: string) => void }) {
       setManual((v) => v.slice(0, -1));
     } else if (key === "GO") {
       if (!manual.trim()) return;
-      const code = `NS-${manual.padStart(5, "0")}`;
+      const code = `${memberNumberPrefix}-${manual.padStart(5, "0")}`;
       onLookup(code);
       setManual("");
     } else {
@@ -529,7 +537,7 @@ function ReadyScreen({ onLookup }: { onLookup: (code: string) => void }) {
         {/* Display — fixed height, no reflow */}
         <div className="w-full max-w-xs shrink-0">
           <div className="flex items-center border-2 rounded-lg px-4 bg-muted/30 select-none pointer-events-none h-14">
-            <span className="text-muted-foreground font-mono text-lg mr-1 shrink-0">NS-</span>
+            <span className="text-muted-foreground font-mono text-lg mr-1 shrink-0">{memberNumberPrefix}-</span>
             <span className="font-mono text-2xl tracking-widest flex-1 min-w-0 overflow-hidden">
               {manual
                 ? manual.split("").map((d, i) => <span key={i}>{d}</span>)

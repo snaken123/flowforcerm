@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
+import { nextMemberNumber } from "@/lib/member-number";
 
 const createChildSchema = z.object({
   firstName: z.string().min(1),
@@ -26,15 +27,7 @@ export async function POST(req: NextRequest) {
   const guardian = await prisma.user.findUnique({ where: { id: parsed.data.guardianUserId } });
   if (!guardian) return NextResponse.json({ error: "Guardian not found" }, { status: 404 });
 
-  const last = await prisma.member.findFirst({
-    where: { memberNumber: { startsWith: "NS-" } },
-    orderBy: { memberNumber: "desc" },
-    select: { memberNumber: true },
-  });
-  const nextNum = last?.memberNumber
-    ? parseInt(last.memberNumber.replace("NS-", ""), 10) + 1
-    : 1;
-  const memberNumber = `NS-${String(nextNum).padStart(5, "0")}`;
+  const memberNumber = await nextMemberNumber();
 
   const member = await prisma.member.create({
     data: {

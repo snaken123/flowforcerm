@@ -44,6 +44,14 @@ export function QRScannerDialog({ open, onClose }: QRScannerDialogProps) {
   const [member, setMember] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [memberNumberPrefix, setMemberNumberPrefix] = useState("NS");
+  useEffect(() => {
+    fetch("/api/member-number-prefix")
+      .then((r) => r.json())
+      .then((d) => d.prefix && setMemberNumberPrefix(d.prefix))
+      .catch(() => {});
+  }, []);
+
   // Close lock
   const [showClosePrompt, setShowClosePrompt] = useState(false);
   const [closePassword, setClosePassword] = useState("");
@@ -527,7 +535,7 @@ export function QRScannerDialog({ open, onClose }: QRScannerDialogProps) {
                 </div>
 
                 {/* Manual entry */}
-                <ManualEntry onLookup={lookup} />
+                <ManualEntry onLookup={lookup} memberNumberPrefix={memberNumberPrefix} />
               </div>
             </>
           )}
@@ -567,15 +575,16 @@ export function QRScannerDialog({ open, onClose }: QRScannerDialogProps) {
   );
 }
 
-function ManualEntry({ onLookup }: { onLookup: (code: string) => void }) {
+function ManualEntry({ onLookup, memberNumberPrefix }: { onLookup: (code: string) => void; memberNumberPrefix: string }) {
   const [value, setValue] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
-    // Auto-prepend NS- if the user just typed the number
-    const code = /^NS-/i.test(trimmed) ? trimmed : `NS-${trimmed.padStart(5, "0")}`;
+    // Auto-prepend the tenant's member-number prefix if the user just typed the number
+    const prefixRegex = new RegExp(`^${memberNumberPrefix}-`, "i");
+    const code = prefixRegex.test(trimmed) ? trimmed : `${memberNumberPrefix}-${trimmed.padStart(5, "0")}`;
     onLookup(code);
     setValue("");
   }
@@ -583,7 +592,7 @@ function ManualEntry({ onLookup }: { onLookup: (code: string) => void }) {
   return (
     <form onSubmit={handleSubmit} className="flex gap-2 w-full max-w-sm">
       <div className="relative flex-1">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono pointer-events-none">NS-</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono pointer-events-none">{memberNumberPrefix}-</span>
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}

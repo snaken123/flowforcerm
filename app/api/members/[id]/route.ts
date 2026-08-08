@@ -21,8 +21,6 @@ const patchSchema = z.object({
   emergencyPhone: z.string().optional(),
   emergencyRel: z.string().optional(),
   waiverSigned: z.boolean().optional(),
-  joinDate: z.string().nullable().optional(),
-  activatedAt: z.string().nullable().optional(),
   guardianUserId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
 });
@@ -138,28 +136,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if ("dateOfBirth" in updateData) {
     updateData.dateOfBirth = updateData.dateOfBirth ? new Date(updateData.dateOfBirth) : null;
   }
-  if ("joinDate" in updateData) {
-    updateData.joinDate = updateData.joinDate ? new Date(updateData.joinDate) : null;
-  }
-  if ("activatedAt" in updateData) {
-    updateData.activatedAt = updateData.activatedAt ? new Date(updateData.activatedAt) : null;
-  }
-
-  // Auto-generate Athlete ID when activatedAt is being set for the first time
-  if (updateData.activatedAt) {
-    const current = await prisma.member.findUnique({ where: { id: params.id }, select: { memberNumber: true } });
-    if (!current?.memberNumber) {
-      const last = await prisma.member.findFirst({
-        where: { memberNumber: { startsWith: "NS-" } },
-        orderBy: { memberNumber: "desc" },
-        select: { memberNumber: true },
-      });
-      const lastNum = last?.memberNumber ? parseInt(last.memberNumber.replace("NS-", ""), 10) : 0;
-      const nextNum = (isNaN(lastNum) ? 0 : lastNum) + 1;
-      updateData.memberNumber = `NS-${String(nextNum).padStart(5, "0")}`;
-    }
-  }
-
   // Update email on linked user if provided
   if (email) {
     const existing = await prisma.member.findUnique({ where: { id: params.id }, select: { userId: true } });

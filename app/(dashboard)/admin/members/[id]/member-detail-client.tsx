@@ -46,8 +46,6 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
     phone: member.phone ?? "",
     dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone }) : "",
     address: member.address ?? "",
-    joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone }) : "",
-    activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone }) : "",
     source: member.source ?? "",
   });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -171,8 +169,6 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           phone: editForm.phone || null,
           dateOfBirth: editForm.dateOfBirth || null,
           address: editForm.address || null,
-          joinDate: editForm.joinDate || null,
-          activatedAt: editForm.activatedAt || null,
           source: editForm.source || null,
           ...(photoUrl ? { photoUrl } : {}),
         }),
@@ -856,8 +852,6 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                   phone: member.phone ?? "",
                   dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString("en-CA", { timeZone }) : "",
                   address: member.address ?? "",
-                  joinDate: member.joinDate ? new Date(member.joinDate).toLocaleDateString("en-CA", { timeZone }) : "",
-                  activatedAt: member.activatedAt ? new Date(member.activatedAt).toLocaleDateString("en-CA", { timeZone }) : "",
                   source: member.source ?? "",
                 });
                 setShowEditProfile(true);
@@ -882,6 +876,16 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
             <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Joined {formatDate(member.joinDate)}</span>
             {member.source && (
               <span className="flex items-center gap-1 text-muted-foreground">Heard via: {member.source}</span>
+            )}
+            {member.emergencyName && (
+              <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs" title={[member.emergencyName, member.emergencyPhone, member.emergencyRel].filter(Boolean).join(" · ")}>
+                <AlertTriangle className="h-3 w-3" />Emergency: {member.emergencyName}
+              </span>
+            )}
+            {member.waiverSigned && (
+              <span className="flex items-center gap-1 text-green-700">
+                <CheckSquare className="h-3.5 w-3.5" />Waiver signed {formatDate(member.waiverDate)}
+              </span>
             )}
           </div>
           {/* Current ranks per martial art */}
@@ -935,8 +939,8 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
         </Card>
       )}
 
-      {/* Row 1: Memberships + Rank History */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Row 1: Memberships + Guardian Account */}
+      <div className={`grid gap-6 ${isAdmin ? "md:grid-cols-2" : ""}`}>
         {/* Memberships */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -1053,8 +1057,39 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           </CardContent>
         </Card>
 
-        {/* Rank records */}
-        <Card>
+        {/* Guardian Account */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" />Guardian Account
+              </CardTitle>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowGuardianDialog(true)}>
+                {currentGuardian ? <><Pencil className="h-3 w-3 mr-1" />Change</> : <><Plus className="h-3 w-3 mr-1" />Link Guardian</>}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {currentGuardian ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{currentGuardian.name ?? "—"}</p>
+                    <p className="text-sm text-muted-foreground">{currentGuardian.email}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">This member&apos;s QR appears on the guardian&apos;s phone.</p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-destructive h-7" onClick={removeGuardian} disabled={savingGuardian}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No guardian linked. Link one so a parent can access this athlete&apos;s QR code from their phone.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>{/* end Row 1 grid */}
+
+      {/* Row 2: Rank History — full width */}
+      <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Award className="h-4 w-4" />Rank History
@@ -1140,65 +1175,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
               );
             })()}
           </CardContent>
-        </Card>
-
-      </div>{/* end Row 1 grid */}
-
-      {/* Row 2: Guardian + Emergency Contact */}
-      <div className={`grid gap-6 ${isAdmin ? "md:grid-cols-2" : ""}`}>
-        {isAdmin && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4" />Guardian Account
-              </CardTitle>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowGuardianDialog(true)}>
-                {currentGuardian ? <><Pencil className="h-3 w-3 mr-1" />Change</> : <><Plus className="h-3 w-3 mr-1" />Link Guardian</>}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {currentGuardian ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{currentGuardian.name ?? "—"}</p>
-                    <p className="text-sm text-muted-foreground">{currentGuardian.email}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">This member&apos;s QR appears on the guardian&apos;s phone.</p>
-                  </div>
-                  <Button size="sm" variant="ghost" className="text-destructive h-7" onClick={removeGuardian} disabled={savingGuardian}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No guardian linked. Link one so a parent can access this athlete&apos;s QR code from their phone.</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />Emergency Contact
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {member.emergencyName ? (
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{member.emergencyName}</p>
-                {member.emergencyPhone && <p className="text-muted-foreground">{member.emergencyPhone}</p>}
-                {member.emergencyRel && <p className="text-muted-foreground">{member.emergencyRel}</p>}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No emergency contact on file.</p>
-            )}
-            {member.waiverSigned && (
-              <div className="mt-3 flex items-center gap-2 text-xs text-green-700">
-                <CheckSquare className="h-3.5 w-3.5" />
-                Waiver signed {formatDate(member.waiverDate)}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>{/* end Row 2 grid */}
+      </Card>{/* end Row 2 */}
 
       {/* Row 3: Class Attendance — full width */}
       <Card>
@@ -2379,11 +2356,11 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
             </div>
             <div className="space-y-1">
               <Label>Registered</Label>
-              <Input type="date" value={editForm.joinDate} onChange={(e) => setEditForm(f => ({ ...f, joinDate: e.target.value }))} />
+              <Input value={member.joinDate ? formatDate(member.joinDate) : "Not yet registered"} readOnly disabled className="bg-muted cursor-not-allowed" />
             </div>
             <div className="space-y-1">
               <Label>Activated</Label>
-              <Input type="date" value={editForm.activatedAt} onChange={(e) => setEditForm(f => ({ ...f, activatedAt: e.target.value }))} />
+              <Input value={member.activatedAt ? formatDate(member.activatedAt) : "Not yet activated"} readOnly disabled className="bg-muted cursor-not-allowed" />
             </div>
             <div className="space-y-1">
               <Label>How did they hear about us?</Label>

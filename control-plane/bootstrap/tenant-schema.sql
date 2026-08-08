@@ -500,6 +500,7 @@ CREATE TABLE "TenantBranding" (
     "emailFromName" TEXT,
     "smsSenderName" TEXT,
     "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
+    "memberNumberPrefix" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TenantBranding_pkey" PRIMARY KEY ("id")
