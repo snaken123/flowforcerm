@@ -44,6 +44,6 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const item = await prisma.shopItem.create({ data: parsed.data });
+  const item = await prisma.shopItem.create({ data: parsed.data, include: { sizeStocks: true } });
   return NextResponse.json(item, { status: 201 });
 }

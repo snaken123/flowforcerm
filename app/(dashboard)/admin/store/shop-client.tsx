@@ -426,7 +426,7 @@ export function ShopClient({
 
   function addToCart(item: ShopItem) {
     const hasSizes = item.category === "MERCHANDISE" &&
-      (item.sizeStocks.length > 0 || JSON.parse(item.availableSizes ?? "[]").length > 0);
+      ((item.sizeStocks?.length ?? 0) > 0 || JSON.parse(item.availableSizes ?? "[]").length > 0);
     if (hasSizes) {
       openSizePicker(item);
       return;
@@ -814,7 +814,7 @@ export function ShopClient({
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">{formatCurrency(item.sellingPrice)}</p>
-                        {item.sizeStocks.length > 0 && (
+                        {(item.sizeStocks?.length ?? 0) > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {item.sizeStocks.filter((s) => s.stock > 0).map((s) => (
                               <span key={s.size} className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
@@ -1477,9 +1477,9 @@ export function ShopClient({
           {sizePickerItem && (() => {
             const customSizes: string[] = JSON.parse(sizePickerItem.availableSizes ?? "[]");
             const knownSizes = [...DEFAULT_SIZES, ...customSizes.filter((s) => !DEFAULT_SIZES.includes(s))];
-            const stockedSizes = sizePickerItem.sizeStocks.map((s) => s.size).filter((s) => !knownSizes.includes(s));
+            const stockedSizes = (sizePickerItem.sizeStocks ?? []).map((s) => s.size).filter((s) => !knownSizes.includes(s));
             const allOptions = [...knownSizes, ...stockedSizes];
-            const hasPerSizeSetup = sizePickerItem.sizeStocks.length > 0;
+            const hasPerSizeSetup = (sizePickerItem.sizeStocks?.length ?? 0) > 0;
             return (
               <div className="space-y-3 py-1">
                 {!hasPerSizeSetup && (
@@ -1490,9 +1490,9 @@ export function ShopClient({
                 )}
                 <div className="grid grid-cols-3 gap-2">
                   {allOptions.map((size) => {
-                    const sStock = sizePickerItem.sizeStocks.find((s) => s.size === size)?.stock ?? null;
+                    const sStock = (sizePickerItem.sizeStocks ?? []).find((s) => s.size === size)?.stock ?? null;
                     // If this item has any per-size stock tracking, a size with no record (null) means no stock
-                    const hasPerSizeTracking = sizePickerItem.sizeStocks.length > 0;
+                    const hasPerSizeTracking = (sizePickerItem.sizeStocks?.length ?? 0) > 0;
                     const outOfStock = hasPerSizeTracking ? (sStock === null || sStock <= 0) : (sStock !== null && sStock <= 0);
                     return (
                       <button
@@ -1740,14 +1740,14 @@ export function ShopClient({
               const customSizes: string[] = JSON.parse(inventoryItem.availableSizes ?? "[]");
               const knownSizes = [...DEFAULT_SIZES, ...customSizes.filter((s) => !DEFAULT_SIZES.includes(s))];
               // Also show sizes that already have stock
-              const stockedSizes = inventoryItem.sizeStocks.map((s) => s.size).filter((s) => !knownSizes.includes(s));
+              const stockedSizes = (inventoryItem.sizeStocks ?? []).map((s) => s.size).filter((s) => !knownSizes.includes(s));
               const allOptions = [...knownSizes, ...stockedSizes];
               return (
                 <div className="space-y-2">
                   <Label>Size <span className="text-muted-foreground font-normal text-xs">(optional — leave blank to adjust total without size)</span></Label>
                   <div className="flex flex-wrap gap-2">
                     {allOptions.map((size) => {
-                      const sStock = inventoryItem.sizeStocks.find((s) => s.size === size)?.stock ?? 0;
+                      const sStock = (inventoryItem.sizeStocks ?? []).find((s) => s.size === size)?.stock ?? 0;
                       return (
                         <button
                           key={size}

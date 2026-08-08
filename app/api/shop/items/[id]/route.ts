@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const item = await prisma.shopItem.update({
     where: { id: params.id },
     data: parsed.data,
+    include: { sizeStocks: true },
   });
 
   return NextResponse.json(item);
