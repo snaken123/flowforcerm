@@ -97,6 +97,10 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const isAdminOrCoach = role === "ADMIN" || (role === "STAFF" && isCoach);
   const isStoreRole = role === "STORE";
 
+  // These badges are re-fetched on every route change (not just once on mount) since the
+  // sidebar stays mounted across client-side navigations — without `pathname` as a
+  // dependency, a badge would only ever reflect whatever was true when the page first
+  // loaded, going stale the moment the user does something elsewhere in the app.
   useEffect(() => {
     if (!["ADMIN", "STAFF", "STORE"].includes(role)) return;
     if (["ADMIN", "STAFF"].includes(role)) {
@@ -109,7 +113,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .then((r) => r.json())
       .then((d) => setStorePendingCount(d.count ?? 0))
       .catch(() => {});
-  }, [role]);
+  }, [role, pathname]);
 
   useEffect(() => {
     if (!isAdminOrCoach) return;
@@ -117,7 +121,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .then((r) => r.json())
       .then((d) => setRecordsPendingCount(d.count ?? 0))
       .catch(() => {});
-  }, [isAdminOrCoach]);
+  }, [isAdminOrCoach, pathname]);
 
   useEffect(() => {
     if (!["ADMIN", "STAFF"].includes(role)) return;
@@ -125,7 +129,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .then((r) => r.json())
       .then((d) => setPendingReceiptsCount(d.count ?? 0))
       .catch(() => {});
-  }, [role]);
+  }, [role, pathname]);
 
   const badgeCounts: Record<string, number> = {
     "/admin/members": freeTrialCount,
