@@ -18,6 +18,7 @@ import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { getUtcOffsetString } from "@/lib/timezone-offset";
 import { MEMBER_SOURCE_OPTIONS } from "@/lib/member-source";
 import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
+import { AwardSelect } from "@/components/records/award-select";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -190,8 +191,9 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
 
   // Rank management
   const [rankDialog, setRankDialog] = useState<{ mode: "add"; art: string } | { mode: "edit"; record: any } | null>(null);
-  const [rankForm, setRankForm] = useState({ martialArt: "", rank: "", stripes: "", awardedAt: "", awardedBy: "" });
+  const [rankForm, setRankForm] = useState({ martialArt: "", rank: "", details: "", awardedAt: "", awardedBy: "", photoUrl: "" });
   const [savingRank, setSavingRank] = useState(false);
+  const [uploadingRankPhoto, setUploadingRankPhoto] = useState(false);
   const [deletingRank, setDeletingRank] = useState<any | null>(null);
   const [deletingRankConfirm, setDeletingRankConfirm] = useState(false);
 
@@ -350,7 +352,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
   }
 
   function openAddRank(art: string) {
-    setRankForm({ martialArt: art, rank: "", stripes: "", awardedAt: new Date().toLocaleDateString("en-CA", { timeZone }), awardedBy: "" });
+    setRankForm({ martialArt: art, rank: "", details: "", awardedAt: new Date().toLocaleDateString("en-CA", { timeZone }), awardedBy: "", photoUrl: "" });
     setRankDialog({ mode: "add", art });
   }
 
@@ -358,11 +360,32 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
     setRankForm({
       martialArt: record.martialArt,
       rank: record.rank,
-      stripes: record.stripes ?? "",
+      details: record.details ?? "",
       awardedAt: new Date(record.awardedAt).toLocaleDateString("en-CA", { timeZone }),
       awardedBy: record.awardedBy ?? "",
+      photoUrl: record.photoUrl ?? "",
     });
     setRankDialog({ mode: "edit", record });
+  }
+
+  async function handleRankPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRankPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("memberId", member.id);
+      const res = await fetch("/api/upload/record-photo", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setRankForm((f) => ({ ...f, photoUrl: data.url }));
+    } catch {
+      toast({ variant: "destructive", title: "Could not upload photo" });
+    } finally {
+      setUploadingRankPhoto(false);
+      e.target.value = "";
+    }
   }
 
   async function saveRank() {
@@ -371,17 +394,22 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
       const isEdit = rankDialog?.mode === "edit";
       const url = isEdit ? `/api/ranks/${(rankDialog as any).record.id}` : "/api/ranks";
       const method = isEdit ? "PATCH" : "POST";
-      const extras = rankForm.stripes ? { stripes: Number(rankForm.stripes) } : { stripes: null };
-      const body = isEdit
-        ? { rank: rankForm.rank, awardedAt: rankForm.awardedAt, awardedBy: rankForm.awardedBy, martialArt: rankForm.martialArt, ...extras }
-        : { memberId: member.id, martialArt: rankForm.martialArt, rank: rankForm.rank, awardedAt: rankForm.awardedAt, awardedBy: rankForm.awardedBy, ...extras };
+      const shared = {
+        rank: rankForm.rank,
+        awardedAt: rankForm.awardedAt,
+        awardedBy: rankForm.awardedBy,
+        martialArt: rankForm.martialArt,
+        details: rankForm.details || undefined,
+        photoUrl: rankForm.photoUrl || undefined,
+      };
+      const body = isEdit ? shared : { memberId: member.id, ...shared };
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); console.error("saveRank error", err); throw new Error(); }
-      toast({ title: isEdit ? "Rank updated" : "Rank added" });
+      toast({ title: isEdit ? "Record updated" : "Record added" });
       setRankDialog(null);
       router.refresh();
     } catch {
-      toast({ variant: "destructive", title: "Could not save rank" });
+      toast({ variant: "destructive", title: "Could not save record" });
     } finally {
       setSavingRank(false);
     }
@@ -1153,7 +1181,8 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
                                 <tr key={r.id} className={i !== records.length - 1 ? "border-b" : ""}>
                                   <td className={`px-3 py-2 font-medium ${recordTextClass(r.status)}`}>
                                     <span className="inline-flex items-center gap-1.5">
-                                      {r.rank}{r.stripes ? ` · ${r.stripes}S` : ""}
+                                      {r.photoUrl && <img src={r.photoUrl} alt="" className="h-4 w-4 rounded object-cover shrink-0" />}
+                                      {r.rank}
                                       <RecordStatusIndicator status={r.status} rejectionReason={r.rejectionReason} />
                                     </span>
                                   </td>
@@ -2127,106 +2156,23 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
-              <Label>Martial Art</Label>
-              <Select
+              <Label>Award</Label>
+              <AwardSelect
                 value={rankForm.martialArt}
-                onValueChange={(v) => setRankForm(f => ({ ...f, martialArt: v, rank: "" }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select martial art" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BJJ">Brazilian Jiu-Jitsu</SelectItem>
-                  <SelectItem value="Judo">Judo</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => setRankForm(f => ({ ...f, martialArt: v }))}
+                canManage={isAdmin}
+              />
             </div>
             <div className="space-y-1">
-              <Label>Rank</Label>
-              <Select
+              <Label>Achievement</Label>
+              <Input
                 value={rankForm.rank}
-                onValueChange={(v) => setRankForm(f => ({ ...f, rank: v }))}
-                disabled={!rankForm.martialArt}
-              >
-                <SelectTrigger><SelectValue placeholder={rankForm.martialArt ? "Select rank" : "Select martial art first"} /></SelectTrigger>
-                <SelectContent>
-                  {rankForm.martialArt === "BJJ" && (
-                    <>
-                      <SelectItem value="— Kids Ranks —" disabled>— Kids Ranks —</SelectItem>
-                      <SelectItem value="Kids White Belt">Kids White Belt</SelectItem>
-                      <SelectItem value="Grey/White Belt">Grey/White Belt</SelectItem>
-                      <SelectItem value="Solid Grey Belt">Solid Grey Belt</SelectItem>
-                      <SelectItem value="Grey/Black Belt">Grey/Black Belt</SelectItem>
-                      <SelectItem value="Yellow/White Belt">Yellow/White Belt</SelectItem>
-                      <SelectItem value="Solid Yellow Belt">Solid Yellow Belt</SelectItem>
-                      <SelectItem value="Yellow/Black Belt">Yellow/Black Belt</SelectItem>
-                      <SelectItem value="Orange/White Belt">Orange/White Belt</SelectItem>
-                      <SelectItem value="Solid Orange Belt">Solid Orange Belt</SelectItem>
-                      <SelectItem value="Orange/Black Belt">Orange/Black Belt</SelectItem>
-                      <SelectItem value="Green/White Belt">Green/White Belt</SelectItem>
-                      <SelectItem value="Solid Green Belt">Solid Green Belt</SelectItem>
-                      <SelectItem value="Green/Black Belt">Green/Black Belt</SelectItem>
-                      <SelectItem value="— Adult Ranks —" disabled>— Adult Ranks —</SelectItem>
-                      <SelectItem value="White Belt">White Belt</SelectItem>
-                      <SelectItem value="Blue Belt">Blue Belt</SelectItem>
-                      <SelectItem value="Purple Belt">Purple Belt</SelectItem>
-                      <SelectItem value="Brown Belt">Brown Belt</SelectItem>
-                      <SelectItem value="Black Belt">Black Belt</SelectItem>
-                      <SelectItem value="Red/Black Belt (Coral)">Red/Black Belt (Coral)</SelectItem>
-                      <SelectItem value="Red/White Belt (Coral)">Red/White Belt (Coral)</SelectItem>
-                      <SelectItem value="Red Belt">Red Belt</SelectItem>
-                    </>
-                  )}
-                  {rankForm.martialArt === "Judo" && (
-                    <>
-                      <SelectItem value="— Kids Ranks —" disabled>— Kids Ranks —</SelectItem>
-                      <SelectItem value="Kids White Belt">Kids White Belt</SelectItem>
-                      <SelectItem value="Kids Yellow Belt">Kids Yellow Belt</SelectItem>
-                      <SelectItem value="Kids Orange Belt">Kids Orange Belt</SelectItem>
-                      <SelectItem value="Kids Green Belt">Kids Green Belt</SelectItem>
-                      <SelectItem value="Kids Blue Belt">Kids Blue Belt</SelectItem>
-                      <SelectItem value="Kids Brown Belt">Kids Brown Belt</SelectItem>
-                      <SelectItem value="— Kyu Grades —" disabled>— Kyu Grades —</SelectItem>
-                      <SelectItem value="6th Kyu - White Belt">6th Kyu - White Belt</SelectItem>
-                      <SelectItem value="5th Kyu - Yellow Belt">5th Kyu - Yellow Belt</SelectItem>
-                      <SelectItem value="4th Kyu - Orange Belt">4th Kyu - Orange Belt</SelectItem>
-                      <SelectItem value="3rd Kyu - Green Belt">3rd Kyu - Green Belt</SelectItem>
-                      <SelectItem value="2nd Kyu - Blue Belt">2nd Kyu - Blue Belt</SelectItem>
-                      <SelectItem value="1st Kyu - Brown Belt">1st Kyu - Brown Belt</SelectItem>
-                      <SelectItem value="— Dan Grades —" disabled>— Dan Grades —</SelectItem>
-                      <SelectItem value="1st Dan - Black Belt">1st Dan - Black Belt</SelectItem>
-                      <SelectItem value="2nd Dan - Black Belt">2nd Dan - Black Belt</SelectItem>
-                      <SelectItem value="3rd Dan - Black Belt">3rd Dan - Black Belt</SelectItem>
-                      <SelectItem value="4th Dan - Black Belt">4th Dan - Black Belt</SelectItem>
-                      <SelectItem value="5th Dan - Black Belt">5th Dan - Black Belt</SelectItem>
-                      <SelectItem value="6th Dan - Red/White Belt">6th Dan - Red/White Belt</SelectItem>
-                      <SelectItem value="7th Dan - Red/White Belt">7th Dan - Red/White Belt</SelectItem>
-                      <SelectItem value="8th Dan - Red/White Belt">8th Dan - Red/White Belt</SelectItem>
-                      <SelectItem value="9th Dan - Red Belt">9th Dan - Red Belt</SelectItem>
-                      <SelectItem value="10th Dan - Red Belt">10th Dan - Red Belt</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setRankForm(f => ({ ...f, rank: e.target.value }))}
+                placeholder="e.g. CF-L1, Black Belt, Gold, etc."
+              />
             </div>
-            {rankForm.martialArt === "BJJ" && (
-              <div className="space-y-1">
-                <Label>Stripes <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                <Select
-                  value={rankForm.stripes}
-                  onValueChange={(v) => setRankForm(f => ({ ...f, stripes: v }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="No stripes" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No stripes</SelectItem>
-                    <SelectItem value="1">1 Stripe</SelectItem>
-                    <SelectItem value="2">2 Stripes</SelectItem>
-                    <SelectItem value="3">3 Stripes</SelectItem>
-                    <SelectItem value="4">4 Stripes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-1">
-              <Label>Date Awarded</Label>
+              <Label>Date</Label>
               <Input
                 type="date"
                 value={rankForm.awardedAt}
@@ -2238,8 +2184,38 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
               <Input
                 value={rankForm.awardedBy}
                 onChange={(e) => setRankForm(f => ({ ...f, awardedBy: e.target.value }))}
-                placeholder="Professor / Instructor name"
+                placeholder="e.g. Sensei Robert, Coach Sid, 6Sigma Philippines, etc."
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Details <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                value={rankForm.details}
+                onChange={(e) => setRankForm(f => ({ ...f, details: e.target.value }))}
+                placeholder="e.g. SM MOA Concert Grounds, North-a-Palooza, Pan Asians, Philippine, etc."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Photo <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <div className="flex items-center gap-3">
+                {rankForm.photoUrl && (
+                  <img src={rankForm.photoUrl} alt="" className="h-10 w-10 rounded object-cover border shrink-0" />
+                )}
+                <Label htmlFor="rank-photo-upload" className="cursor-pointer">
+                  <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted transition-colors">
+                    {uploadingRankPhoto && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {uploadingRankPhoto ? "Uploading…" : rankForm.photoUrl ? "Replace Photo" : "Upload Photo"}
+                  </span>
+                </Label>
+                <input
+                  id="rank-photo-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploadingRankPhoto}
+                  onChange={handleRankPhotoChange}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

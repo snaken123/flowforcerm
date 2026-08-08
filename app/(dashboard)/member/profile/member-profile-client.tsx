@@ -10,6 +10,7 @@ import { formatDate, formatCurrency, getInitials } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { DocumentsSection } from "./documents-section";
 import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
+import { AwardSelect } from "@/components/records/award-select";
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", FROZEN: "warning", INACTIVE: "secondary", CANCELLED: "destructive",
@@ -81,6 +82,66 @@ export function MemberProfileClient({ member }: { member: any }) {
       setEmergencyError("Something went wrong. Please try again.");
     } finally {
       setEmergencySaving(false);
+    }
+  }
+
+  const [addRecordOpen, setAddRecordOpen] = useState(false);
+  const [rankForm, setRankForm] = useState({ martialArt: "", rank: "", details: "", awardedAt: "", awardedBy: "", photoUrl: "" });
+  const [savingRank, setSavingRank] = useState(false);
+  const [rankError, setRankError] = useState("");
+  const [uploadingRankPhoto, setUploadingRankPhoto] = useState(false);
+
+  function openAddRecord() {
+    setRankForm({ martialArt: "", rank: "", details: "", awardedAt: new Date().toISOString().slice(0, 10), awardedBy: "", photoUrl: "" });
+    setRankError("");
+    setAddRecordOpen(true);
+  }
+
+  async function handleRankPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRankPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("memberId", member.id);
+      const res = await fetch("/api/upload/record-photo", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setRankForm((f) => ({ ...f, photoUrl: data.url }));
+    } catch {
+      toast({ variant: "destructive", title: "Could not upload photo" });
+    } finally {
+      setUploadingRankPhoto(false);
+      e.target.value = "";
+    }
+  }
+
+  async function saveRecord() {
+    setSavingRank(true);
+    setRankError("");
+    try {
+      const res = await fetch("/api/ranks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: member.id,
+          martialArt: rankForm.martialArt,
+          rank: rankForm.rank,
+          awardedAt: rankForm.awardedAt,
+          awardedBy: rankForm.awardedBy || undefined,
+          details: rankForm.details || undefined,
+          photoUrl: rankForm.photoUrl || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      setAddRecordOpen(false);
+      toast({ title: "Record submitted", description: "Pending approval from a coach or admin." });
+      router.refresh();
+    } catch {
+      setRankError("Something went wrong. Please try again.");
+    } finally {
+      setSavingRank(false);
     }
   }
 
@@ -347,10 +408,13 @@ export function MemberProfileClient({ member }: { member: any }) {
 
         {/* Records */}
         <Card className="md:col-span-2">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Award className="h-4 w-4" />Records
             </CardTitle>
+            <button onClick={openAddRecord} className="text-xs text-primary hover:underline font-medium">
+              + Add Record
+            </button>
           </CardHeader>
           <CardContent>
             {Object.keys(rankGroups).length === 0 ? (
@@ -484,6 +548,102 @@ export function MemberProfileClient({ member }: { member: any }) {
 
       {/* Documents */}
       <DocumentsSection waiverDate={member.waiverDate} privacyAcceptedAt={member.privacyAcceptedAt} />
+
+      {/* Add Record Modal */}
+      {addRecordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-base font-bold">Add Record</h2>
+            <p className="text-xs text-muted-foreground -mt-2">New records are pending approval from a coach or admin.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Award</label>
+                <div className="mt-1">
+                  <AwardSelect
+                    value={rankForm.martialArt}
+                    onChange={(v) => setRankForm(f => ({ ...f, martialArt: v }))}
+                    canManage={false}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Achievement</label>
+                <input
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={rankForm.rank}
+                  onChange={(e) => setRankForm(f => ({ ...f, rank: e.target.value }))}
+                  placeholder="e.g. CF-L1, Black Belt, Gold, etc."
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Date</label>
+                <input
+                  type="date"
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={rankForm.awardedAt}
+                  onChange={(e) => setRankForm(f => ({ ...f, awardedAt: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Awarded by</label>
+                <input
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={rankForm.awardedBy}
+                  onChange={(e) => setRankForm(f => ({ ...f, awardedBy: e.target.value }))}
+                  placeholder="e.g. Sensei Robert, Coach Sid, 6Sigma Philippines, etc."
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Details (optional)</label>
+                <input
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={rankForm.details}
+                  onChange={(e) => setRankForm(f => ({ ...f, details: e.target.value }))}
+                  placeholder="e.g. SM MOA Concert Grounds, North-a-Palooza, Pan Asians, Philippine, etc."
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Photo (optional)</label>
+                <div className="mt-1 flex items-center gap-3">
+                  {rankForm.photoUrl && (
+                    <img src={rankForm.photoUrl} alt="" className="h-10 w-10 rounded object-cover border shrink-0" />
+                  )}
+                  <label htmlFor="member-rank-photo-upload" className="cursor-pointer">
+                    <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted transition-colors">
+                      {uploadingRankPhoto && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      {uploadingRankPhoto ? "Uploading…" : rankForm.photoUrl ? "Replace Photo" : "Upload Photo"}
+                    </span>
+                  </label>
+                  <input
+                    id="member-rank-photo-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={uploadingRankPhoto}
+                    onChange={handleRankPhotoChange}
+                  />
+                </div>
+              </div>
+            </div>
+            {rankError && <p className="text-xs text-destructive">{rankError}</p>}
+            <div className="flex gap-2 justify-end pt-1">
+              <button
+                onClick={() => setAddRecordOpen(false)}
+                className="px-4 py-2 text-sm rounded-md border hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveRecord}
+                disabled={savingRank || !rankForm.martialArt || !rankForm.rank || !rankForm.awardedAt}
+                className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                {savingRank ? "Saving…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
