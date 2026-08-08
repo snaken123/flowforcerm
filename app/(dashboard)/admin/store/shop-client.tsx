@@ -1013,7 +1013,7 @@ export function ShopClient({
                   <div className="relative rounded-lg overflow-hidden border">
                     <img src={receiptPreview} className="w-full max-h-40 object-cover" alt="receipt" />
                     <button className="absolute top-1 right-1 rounded-full bg-background/80 p-1 hover:bg-background" onClick={() => { setReceiptFile(null); setReceiptPreview(null); setReceiptStatus("idle"); if (receiptInputRef.current) receiptInputRef.current.value = ""; }}><X className="h-3 w-3" /></button>
-                    {receiptStatus === "done" && <div className="absolute bottom-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded">Uploaded to Drive</div>}
+                    {receiptStatus === "done" && <div className="absolute bottom-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded">Uploaded</div>}
                   </div>
                 )}
               </div>
@@ -1210,7 +1210,7 @@ export function ShopClient({
                         <div className="relative rounded-xl overflow-hidden border">
                           <img src={receiptPreview} className="w-full max-h-48 object-cover" alt="receipt" />
                           <button className="absolute top-2 right-2 rounded-full bg-background/90 p-1.5 shadow" onClick={() => { setReceiptFile(null); setReceiptPreview(null); setReceiptStatus("idle"); if (receiptInputRef.current) receiptInputRef.current.value = ""; }}><X className="h-4 w-4" /></button>
-                          {receiptStatus === "done" && <div className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-lg">Uploaded to Drive</div>}
+                          {receiptStatus === "done" && <div className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-lg">Uploaded</div>}
                         </div>
                       )}
                     </div>
@@ -1967,7 +1967,7 @@ export function ShopClient({
                 ) : (
                   <label className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-4 cursor-pointer hover:border-primary transition-colors">
                     <Camera className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Upload receipt photo to Google Drive</span>
+                    <span className="text-xs text-muted-foreground">Upload receipt photo</span>
                     <input type="file" accept="image/*" capture="environment" className="hidden" ref={editReceiptRef} onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) { setEditReceiptFile(f); setEditReceiptPreview(URL.createObjectURL(f)); }
