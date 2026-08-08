@@ -9,12 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   KeyRound, Monitor, ShoppingBag, Eye, EyeOff,
   Tablet, Plus, Trash2, Copy, Check, AlertCircle, Palette, Loader2, ImageUp,
+  FileText, Shield, BookOpen, Scroll, Upload,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { PhotoCropDialog } from "@/components/photo-crop-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type AccountInfo = { email: string; updatedAt: string } | null;
 
@@ -288,6 +290,145 @@ function BrandingSection() {
           onCancel={() => setCropSrc(null)}
         />
       )}
+    </Card>
+  );
+}
+
+type LegalDocuments = {
+  waiverText: string;
+  privacyText: string;
+  rulesPdfUrl: string;
+  handbookPdfUrl: string;
+};
+
+function LegalDocumentsSection() {
+  const [docs, setDocs] = useState<LegalDocuments | null>(null);
+  const [waiverText, setWaiverText] = useState("");
+  const [privacyText, setPrivacyText] = useState("");
+  const [savingText, setSavingText] = useState(false);
+  const [textSaved, setTextSaved] = useState(false);
+  const [textError, setTextError] = useState("");
+  const [uploadingKind, setUploadingKind] = useState<"rules" | "handbook" | null>(null);
+  const [uploadError, setUploadError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/legal-documents")
+      .then((r) => r.json())
+      .then((data: LegalDocuments) => {
+        setDocs(data);
+        setWaiverText(data.waiverText);
+        setPrivacyText(data.privacyText);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function saveText() {
+    setSavingText(true);
+    setTextError("");
+    setTextSaved(false);
+    try {
+      const res = await fetch("/api/admin/settings/legal-documents", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waiverText, privacyText }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setTextError(d.error ?? "Failed to save."); return; }
+      setTextSaved(true);
+    } catch {
+      setTextError("Network error. Please try again.");
+    } finally {
+      setSavingText(false);
+    }
+  }
+
+  async function replacePdf(kind: "rules" | "handbook", file: File) {
+    setUploadingKind(kind);
+    setUploadError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("kind", kind);
+      const res = await fetch("/api/admin/settings/legal-documents/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error ?? "Upload failed."); return; }
+      setDocs((d) => d && ({ ...d, [kind === "rules" ? "rulesPdfUrl" : "handbookPdfUrl"]: data.url }));
+    } catch {
+      setUploadError("Network error during upload.");
+    } finally {
+      setUploadingKind(null);
+    }
+  }
+
+  if (!docs) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Scroll className="h-4 w-4" />
+          Legal Documents
+        </CardTitle>
+        <CardDescription>Edit the waiver and privacy text members agree to, and replace the rules/handbook PDFs.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />Liability Waiver</Label>
+          <Textarea
+            value={waiverText}
+            onChange={(e) => setWaiverText(e.target.value)}
+            className="min-h-[200px] font-mono text-xs"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" />Privacy & Confidentiality</Label>
+          <Textarea
+            value={privacyText}
+            onChange={(e) => setPrivacyText(e.target.value)}
+            className="min-h-[200px] font-mono text-xs"
+          />
+        </div>
+        {textError && <p className="text-sm text-destructive">{textError}</p>}
+        {textSaved && <p className="text-sm text-emerald-600">Saved.</p>}
+        <Button onClick={saveText} disabled={savingText || !waiverText.trim() || !privacyText.trim()}>
+          {savingText && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {savingText ? "Saving…" : "Save Text"}
+        </Button>
+
+        <div className="border-t pt-5 grid gap-4 sm:grid-cols-2">
+          {([
+            { kind: "rules" as const, label: "Gym Rules & Guidelines", url: docs.rulesPdfUrl, icon: BookOpen },
+            { kind: "handbook" as const, label: "Welcome Handbook", url: docs.handbookPdfUrl, icon: BookOpen },
+          ]).map(({ kind, label, url, icon: Icon }) => (
+            <div key={kind} className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{label}</Label>
+              <div className="flex items-center gap-2">
+                <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">
+                  View current PDF
+                </a>
+              </div>
+              <Label htmlFor={`pdf-upload-${kind}`} className="cursor-pointer">
+                <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted transition-colors">
+                  {uploadingKind === kind ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploadingKind === kind ? "Uploading…" : "Replace PDF"}
+                </span>
+              </Label>
+              <input
+                id={`pdf-upload-${kind}`}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                disabled={uploadingKind !== null}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) replacePdf(kind, file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          ))}
+        </div>
+        {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+      </CardContent>
     </Card>
   );
 }
@@ -605,6 +746,11 @@ export function SettingsClient() {
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Branding</h2>
         <BrandingSection />
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Legal Documents</h2>
+        <LegalDocumentsSection />
       </div>
 
       <div>
