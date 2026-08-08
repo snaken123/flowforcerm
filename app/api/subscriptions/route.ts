@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
 import { addMonths } from "date-fns";
+import { nextMemberNumber } from "@/lib/member-number";
 
 const createSchema = z.object({
   memberId: z.string().optional(),
@@ -160,14 +161,7 @@ export async function POST(req: NextRequest) {
     };
     // Auto-assign member number if they don't have one
     if (!sub.member.memberNumber) {
-      const last = await prisma.member.findFirst({
-        where: { memberNumber: { startsWith: "NS-" } },
-        orderBy: { memberNumber: "desc" },
-        select: { memberNumber: true },
-      });
-      const lastNum = last?.memberNumber ? parseInt(last.memberNumber.replace("NS-", ""), 10) : 0;
-      const nextNum = (isNaN(lastNum) ? 0 : lastNum) + 1;
-      memberUpdateData.memberNumber = `NS-${String(nextNum).padStart(5, "0")}`;
+      memberUpdateData.memberNumber = await nextMemberNumber();
     }
     await prisma.member.update({ where: { id: parsed.data.memberId }, data: memberUpdateData });
   }
