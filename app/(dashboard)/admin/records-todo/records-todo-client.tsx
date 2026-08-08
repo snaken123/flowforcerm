@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getInitials } from "@/lib/utils";
 import { ApproveRejectActions } from "@/components/records/approve-reject-actions";
 
-export function RecordsTodoClient() {
+export function RecordsTodoClient({ canApprove }: { canApprove: boolean }) {
   const [records, setRecords] = useState<any[] | null>(null);
 
   const load = useCallback(() => {
@@ -60,7 +60,11 @@ export function RecordsTodoClient() {
               </div>
               {r.details && <p className="text-xs text-muted-foreground mt-1">{r.details}</p>}
             </div>
-            <ApproveRejectActions recordId={r.id} onDone={load} />
+            {canApprove ? (
+              <ApproveRejectActions recordId={r.id} onDone={load} />
+            ) : (
+              <span className="text-xs text-muted-foreground shrink-0">Awaiting a coach or admin</span>
+            )}
           </CardContent>
         </Card>
       ))}

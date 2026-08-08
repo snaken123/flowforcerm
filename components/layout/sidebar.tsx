@@ -45,7 +45,7 @@ const navEntries: NavEntry[] = [
       { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
     ],
   },
-  { type: "link", item: { label: "To Do", href: "/admin/records-todo", icon: ListChecks, roles: ["ADMIN", "STAFF"], requiresCoach: true } },
+  { type: "link", item: { label: "To Do", href: "/admin/records-todo", icon: ListChecks, roles: ["ADMIN", "STAFF"] } },
   { type: "link", item: { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] } },
   { type: "link", item: { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] } },
   // Member-only
@@ -89,6 +89,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const [freeTrialCount, setFreeTrialCount] = useState(0);
   const [storePendingCount, setStorePendingCount] = useState(0);
   const [recordsPendingCount, setRecordsPendingCount] = useState(0);
+  const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
   const role = (session?.user as any)?.role ?? "MEMBER";
   const employeeTypes: string[] = (session?.user as any)?.employeeTypes ?? [];
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
@@ -118,18 +119,27 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
       .catch(() => {});
   }, [isAdminOrCoach]);
 
+  useEffect(() => {
+    if (!["ADMIN", "STAFF"].includes(role)) return;
+    fetch("/api/admin/pending-receipts-count")
+      .then((r) => r.json())
+      .then((d) => setPendingReceiptsCount(d.count ?? 0))
+      .catch(() => {});
+  }, [role]);
+
   const badgeCounts: Record<string, number> = {
     "/admin/members": freeTrialCount,
     "/admin/store": storePendingCount,
-    "/admin/records-todo": recordsPendingCount,
+    "/admin/records-todo": recordsPendingCount + pendingReceiptsCount,
   };
 
   const isEntryActive = (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/"));
 
-  // isCoachOnly (pure coaches, no ADMIN/STAFF employeeType tag) keep Dashboard, both
-  // Schedule groups, and any item flagged requiresCoach, but never see Comms/Settings.
+  // isCoachOnly (pure coaches, no ADMIN/STAFF employeeType tag) keep Dashboard, To Do,
+  // both Schedule groups, and any item flagged requiresCoach, but never see Comms/Settings.
   const coachAllowedHrefs = [
     "/dashboard",
+    "/admin/records-todo",
     ...navEntries.filter((e): e is Extract<NavEntry, { type: "link" }> => e.type === "link" && !!e.item.requiresCoach).map((e) => e.item.href),
   ];
   const visibleEntries = navEntries

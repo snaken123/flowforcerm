@@ -425,6 +425,8 @@ model Payment {
   notes          String?
   paidAt         DateTime?
   dueDate        DateTime?
+  needsReceipt   Boolean       @default(false)
+  receiptUrl     String?
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -433,6 +435,7 @@ model Payment {
   @@index([subscriptionId])
   @@index([paidAt])
   @@index([status, paidAt])
+  @@index([needsReceipt, receiptUrl])
 }
 
 model CheckIn {

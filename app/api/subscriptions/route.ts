@@ -17,6 +17,8 @@ const createSchema = z.object({
   sessionsTotal: z.number().int().positive().nullable().optional(),
   notes: z.string().max(500).optional(),
   paymentMethod: z.string().optional(),
+  needsReceipt: z.boolean().optional(),
+  receiptUrl: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -131,7 +133,9 @@ export async function POST(req: NextRequest) {
     include: { service: true, member: true, employee: { select: { id: true, firstName: true, lastName: true } } },
   });
 
-  // Auto-create a PAID payment record
+  // Auto-create a PAID payment record. The money was collected either way — needsReceipt
+  // tracks whether proof is still outstanding (checked, but nothing attached yet), which
+  // surfaces on the admin/coach To Do list rather than affecting payment status.
   if (parsed.data.price > 0) {
     await prisma.payment.create({
       data: {
@@ -142,6 +146,8 @@ export async function POST(req: NextRequest) {
         status: "PAID",
         method: parsed.data.paymentMethod ?? null,
         paidAt: startDate,
+        needsReceipt: parsed.data.needsReceipt === true && !parsed.data.receiptUrl,
+        receiptUrl: parsed.data.receiptUrl ?? null,
       },
     });
   }

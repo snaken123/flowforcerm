@@ -315,6 +315,8 @@ CREATE TABLE "Payment" (
     "notes" TEXT,
     "paidAt" TIMESTAMP(3),
     "dueDate" TIMESTAMP(3),
+    "needsReceipt" BOOLEAN NOT NULL DEFAULT false,
+    "receiptUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -636,6 +638,9 @@ CREATE INDEX "Payment_paidAt_idx" ON "Payment"("paidAt");
 
 -- CreateIndex
 CREATE INDEX "Payment_status_paidAt_idx" ON "Payment"("status", "paidAt");
+
+-- CreateIndex
+CREATE INDEX "Payment_needsReceipt_receiptUrl_idx" ON "Payment"("needsReceipt", "receiptUrl");
 
 -- CreateIndex
 CREATE INDEX "CheckIn_memberId_idx" ON "CheckIn"("memberId");

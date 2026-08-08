@@ -759,6 +759,37 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
 
     setAssigning(true);
     try {
+      // Upload the receipt photo first (if attached) so its URL can ride along with the
+      // subscription/payment creation, instead of being uploaded after and discarded.
+      let uploadedReceiptUrl: string | null = null;
+      let uploadError = false;
+      if (receiptFile && selectedService && selectedPackage) {
+        setReceiptStatus("uploading");
+        try {
+          const fd = new FormData();
+          fd.append("file", receiptFile);
+          fd.append("memberId", member.id);
+          fd.append("lastName", member.lastName);
+          fd.append("sport", selectedService.name);
+          fd.append("package", selectedPackage.name);
+          fd.append("amount", String(finalPrice));
+          fd.append("paymentMethod", paymentSubMode.length ? `${paymentMode}${paymentSubMode.join("")}` : paymentMode);
+          const upRes = await fetch("/api/upload-receipt", { method: "POST", body: fd });
+          if (upRes.ok) {
+            const data = await upRes.json();
+            uploadedReceiptUrl = data.link ?? null;
+            setReceiptLink(uploadedReceiptUrl);
+            setReceiptStatus("done");
+          } else {
+            setReceiptStatus("error");
+            uploadError = true;
+          }
+        } catch {
+          setReceiptStatus("error");
+          uploadError = true;
+        }
+      }
+
       // Calculate end date from package validDays
       const startDateStr = new Date().toLocaleDateString("en-CA", { timeZone });
       const startOffset = getUtcOffsetString(new Date(`${startDateStr}T12:00:00Z`), timeZone);
@@ -779,42 +810,16 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           endDate: endDate ? endDate.toLocaleDateString("en-CA", { timeZone }) : undefined,
           sessionsTotal: selectedPackage?.sessions ?? null,
           paymentMethod: paymentSubMode.length ? `${paymentMode} - ${paymentSubMode.join(" & ")}` : paymentMode || undefined,
+          needsReceipt: membershipNeedsReceipt,
+          receiptUrl: uploadedReceiptUrl ?? undefined,
           ...(specialPriceNote ? { notes: specialPriceNote } : {}),
         }),
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error || "Failed"); }
 
-      // Upload receipt photo if one was attached
-      let uploadError = false;
-      if (receiptFile && selectedService && selectedPackage) {
-        setReceiptStatus("uploading");
-        try {
-          const fd = new FormData();
-          fd.append("file", receiptFile);
-          fd.append("memberId", member.id);
-          fd.append("lastName", member.lastName);
-          fd.append("sport", selectedService.name);
-          fd.append("package", selectedPackage.name);
-          fd.append("amount", String(finalPrice));
-          fd.append("paymentMethod", paymentSubMode.length ? `${paymentMode}${paymentSubMode.join("")}` : paymentMode);
-          const upRes = await fetch("/api/upload-receipt", { method: "POST", body: fd });
-          if (upRes.ok) {
-            const data = await upRes.json();
-            setReceiptLink(data.link ?? null);
-            setReceiptStatus("done");
-          } else {
-            setReceiptStatus("error");
-            uploadError = true;
-          }
-        } catch {
-          setReceiptStatus("error");
-          uploadError = true;
-        }
-      }
-
       toast({
         title: "Membership assigned",
-        ...(uploadError && membershipNeedsReceipt ? { description: "Receipt upload failed — membership was still created. Upload the receipt manually." } : {}),
+        ...(uploadError && membershipNeedsReceipt ? { description: "Receipt upload failed — membership was still created, flagged in To Do until a receipt is added." } : {}),
       });
       setShowAssign(false);
       setSelectedServiceId("");
