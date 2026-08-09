@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, UserPlus, Filter, Trash2, CheckCircle2, Clock, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Loader2 } from "lucide-react";
+import { Search, UserPlus, Filter, Trash2, CheckCircle2, Clock, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Loader2, Eye, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import { formatDate, timeAgo, getInitials } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AddMemberDialog } from "./add-member-dialog";
+import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 const STATUS_COLORS: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
   ACTIVE: "success",
@@ -33,6 +35,7 @@ export function MembersClient({
   total,
   pageSize,
   freeTrialCount = 0,
+  services = [],
 }: {
   members: any[];
   isAdmin: boolean;
@@ -42,10 +45,12 @@ export function MembersClient({
   total: number;
   pageSize: number;
   freeTrialCount?: number;
+  services?: any[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const timeZone = useTenantTimezone();
   const bouncedSet = new Set(bouncedEmails.map((e) => e.toLowerCase()));
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "ALL");
@@ -81,6 +86,22 @@ export function MembersClient({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [confirmResend, setConfirmResend] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [assignTarget, setAssignTarget] = useState<{ id: string; firstName: string; lastName: string; subscriptions: any[] } | null>(null);
+  const [loadingAssignId, setLoadingAssignId] = useState<string | null>(null);
+
+  async function openAssignMembership(member: any) {
+    setLoadingAssignId(member.id);
+    try {
+      const res = await fetch(`/api/members/${member.id}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setAssignTarget({ id: member.id, firstName: member.firstName, lastName: member.lastName, subscriptions: data.subscriptions ?? [] });
+    } catch {
+      toast({ variant: "destructive", title: "Could not load athlete details" });
+    } finally {
+      setLoadingAssignId(null);
+    }
+  }
 
   async function resendActivation(memberId: string, email: string) {
     setResendingId(memberId);
@@ -321,8 +342,8 @@ export function MembersClient({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/admin/members/${member.id}`}>View</Link>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="View athlete" asChild>
+                          <Link href={`/admin/members/${member.id}`}><Eye className="h-4 w-4" /></Link>
                         </Button>
                         {(isAdmin || isStaff) && (
                           <Button
@@ -336,6 +357,21 @@ export function MembersClient({
                             {resendingId === member.id
                               ? <Loader2 className="h-4 w-4 animate-spin" />
                               : <Mail className="h-4 w-4" />
+                            }
+                          </Button>
+                        )}
+                        {(isAdmin || isStaff) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50"
+                            title="Assign membership"
+                            disabled={loadingAssignId === member.id}
+                            onClick={() => openAssignMembership(member)}
+                          >
+                            {loadingAssignId === member.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <CreditCard className="h-4 w-4" />
                             }
                           </Button>
                         )}
@@ -391,6 +427,16 @@ export function MembersClient({
       )}
 
       <AddMemberDialog open={showAdd} onClose={() => setShowAdd(false)} />
+
+      {assignTarget && (
+        <AssignMembershipDialog
+          open={!!assignTarget}
+          onOpenChange={(o) => { if (!o) setAssignTarget(null); }}
+          member={assignTarget}
+          services={services}
+          timeZone={timeZone}
+        />
+      )}
 
       {/* Resend activation confirmation */}
       <Dialog open={!!confirmResend} onOpenChange={(o) => { if (!o) setConfirmResend(null); }}>

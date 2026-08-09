@@ -59,7 +59,7 @@ export default async function MembersPage({
     where.status = statusFilter;
   }
 
-  const [members, total, bouncedEmails, freeTrialCount] = await Promise.all([
+  const [members, total, bouncedEmails, freeTrialCount, services] = await Promise.all([
     prisma.member.findMany({
       where,
       orderBy: { lastName: "asc" },
@@ -80,6 +80,11 @@ export default async function MembersPage({
     prisma.member.count({ where }),
     fetchBouncedEmails(),
     prisma.member.count({ where: { source: "free-trial-registration", status: "INACTIVE" } }),
+    prisma.service.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      include: { packages: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+    }),
   ]);
 
   return (
@@ -93,6 +98,7 @@ export default async function MembersPage({
         total={total}
         pageSize={PAGE_SIZE}
         freeTrialCount={freeTrialCount}
+        services={services}
       />
     </Suspense>
   );
