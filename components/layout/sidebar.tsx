@@ -86,10 +86,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showQR, setShowQR] = useState(false);
-  const [freeTrialCount, setFreeTrialCount] = useState(0);
-  const [storePendingCount, setStorePendingCount] = useState(0);
-  const [recordsPendingCount, setRecordsPendingCount] = useState(0);
-  const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
+  const [todoCount, setTodoCount] = useState(0);
   const role = (session?.user as any)?.role ?? "MEMBER";
   const employeeTypes: string[] = (session?.user as any)?.employeeTypes ?? [];
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
@@ -97,44 +94,17 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
   const isAdminOrCoach = role === "ADMIN" || (role === "STAFF" && isCoach);
   const isStoreRole = role === "STORE";
 
-  // These badges are re-fetched on every route change (not just once on mount) since the
-  // sidebar stays mounted across client-side navigations — without `pathname` as a
-  // dependency, a badge would only ever reflect whatever was true when the page first
-  // loaded, going stale the moment the user does something elsewhere in the app.
-  useEffect(() => {
-    if (!["ADMIN", "STAFF", "STORE"].includes(role)) return;
-    if (["ADMIN", "STAFF"].includes(role)) {
-      fetch("/api/admin/free-trial-leads")
-        .then((r) => r.json())
-        .then((d) => setFreeTrialCount(d.count ?? 0))
-        .catch(() => {});
-    }
-    fetch("/api/admin/store-pending")
-      .then((r) => r.json())
-      .then((d) => setStorePendingCount(d.count ?? 0))
-      .catch(() => {});
-  }, [role, pathname]);
-
-  useEffect(() => {
-    if (!isAdminOrCoach) return;
-    fetch("/api/admin/records-pending-count")
-      .then((r) => r.json())
-      .then((d) => setRecordsPendingCount(d.count ?? 0))
-      .catch(() => {});
-  }, [isAdminOrCoach, pathname]);
-
+  // Re-fetched on every route change so the badge stays fresh across navigations.
   useEffect(() => {
     if (!["ADMIN", "STAFF"].includes(role)) return;
-    fetch("/api/admin/pending-receipts-count")
+    fetch("/api/admin/todo-count")
       .then((r) => r.json())
-      .then((d) => setPendingReceiptsCount(d.count ?? 0))
+      .then((d) => setTodoCount(d.total ?? 0))
       .catch(() => {});
   }, [role, pathname]);
 
   const badgeCounts: Record<string, number> = {
-    "/admin/members": freeTrialCount,
-    "/admin/store": storePendingCount,
-    "/admin/records-todo": recordsPendingCount + pendingReceiptsCount + storePendingCount,
+    "/admin/records-todo": todoCount,
   };
 
   const isEntryActive = (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/"));

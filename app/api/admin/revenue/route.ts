@@ -27,15 +27,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 });
   }
 
-  const payments = await prisma.payment.findMany({
-    where: { status: "PAID", paidAt: { gte: start, lte: end } },
-    include: {
-      member: { select: { firstName: true, lastName: true, memberNumber: true } },
-      employee: { select: { firstName: true, lastName: true } },
-      subscription: { include: { service: { select: { name: true } } } },
-    },
-    orderBy: { paidAt: "asc" },
-  });
+  const [payments, shopSales] = await Promise.all([
+    prisma.payment.findMany({
+      where: { status: "PAID", paidAt: { gte: start, lte: end } },
+      include: {
+        member: { select: { firstName: true, lastName: true, memberNumber: true } },
+        employee: { select: { firstName: true, lastName: true } },
+        subscription: { include: { service: { select: { name: true } } } },
+      },
+      orderBy: { paidAt: "asc" },
+    }),
+    prisma.shopSale.findMany({
+      where: { resolvedAt: { gte: start, lte: end } },
+      orderBy: { resolvedAt: "asc" },
+    }),
+  ]);
 
   const rows = payments.map((p) => ({
     id: p.id,
@@ -52,7 +58,9 @@ export async function GET(req: NextRequest) {
     notes: (p as any).notes ?? "",
   }));
 
-  const total = rows.reduce((s, r) => s + r.amount, 0);
+  const shopTotal = shopSales.reduce((s, r) => s + Number(r.total), 0);
+  const paymentTotal = rows.reduce((s, r) => s + r.amount, 0);
+  const total = paymentTotal + shopTotal;
 
-  return NextResponse.json({ total, payments: rows });
+  return NextResponse.json({ total, payments: rows, shopTotal, shopSalesCount: shopSales.length });
 }

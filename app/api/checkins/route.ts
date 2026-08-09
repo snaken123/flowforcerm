@@ -34,7 +34,17 @@ export async function POST(req: NextRequest) {
   const member = await prisma.member.findUnique({ where: { id: parsed.data.memberId } });
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
   if (member.status !== "ACTIVE") {
-    return NextResponse.json({ error: "Member is not active" }, { status: 400 });
+    // Allow INACTIVE members who have an active trial subscription
+    const trialSub = await prisma.subscription.findFirst({
+      where: {
+        memberId: member.id,
+        status: "ACTIVE",
+        OR: [{ isTrial: true }, { price: 0, notes: { contains: "Free trial" } }],
+      },
+    });
+    if (!trialSub) {
+      return NextResponse.json({ error: "Member is not active" }, { status: 400 });
+    }
   }
 
   // Same-day duplicate guard (Manila timezone) — warn staff, allow override with force: true
@@ -79,6 +89,37 @@ export async function POST(req: NextRequest) {
     },
     include: { member: true },
   });
+
+  // Link check-in to an open free-trial follow-up (if any)
+  if (parsed.data.serviceId) {
+    const trialSub = await prisma.subscription.findFirst({
+      where: {
+        memberId: parsed.data.memberId,
+        serviceId: parsed.data.serviceId,
+        status: "ACTIVE",
+        OR: [{ isTrial: true }, { price: 0, notes: { contains: "Free trial" } }],
+      },
+    });
+    if (trialSub) {
+      const existing = await prisma.freeTrialFollowUp.findUnique({
+        where: { subscriptionId: trialSub.id },
+      });
+      if (existing && !existing.checkInId) {
+        await prisma.freeTrialFollowUp.update({
+          where: { id: existing.id },
+          data: { checkInId: checkIn.id },
+        });
+      } else if (!existing) {
+        await prisma.freeTrialFollowUp.create({
+          data: {
+            memberId: parsed.data.memberId,
+            subscriptionId: trialSub.id,
+            checkInId: checkIn.id,
+          },
+        });
+      }
+    }
+  }
 
   return NextResponse.json(checkIn, { status: 201 });
 }

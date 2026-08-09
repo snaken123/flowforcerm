@@ -88,12 +88,17 @@ export async function POST(req: NextRequest) {
         serviceId: sel.serviceId,
         status: "ACTIVE",
         price: 0,
+        isTrial: true,
         startDate: classDate,
         endDate: endOfDay,
         sessionsTotal: freePkg?.sessions ?? 1,
         sessionsUsed: 0,
         notes: `Free trial — registered online`,
       },
+    });
+
+    await prisma.freeTrialFollowUp.create({
+      data: { memberId: member.id, subscriptionId: sub.id },
     });
 
     // Create a booking so the slot shows as booked on the schedule

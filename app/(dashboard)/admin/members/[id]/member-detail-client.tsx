@@ -29,7 +29,7 @@ const SUB_STATUS_COLORS: Record<string, any> = {
   ACTIVE: "success", PAUSED: "warning", EXPIRED: "secondary", CANCELLED: "destructive",
 };
 
-export function MemberDetailClient({ member, services, isAdmin, isStaff }: { member: any; services: any[]; isAdmin: boolean; isStaff?: boolean }) {
+export function MemberDetailClient({ member, services, freeTrialFollowUps = [], isAdmin, isStaff }: { member: any; services: any[]; freeTrialFollowUps?: any[]; isAdmin: boolean; isStaff?: boolean }) {
   const router = useRouter();
   const timeZone = useTenantTimezone();
   const [status, setStatus] = useState(member.status);
@@ -817,9 +817,15 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error || "Failed"); }
 
+      const paymentMethodFull = paymentSubMode.length ? `${paymentMode} - ${paymentSubMode.join(" & ")}` : paymentMode || undefined;
+      const isPaymentComplete = !!paymentMethodFull && (!membershipNeedsReceipt || !!uploadedReceiptUrl);
       toast({
         title: "Membership assigned",
-        ...(uploadError && membershipNeedsReceipt ? { description: "Receipt upload failed — membership was still created, flagged in To Do until a receipt is added." } : {}),
+        description: !isPaymentComplete
+          ? "Incomplete payment info — added to To-Do."
+          : uploadError && membershipNeedsReceipt
+          ? "Receipt upload failed — membership was still created, flagged in To Do until a receipt is added."
+          : undefined,
       });
       setShowAssign(false);
       setSelectedServiceId("");
@@ -1408,6 +1414,52 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Free Trial History */}
+      {freeTrialFollowUps.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />Free Trial History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {freeTrialFollowUps.map((fu: any) => (
+              <div key={fu.id} className="rounded-md border p-3 space-y-1 text-sm">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{fu.subscription?.service?.name ?? "—"}</span>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                    fu.status === "OPEN" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                    fu.status === "CONVERTED" ? "bg-green-50 text-green-700 border-green-200" :
+                    "bg-red-50 text-red-700 border-red-200"
+                  }`}>
+                    {fu.status}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {fu.checkIn
+                      ? `Checked in: ${new Date(fu.checkIn.checkedInAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`
+                      : "Not yet attended"}
+                  </span>
+                </div>
+                {fu.status === "DECLINED" && fu.declineReason && (
+                  <p className="text-muted-foreground text-xs">
+                    Reason: {fu.declineReason}{fu.declineReasonDetail ? ` — ${fu.declineReasonDetail}` : ""}
+                  </p>
+                )}
+                {fu.status === "CONVERTED" && (
+                  <p className="text-muted-foreground text-xs">Converted to member</p>
+                )}
+                {fu.notes && <p className="text-muted-foreground text-xs">Notes: {fu.notes}</p>}
+                {fu.resolvedBy && fu.resolvedAt && (
+                  <p className="text-muted-foreground text-xs">
+                    Resolved by {fu.resolvedBy.name ?? fu.resolvedBy.email} on {new Date(fu.resolvedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payment History */}
       <Card>
@@ -2140,7 +2192,7 @@ export function MemberDetailClient({ member, services, isAdmin, isStaff }: { mem
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAssign(false)}>Cancel</Button>
-            <Button onClick={() => assignMembership()} disabled={!selectedServiceId || !selectedPackageId || !paymentMode || (["Bank Transfer","eWallet"].includes(paymentMode) && paymentSubMode.length === 0) || assigning}>
+            <Button onClick={() => assignMembership()} disabled={!selectedServiceId || !selectedPackageId || assigning}>
               {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Assign Membership
             </Button>

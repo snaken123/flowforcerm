@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { AlertCircle, ChevronDown, ChevronUp, Inbox, Loader2 } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 
 const PAYMENT_MODES = ["Cash", "Credit Card", "Bank Transfer", "eWallet", "Class Pass"];
@@ -27,8 +28,8 @@ function parsePmMode(full: string | null) {
   return { mode: full, sub: "" };
 }
 
-export function PendingStoreSalesClient() {
-  const [sales, setSales] = useState<any[] | null>(null);
+export function PendingPaymentsClient({ pendingPayments }: { pendingPayments: any[] }) {
+  const [localPayments, setLocalPayments] = useState(pendingPayments);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editMode, setEditMode] = useState("");
   const [editSub, setEditSub] = useState("");
@@ -37,35 +38,26 @@ export function PendingStoreSalesClient() {
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
-  const load = useCallback(() => {
-    fetch("/api/shop/sales/pending")
-      .then((r) => r.json())
-      .then((d) => setSales(Array.isArray(d) ? d : []))
-      .catch(() => setSales([]));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  function openSale(sale: any) {
-    if (expanded === sale.id) { setExpanded(null); return; }
-    const { mode, sub } = parsePmMode(sale.paymentMode);
+  function openRow(payment: any) {
+    if (expanded === payment.id) { setExpanded(null); return; }
+    const { mode, sub } = parsePmMode(payment.method);
     setEditMode(mode);
     setEditSub(sub);
-    setEditNeedsReceipt(sale.needsReceipt ?? true);
-    setEditReceiptUrl(sale.receiptUrl ?? "");
-    setEditNotes(sale.notes ?? "");
-    setExpanded(sale.id);
+    setEditNeedsReceipt(payment.needsReceipt ?? true);
+    setEditReceiptUrl(payment.receiptUrl ?? "");
+    setEditNotes(payment.notes ?? "");
+    setExpanded(payment.id);
   }
 
-  async function saveSale(saleId: string) {
-    setSaving((s) => ({ ...s, [saleId]: true }));
+  async function savePayment(paymentId: string) {
+    setSaving((s) => ({ ...s, [paymentId]: true }));
     try {
       const fullMode = editSub ? `${editMode} - ${editSub}` : editMode;
-      const res = await fetch(`/api/shop/sales/${saleId}`, {
+      const res = await fetch(`/api/payments/${paymentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentMode: fullMode || null,
+          method: fullMode || undefined,
           needsReceipt: editNeedsReceipt,
           receiptUrl: editReceiptUrl || null,
           notes: editNotes || null,
@@ -73,33 +65,26 @@ export function PendingStoreSalesClient() {
       });
       if (!res.ok) throw new Error();
       const updated = await res.json();
-
-      const stillIncomplete = !updated.paymentMode || (!updated.receiptUrl && (updated.needsReceipt ?? true));
-      if (!stillIncomplete) {
-        setSales((prev) => prev ? prev.filter((s) => s.id !== saleId) : prev);
+      if (updated.status === "PAID") {
+        setLocalPayments((prev) => prev.filter((p) => p.id !== paymentId));
         setExpanded(null);
-        toast({ title: "Sale completed", description: "Removed from To-Do." });
+        toast({ title: "Payment resolved", description: "Removed from To-Do." });
       } else {
-        setSales((prev) => prev ? prev.map((s) => s.id === saleId ? updated : s) : prev);
-        toast({ title: "Sale updated" });
+        setLocalPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, ...updated } : p)));
+        toast({ title: "Payment updated" });
       }
     } catch {
-      toast({ variant: "destructive", title: "Could not save sale" });
+      toast({ variant: "destructive", title: "Could not save payment" });
     } finally {
-      setSaving((s) => ({ ...s, [saleId]: false }));
+      setSaving((s) => ({ ...s, [paymentId]: false }));
     }
   }
 
-  if (sales === null) {
-    return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
-  }
-
-  if (sales.length === 0) {
+  if (localPayments.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          <Inbox className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          No incomplete store sales. All caught up!
+          No pending membership payments. All caught up!
         </CardContent>
       </Card>
     );
@@ -107,37 +92,45 @@ export function PendingStoreSalesClient() {
 
   return (
     <div className="space-y-2">
-      {sales.map((sale) => {
-        const buyer = sale.buyerMember
-          ? `${sale.buyerMember.firstName} ${sale.buyerMember.lastName}`
-          : sale.buyerEmployee
-          ? `${sale.buyerEmployee.firstName} ${sale.buyerEmployee.lastName}`
-          : sale.buyerName ?? "Walk-in";
-        const items = sale.items.map((i: any) => `${i.shopItem.name} ×${i.quantity}`).join(", ");
-        const missingPayment = !sale.paymentMode;
-        const missingReceipt = !sale.receiptUrl && (sale.needsReceipt ?? true);
-        const isExpanded = expanded === sale.id;
+      {localPayments.map((p) => {
+        const name = p.member
+          ? `${p.member.firstName} ${p.member.lastName}`
+          : p.employee
+          ? `${p.employee.firstName} ${p.employee.lastName} (Staff)`
+          : "—";
+        const memberLink = p.member ? `/admin/members/${p.member.id}` : undefined;
+        const serviceName = p.subscription?.service?.name ?? "—";
+        const missingMethod = !p.method;
+        const missingReceipt = !p.receiptUrl && (p.needsReceipt ?? true);
+        const isExpanded = expanded === p.id;
 
         return (
-          <div key={sale.id} className="rounded-md border overflow-hidden">
+          <div key={p.id} className="rounded-md border overflow-hidden">
             <button
               type="button"
               className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
-              onClick={() => openSale(sale)}
+              onClick={() => openRow(p)}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium">{buyer}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(sale.createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                  </span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[180px]">{items}</span>
-                  <span className="text-sm font-semibold tabular-nums ml-auto">₱{sale.total.toFixed(2)}</span>
+                  {memberLink ? (
+                    <Link href={memberLink} className="text-sm font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                      {name}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-medium">{name}</span>
+                  )}
+                  {p.member?.memberNumber && (
+                    <span className="text-xs font-mono text-muted-foreground">{p.member.memberNumber}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">{serviceName}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</span>
+                  <span className="text-sm font-semibold tabular-nums ml-auto">{formatCurrency(p.amount)}</span>
                 </div>
                 <div className="flex gap-2 mt-1">
-                  {missingPayment && (
+                  {missingMethod && (
                     <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
-                      <AlertCircle className="h-3 w-3" />Payment missing
+                      <AlertCircle className="h-3 w-3" />Payment mode missing
                     </span>
                   )}
                   {missingReceipt && (
@@ -189,12 +182,12 @@ export function PendingStoreSalesClient() {
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      id={`needsReceipt-sale-${sale.id}`}
+                      id={`needsReceipt-pm-${p.id}`}
                       checked={editNeedsReceipt}
                       onChange={(e) => setEditNeedsReceipt(e.target.checked)}
                       className="h-4 w-4 rounded border-input"
                     />
-                    <label htmlFor={`needsReceipt-sale-${sale.id}`} className="text-sm cursor-pointer select-none">
+                    <label htmlFor={`needsReceipt-pm-${p.id}`} className="text-sm cursor-pointer select-none">
                       Needs Receipt
                     </label>
                   </div>
@@ -220,8 +213,8 @@ export function PendingStoreSalesClient() {
 
                 <div className="flex justify-end gap-2">
                   <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>Cancel</Button>
-                  <Button size="sm" disabled={saving[sale.id]} onClick={() => saveSale(sale.id)}>
-                    {saving[sale.id] && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                  <Button size="sm" disabled={saving[p.id]} onClick={() => savePayment(p.id)}>
+                    {saving[p.id] && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                     Save
                   </Button>
                 </div>

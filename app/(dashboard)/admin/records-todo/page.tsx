@@ -1,9 +1,8 @@
 import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isAdminOrCoach } from "@/lib/permissions";
-import { RecordsTodoClient } from "./records-todo-client";
-import { PendingReceiptsClient } from "./pending-receipts-client";
-import { PendingStoreSalesClient } from "./pending-store-sales-client";
+import { prisma } from "@/lib/db";
+import { RecordsTodoLayout } from "./records-todo-layout";
 
 export const metadata = { title: "To Do" };
 
@@ -13,30 +12,45 @@ export default async function RecordsTodoPage() {
   const role = (session.user as any).role;
   if (!["ADMIN", "STAFF"].includes(role)) redirect("/dashboard");
 
+  const [pendingPayments, openFollowUps, services] = await Promise.all([
+    prisma.payment.findMany({
+      where: { status: "PENDING" },
+      include: {
+        member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
+        employee: { select: { id: true, firstName: true, lastName: true } },
+        subscription: { include: { service: { select: { name: true, color: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.freeTrialFollowUp.findMany({
+      where: { status: "OPEN" },
+      include: {
+        member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
+        subscription: { include: { service: { select: { id: true, name: true } } } },
+        checkIn: { select: { checkedInAt: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.service.findMany({
+      where: { isActive: true },
+      include: { packages: { where: { isActive: true }, orderBy: { memberPrice: "asc" } } },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">To Do</h1>
-        <p className="text-muted-foreground mt-1">Items that need attention before they're complete.</p>
+        <p className="text-muted-foreground mt-1">Items that need attention before they&apos;re complete.</p>
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Pending Receipts</h2>
-        <p className="text-sm text-muted-foreground -mt-2">Payments flagged as needing a receipt, but none attached yet.</p>
-        <PendingReceiptsClient />
-      </div>
-
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Pending Store Sales</h2>
-        <p className="text-sm text-muted-foreground -mt-2">Sales missing a payment mode or a required receipt.</p>
-        <PendingStoreSalesClient />
-      </div>
-
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Pending Records</h2>
-        <p className="text-sm text-muted-foreground -mt-2">Achievements submitted by members, awaiting approval.</p>
-        <RecordsTodoClient canApprove={isAdminOrCoach(session)} />
-      </div>
+      <RecordsTodoLayout
+        pendingPayments={pendingPayments}
+        openFollowUps={openFollowUps}
+        services={services}
+        canApprove={isAdminOrCoach(session)}
+      />
     </div>
   );
 }

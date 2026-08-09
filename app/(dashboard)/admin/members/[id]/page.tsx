@@ -35,11 +35,22 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
 
   if (!member) notFound();
 
-  const services = await prisma.service.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-    include: { packages: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
-  });
+  const [services, freeTrialFollowUps] = await Promise.all([
+    prisma.service.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      include: { packages: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+    }),
+    prisma.freeTrialFollowUp.findMany({
+      where: { memberId: params.id },
+      include: {
+        subscription: { include: { service: { select: { name: true } } } },
+        resolvedBy: { select: { name: true, email: true } },
+        checkIn: { select: { checkedInAt: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  return <MemberDetailClient member={member} services={services} isAdmin={role === "ADMIN"} isStaff={role === "STAFF" || role === "STORE"} />;
+  return <MemberDetailClient member={member} services={services} freeTrialFollowUps={freeTrialFollowUps} isAdmin={role === "ADMIN"} isStaff={role === "STAFF" || role === "STORE"} />;
 }

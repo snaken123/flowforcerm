@@ -118,6 +118,7 @@ model User {
   shopInventoryLogs ShopInventoryLog[]
   createdRankRecords  RankRecord[] @relation("RankRecordCreatedBy")
   approvedRankRecords RankRecord[] @relation("RankRecordApprovedBy")
+  resolvedFollowUps   FreeTrialFollowUp[]
 }
 
 model AuditLog {
@@ -188,6 +189,7 @@ model Member {
   payments        Payment[]
   bookings        Booking[]
   shopSales       ShopSale[]
+  freeTrialFollowUps FreeTrialFollowUp[]
 
   @@index([status])
 }
@@ -396,12 +398,14 @@ model Subscription {
   frozenAt      DateTime?
   frozenUntil   DateTime?
   notes         String?
+  isTrial       Boolean            @default(false)
 
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
   payments      Payment[]
   bookings      Booking[]
+  freeTrialFollowUp FreeTrialFollowUp?
 
   @@index([memberId])
   @@index([memberId, status])
@@ -425,7 +429,7 @@ model Payment {
   notes          String?
   paidAt         DateTime?
   dueDate        DateTime?
-  needsReceipt   Boolean       @default(false)
+  needsReceipt   Boolean       @default(true)
   receiptUrl     String?
 
   createdAt      DateTime      @default(now())
@@ -450,6 +454,7 @@ model CheckIn {
   schedule       ClassSchedule? @relation(fields: [scheduleId], references: [id])
   checkedInAt    DateTime       @default(now())
   notes          String?
+  freeTrialFollowUp FreeTrialFollowUp?
 
   @@index([memberId])
   @@index([scheduleId])
@@ -601,6 +606,7 @@ model ShopSale {
   needsReceipt    Boolean   @default(true)
   total           Float
   notes           String?
+  resolvedAt      DateTime?
   createdAt       DateTime  @default(now())
 
   buyerMember   Member?   @relation(fields: [buyerMemberId], references: [id])
@@ -678,4 +684,33 @@ model KioskDevice {
   token     String   @unique
   label     String
   createdAt DateTime @default(now())
+}
+
+enum FreeTrialFollowUpStatus {
+  OPEN
+  CONVERTED
+  DECLINED
+}
+
+model FreeTrialFollowUp {
+  id                  String                  @id @default(cuid())
+  memberId            String
+  subscriptionId      String                  @unique
+  checkInId           String?                 @unique
+  status              FreeTrialFollowUpStatus @default(OPEN)
+  declineReason       String?
+  declineReasonDetail String?
+  notes               String?
+  resolvedById        String?
+  resolvedAt          DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  member       Member       @relation(fields: [memberId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  checkIn      CheckIn?     @relation(fields: [checkInId], references: [id])
+  resolvedBy   User?        @relation(fields: [resolvedById], references: [id])
+
+  @@index([memberId])
+  @@index([status])
 }

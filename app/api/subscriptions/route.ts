@@ -134,20 +134,21 @@ export async function POST(req: NextRequest) {
     include: { service: true, member: true, employee: { select: { id: true, firstName: true, lastName: true } } },
   });
 
-  // Auto-create a PAID payment record. The money was collected either way — needsReceipt
-  // tracks whether proof is still outstanding (checked, but nothing attached yet), which
-  // surfaces on the admin/coach To Do list rather than affecting payment status.
+  // Create a payment record. If payment info is complete (method provided and receipt
+  // requirements met), status is PAID. Otherwise PENDING — surfaces in the To-Do list.
   if (parsed.data.price > 0) {
+    const needsReceipt = parsed.data.needsReceipt !== false; // defaults to true
+    const isComplete = !!parsed.data.paymentMethod && (!needsReceipt || !!parsed.data.receiptUrl);
     await prisma.payment.create({
       data: {
         memberId: parsed.data.memberId ?? null,
         employeeId: parsed.data.employeeId ?? null,
         subscriptionId: sub.id,
         amount: parsed.data.price,
-        status: "PAID",
+        status: isComplete ? "PAID" : "PENDING",
         method: parsed.data.paymentMethod ?? null,
-        paidAt: startDate,
-        needsReceipt: parsed.data.needsReceipt === true && !parsed.data.receiptUrl,
+        paidAt: isComplete ? startDate : null,
+        needsReceipt,
         receiptUrl: parsed.data.receiptUrl ?? null,
       },
     });
