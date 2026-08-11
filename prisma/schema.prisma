@@ -718,3 +718,58 @@ model FreeTrialFollowUp {
   @@index([memberId])
   @@index([status])
 }
+
+// ── Control-plane tables (managed by control-plane/prisma/schema.prisma) ──────
+// These models are declared here so `prisma db push` on the tenant schema never
+// tries to drop them. Do NOT edit these here — edit control-plane/prisma/schema.prisma
+// and push from the control-plane directory.
+
+enum TenantStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  FAILED
+}
+
+model Tenant {
+  id                    String       @id @default(cuid())
+  name                  String
+  subdomain             String       @unique
+  status                TenantStatus @default(PROVISIONING)
+  databaseUrlEnc        String       @db.Text
+  directUrlEnc          String       @db.Text
+  neonProjectId         String
+  brandName             String?
+  logoUrl               String?
+  primaryColor          String?
+  timezone              String       @default("Asia/Manila")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  provisionedAt         DateTime?
+  createdBySuperAdminId String?
+
+  provisioningLogs ProvisioningLog[]
+
+  @@index([status])
+}
+
+model SuperAdmin {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  totpSecret  String?
+  totpEnabled Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model ProvisioningLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  step      String
+  status    String
+  detail    String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
