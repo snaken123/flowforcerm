@@ -98,6 +98,7 @@ export function MemberCalendar({
   const [bookings, setBookings] = useState<{ id: string; sessionId: string; scheduleId: string | null; status: string }[]>(existingBookings);
   const [loading, setLoading] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [cancelWithinCutoff, setCancelWithinCutoff] = useState(false);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const weekDates = DAYS.map((d) => addDays(weekStart, d));
@@ -165,11 +166,19 @@ export function MemberCalendar({
       const res = await fetch(`/api/bookings/${bookingId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ returnSession: true }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error("Failed to cancel");
+      const data = await res.json().catch(() => ({}));
       setBookings((prev) => prev.filter((b) => b.id !== bookingId));
-      toast({ title: "Booking cancelled" });
+      toast({
+        title: "Booking cancelled",
+        description: data.sessionReturned
+          ? "Your session has been returned to your balance."
+          : data.withinCutoff
+          ? "You cancelled within 4 hours of class start — your session was not returned."
+          : undefined,
+      });
       setSelected(null);
       router.refresh();
     } catch {
@@ -464,15 +473,28 @@ export function MemberCalendar({
                 ) : !isAttended && (
                   isBooked ? (
                     cancelConfirmId === booking!.id ? (
-                      <div className="flex gap-2 w-full justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => setCancelConfirmId(null)}>Keep it</Button>
-                        <Button variant="destructive" size="sm" onClick={() => { setCancelConfirmId(null); handleCancel(booking!.id); }} disabled={loading}>
-                          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                          Yes, cancel
-                        </Button>
+                      <div className="flex flex-col gap-2 w-full">
+                        <p className="text-sm text-muted-foreground">
+                          {cancelWithinCutoff
+                            ? "You are canceling within 4 hours of class start — your session will NOT be returned. Are you sure?"
+                            : "Cancel this booking? Your session will be returned to your balance."}
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => setCancelConfirmId(null)}>Keep it</Button>
+                          <Button variant="destructive" size="sm" onClick={() => { setCancelConfirmId(null); handleCancel(booking!.id); }} disabled={loading}>
+                            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                            Yes, cancel
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                    <Button variant="outline" onClick={() => setCancelConfirmId(booking!.id)} disabled={loading} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                    <Button variant="outline" onClick={() => {
+                      const hours = selected?.startTime && selectedDate
+                        ? (new Date(`${selectedDate.toLocaleDateString("en-CA")}T${selected.startTime}:00+08:00`).getTime() - Date.now()) / 3600000
+                        : Infinity;
+                      setCancelWithinCutoff(hours < 4);
+                      setCancelConfirmId(booking!.id);
+                    }} disabled={loading} className="text-destructive border-destructive/30 hover:bg-destructive/10">
                       Cancel Reservation
                     </Button>
                     )

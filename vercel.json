@@ -3,6 +3,22 @@
     {
       "path": "/api/cron/membership-notifications",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/deduct-no-shows",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/deduct-no-shows",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/deduct-no-shows",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/deduct-no-shows",
+      "schedule": "0 14 * * *"
     }
   ]
 }

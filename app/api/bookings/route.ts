@@ -32,6 +32,9 @@ export async function GET(req: NextRequest) {
       employee: {
         select: { id: true, firstName: true, lastName: true, photoUrl: true, employeeTypes: true },
       },
+      subscription: {
+        select: { id: true, sessionsTotal: true, sessionsUsed: true, status: true },
+      },
     },
     orderBy: { createdAt: "asc" },
     take: 200,

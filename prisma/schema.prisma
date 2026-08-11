@@ -46,8 +46,9 @@ enum PaymentStatus {
 
 enum BookingStatus {
   CONFIRMED
-  CANCELLED
   ATTENDED
+  CANCELLED
+  NO_SHOW
 }
 
 model Account {

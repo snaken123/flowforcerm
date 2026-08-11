@@ -80,11 +80,26 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const booking = await prisma.booking.findUnique({
     where: { id: params.id },
-    include: { subscription: true },
+    include: {
+      subscription: true,
+      schedule: { select: { startTime: true } },
+    },
   });
   if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (booking.status === "CANCELLED") {
     return NextResponse.json({ error: "Already cancelled" }, { status: 409 });
+  }
+
+  // For member self-cancellation, enforce the 4-hour rule server-side:
+  // session is only returned if cancellation is more than 4 hours before class start.
+  let effectiveReturnSession = parsed.data.returnSession;
+  let withinCutoff = false;
+  if (!["ADMIN", "STAFF", "STORE"].includes(role) && booking.scheduledDate && booking.schedule?.startTime) {
+    const dateStr = booking.scheduledDate.toISOString().slice(0, 10);
+    const classTime = new Date(`${dateStr}T${booking.schedule.startTime}:00+08:00`);
+    const hoursUntilClass = (classTime.getTime() - Date.now()) / (1000 * 60 * 60);
+    withinCutoff = hoursUntilClass < 4;
+    effectiveReturnSession = !withinCutoff;
   }
 
   await prisma.booking.update({
@@ -93,12 +108,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       status: "CANCELLED",
       cancelledAt: new Date(),
       cancelReason: parsed.data.reason ?? null,
-      sessionReturned: parsed.data.returnSession,
+      sessionReturned: effectiveReturnSession,
     },
   });
 
   // Return session to membership balance if applicable (prevent negative sessionsUsed)
-  if (parsed.data.returnSession && booking.subscriptionId && booking.subscription?.sessionsTotal != null) {
+  if (effectiveReturnSession && booking.subscriptionId && booking.subscription?.sessionsTotal != null) {
     await prisma.subscription.updateMany({
       where: { id: booking.subscriptionId, sessionsUsed: { gt: 0 } },
       data: { sessionsUsed: { decrement: 1 } },
@@ -112,5 +127,5 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, withinCutoff, sessionReturned: effectiveReturnSession });
 }

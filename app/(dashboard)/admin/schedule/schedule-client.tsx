@@ -291,6 +291,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [slotCheckIns, setSlotCheckIns] = useState<any[]>([]);
+  const [removeBookingTarget, setRemoveBookingTarget] = useState<any | null>(null);
   const [addSearch, setAddSearch] = useState("");
   const [addResults, setAddResults] = useState<any[]>([]);
   const [addSearching, setAddSearching] = useState(false);
@@ -715,18 +716,28 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
     });
   }
 
-  async function removeBooking(bookingId: string) {
+  async function removeBooking(bookingId: string, returnSession: boolean) {
     const res = await fetch(`/api/bookings/${bookingId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      // No session was deducted on booking — returnSession would incorrectly decrement
-      body: JSON.stringify({ returnSession: false }),
+      body: JSON.stringify({ returnSession }),
     });
+    setRemoveBookingTarget(null);
     if (res.ok) {
       await refreshBookings();
     } else {
       const d = await res.json().catch(() => ({}));
       toast({ variant: "destructive", title: "Error", description: d.error ?? "Could not remove booking" });
+    }
+  }
+
+  function initiateRemoveBooking(b: any) {
+    const wasDeducted = b.status === "ATTENDED" || b.status === "NO_SHOW";
+    const isLimited = b.subscription?.sessionsTotal != null;
+    if (wasDeducted && isLimited) {
+      setRemoveBookingTarget(b);
+    } else {
+      removeBooking(b.id, false);
     }
   }
 
@@ -1526,27 +1537,33 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {!checked && !isEmp && canInteract && (
+                              {!isEmp && canInteract && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   title="Remove booking"
-                                  onClick={() => removeBooking(b.id)}
+                                  onClick={() => initiateRemoveBooking(b)}
                                 >
                                   <XIcon className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                size="sm"
-                                variant={checked ? "default" : "outline"}
-                                className={`shrink-0 text-xs ${checked ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white" : ""}`}
-                                onClick={() => toggleAttendance(b.id)}
-                              >
-                                {checked
-                                  ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />Attended</>
-                                  : "Check In"}
-                              </Button>
+                              {b.status === "NO_SHOW" ? (
+                                <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 text-[10px] font-semibold">
+                                  No Show
+                                </span>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant={checked ? "default" : "outline"}
+                                  className={`shrink-0 text-xs ${checked ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white" : ""}`}
+                                  onClick={() => toggleAttendance(b.id)}
+                                >
+                                  {checked
+                                    ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />Attended</>
+                                    : "Check In"}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         );
@@ -1876,6 +1893,38 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
             <Button variant="outline" onClick={() => setEmpPayDialog(false)} disabled={empPayLoading}>Cancel</Button>
             <Button onClick={confirmEmpPayment} disabled={empPayLoading || !empPayMode || (!!PAYMENT_SUB[empPayMode] && !empPaySubMode) || !empPayPackageId}>
               {empPayLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</> : "Confirm & Add to Class"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove booking confirmation dialog */}
+      <Dialog open={!!removeBookingTarget} onOpenChange={(open) => { if (!open) setRemoveBookingTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Booking</DialogTitle>
+          </DialogHeader>
+          {removeBookingTarget && (
+            <p className="text-sm text-muted-foreground">
+              This booking is marked as <strong>{removeBookingTarget.status === "NO_SHOW" ? "No Show" : "Attended"}</strong>
+              {" "}and a session was deducted. Would you like to return the session to this member&apos;s balance?
+            </p>
+          )}
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setRemoveBookingTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => removeBookingTarget && removeBooking(removeBookingTarget.id, false)}
+            >
+              No, just remove
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => removeBookingTarget && removeBooking(removeBookingTarget.id, true)}
+            >
+              Yes, return session
             </Button>
           </DialogFooter>
         </DialogContent>
