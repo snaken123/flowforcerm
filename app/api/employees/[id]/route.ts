@@ -28,6 +28,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
+
+  // Guardian-only update — bypass the full profile schema
+  if (Object.keys(body).length === 1 && "guardianUserId" in body) {
+    const emp = await prisma.employee.findUnique({ where: { id: params.id } });
+    if (!emp) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const updated = await prisma.employee.update({
+      where: { id: params.id },
+      data: { guardianUserId: body.guardianUserId ?? null },
+    });
+    return NextResponse.json(updated);
+  }
+
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 

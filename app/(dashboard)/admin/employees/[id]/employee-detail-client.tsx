@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, User, CreditCard, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, User, CreditCard, CheckCircle2, Clock, XCircle, Users, Pencil, Plus, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/use-toast";
 
 const STATUS_STYLES: Record<string, { label: string; icon: any; className: string }> = {
   ACTIVE: { label: "Active", icon: CheckCircle2, className: "bg-green-100 text-green-800 border-green-200" },
@@ -21,6 +26,96 @@ export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isA
   const router = useRouter();
   const [tab, setTab] = useState("info");
   const [historySortDir, setHistorySortDir] = useState<"asc" | "desc">("desc");
+
+  // Guardian linking
+  const [showGuardianDialog, setShowGuardianDialog] = useState(false);
+  const [guardianSearch, setGuardianSearch] = useState("");
+  const [guardianResults, setGuardianResults] = useState<any[]>([]);
+  const [guardianSearching, setGuardianSearching] = useState(false);
+  const [guardianMode, setGuardianMode] = useState<"search" | "create">("search");
+  const [newGuardianName, setNewGuardianName] = useState("");
+  const [newGuardianEmail, setNewGuardianEmail] = useState("");
+  const [savingGuardian, setSavingGuardian] = useState(false);
+  const [currentGuardian, setCurrentGuardian] = useState<{ id: string; name: string | null; email: string } | null>(
+    employee.guardian ?? null
+  );
+
+  async function searchGuardians(q: string) {
+    setGuardianSearch(q);
+    if (!q.trim()) { setGuardianResults([]); return; }
+    setGuardianSearching(true);
+    try {
+      const res = await fetch(`/api/guardian?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setGuardianResults(data);
+    } finally {
+      setGuardianSearching(false);
+    }
+  }
+
+  async function linkGuardian(userId: string) {
+    setSavingGuardian(true);
+    try {
+      const res = await fetch(`/api/employees/${employee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guardianUserId: userId }),
+      });
+      if (!res.ok) throw new Error("Failed to link guardian");
+      const found = guardianResults.find((u) => u.id === userId);
+      if (found) setCurrentGuardian({ id: found.id, name: found.name, email: found.email });
+      setShowGuardianDialog(false);
+      toast({ title: "Guardian linked successfully" });
+    } catch {
+      toast({ title: "Failed to link guardian", variant: "destructive" });
+    } finally {
+      setSavingGuardian(false);
+    }
+  }
+
+  async function createAndLinkGuardian() {
+    if (!newGuardianName.trim() || !newGuardianEmail.trim()) return;
+    setSavingGuardian(true);
+    try {
+      const res = await fetch("/api/guardian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newGuardianName, email: newGuardianEmail }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to create guardian");
+      }
+      const { user, tempPassword } = await res.json();
+      await linkGuardian(user.id);
+      toast({ title: `Guardian account created`, description: `Temp password: ${tempPassword}` });
+      setNewGuardianName("");
+      setNewGuardianEmail("");
+      setGuardianMode("search");
+    } catch (e: any) {
+      toast({ title: e.message ?? "Failed to create guardian", variant: "destructive" });
+    } finally {
+      setSavingGuardian(false);
+    }
+  }
+
+  async function removeGuardian() {
+    setSavingGuardian(true);
+    try {
+      const res = await fetch(`/api/employees/${employee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guardianUserId: null }),
+      });
+      if (!res.ok) throw new Error("Failed to remove guardian");
+      setCurrentGuardian(null);
+      toast({ title: "Guardian removed" });
+    } catch {
+      toast({ title: "Failed to remove guardian", variant: "destructive" });
+    } finally {
+      setSavingGuardian(false);
+    }
+  }
 
   const activeSubscriptions = employee.subscriptions.filter((s: any) => s.status === "ACTIVE");
   const pastSubscriptions = employee.subscriptions.filter((s: any) => s.status !== "ACTIVE");
@@ -54,6 +149,90 @@ export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isA
           </div>
         </div>
       </div>
+
+      {/* Guardian Account Card */}
+      {isAdmin && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />Guardian Account
+            </CardTitle>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowGuardianDialog(true)}>
+              {currentGuardian ? <><Pencil className="h-3 w-3 mr-1" />Change</> : <><Plus className="h-3 w-3 mr-1" />Link Guardian</>}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {currentGuardian ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{currentGuardian.name ?? "—"}</p>
+                  <p className="text-sm text-muted-foreground">{currentGuardian.email}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">This staff member&apos;s QR appears on the guardian&apos;s phone.</p>
+                </div>
+                <Button size="sm" variant="ghost" className="text-destructive h-7" onClick={removeGuardian} disabled={savingGuardian}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No guardian linked. Link one so a parent can access this staff member&apos;s QR code from their phone.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Guardian Dialog */}
+      <Dialog open={showGuardianDialog} onOpenChange={setShowGuardianDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Guardian Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button size="sm" variant={guardianMode === "search" ? "default" : "outline"} onClick={() => setGuardianMode("search")}>Find Existing</Button>
+              <Button size="sm" variant={guardianMode === "create" ? "default" : "outline"} onClick={() => setGuardianMode("create")}>Create New</Button>
+            </div>
+            {guardianMode === "search" ? (
+              <div className="space-y-2">
+                <Label>Search by name or email</Label>
+                <Input
+                  placeholder="e.g. parent@email.com"
+                  value={guardianSearch}
+                  onChange={(e) => searchGuardians(e.target.value)}
+                />
+                {guardianSearching && <p className="text-xs text-muted-foreground">Searching…</p>}
+                {guardianResults.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                    {guardianResults.map((u) => (
+                      <button key={u.id} className="w-full text-left px-3 py-2 hover:bg-muted text-sm" onClick={() => linkGuardian(u.id)} disabled={savingGuardian}>
+                        <p className="font-medium">{u.name ?? u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!guardianSearching && guardianSearch && guardianResults.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No users found. Try creating a new guardian account.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <Label>Parent / Guardian Name</Label>
+                  <Input placeholder="Maria Santos" value={newGuardianName} onChange={(e) => setNewGuardianName(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input type="email" placeholder="parent@email.com" value={newGuardianEmail} onChange={(e) => setNewGuardianEmail(e.target.value)} />
+                </div>
+                <p className="text-xs text-muted-foreground">A login will be created. The temp password will be shown after saving.</p>
+                <Button className="w-full" onClick={createAndLinkGuardian} disabled={savingGuardian || !newGuardianName || !newGuardianEmail}>
+                  {savingGuardian ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create & Link Guardian"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

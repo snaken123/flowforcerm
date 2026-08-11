@@ -108,7 +108,8 @@ model User {
   accounts Account[]
   sessions Session[]
   member          Member?   @relation("OwnMember")
-  managedMembers  Member[]  @relation("GuardianMembers")
+  managedMembers   Member[]   @relation("GuardianMembers")
+  managedEmployees Employee[] @relation("GuardianEmployees")
   employee Employee?
 
   // Email OAuth tokens (stored separately for security)
@@ -196,9 +197,11 @@ model Member {
 }
 
 model Employee {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guardianUserId String?
+  guardian       User?     @relation("GuardianEmployees", fields: [guardianUserId], references: [id], onDelete: SetNull)
 
   employeeNumber String?   @unique
   firstName      String

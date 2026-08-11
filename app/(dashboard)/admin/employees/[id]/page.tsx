@@ -13,6 +13,7 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
     where: { id: params.id },
     include: {
       user: { select: { email: true } },
+      guardian: { select: { id: true, name: true, email: true } },
       taughtServices: { include: { service: { select: { id: true, name: true, color: true } } } },
       subscriptions: {
         include: { service: true },
