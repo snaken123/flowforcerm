@@ -31,7 +31,7 @@ async function log(tenantId: string, step: string, status: string, detail?: stri
   });
 }
 
-function generateTempPassword(): string {
+export function generateTempPassword(): string {
   return randomBytes(9).toString("base64").replace(/[+/=]/g, "").slice(0, 12);
 }
 

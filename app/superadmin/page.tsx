@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSuperAdminSession } from "@/control-plane/lib/superadmin-auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
 import { NewTenantForm } from "./new-tenant-form";
+import { TenantRowActions } from "./tenant-row-actions";
 
 export default async function SuperAdminDashboard() {
   const session = await getSuperAdminSession();
@@ -56,6 +57,7 @@ export default async function SuperAdminDashboard() {
                   <th className="px-4 py-3 font-medium">Subdomain</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -80,6 +82,9 @@ export default async function SuperAdminDashboard() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-[#666]">{t.createdAt.toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      <TenantRowActions tenantId={t.id} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
