@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 // Create a guardian-only User account (no Member record)
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || !["ADMIN", "STAFF"].includes((session.user as any).role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

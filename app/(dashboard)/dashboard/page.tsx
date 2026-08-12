@@ -11,6 +11,8 @@ import { DashboardSearch } from "./dashboard-search";
 import { CoachDashboard } from "./coach-dashboard";
 import { manilaDateStr, manilaDayBoundaries, manilaDayOfWeek } from "@/lib/time";
 import { getTenantTimezone } from "@/lib/tenant-context";
+import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
+import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
 
 async function getCoachDashboardData(employeeId: string) {
   const now = new Date();
@@ -252,6 +254,11 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Here's your membership overview.</p>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TodaysWodCard showPlanLink={false} />
+          <AnnouncementBoardCard canManage={false} />
+        </div>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -401,6 +408,11 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Overview of your gym's activity today.</p>
         </div>
         <DashboardSearch />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TodaysWodCard showPlanLink={true} />
+        <AnnouncementBoardCard canManage={true} />
       </div>
 
       {/* Stats cards */}

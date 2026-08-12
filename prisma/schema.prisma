@@ -121,6 +121,9 @@ model User {
   createdRankRecords  RankRecord[] @relation("RankRecordCreatedBy")
   approvedRankRecords RankRecord[] @relation("RankRecordApprovedBy")
   resolvedFollowUps   FreeTrialFollowUp[]
+  requestedFreezes    MembershipFreezeRequest[] @relation("FreezeRequestCreatedBy")
+  reviewedFreezes     MembershipFreezeRequest[] @relation("FreezeRequestReviewedBy")
+  announcements       Announcement[]
 }
 
 model AuditLog {
@@ -192,6 +195,7 @@ model Member {
   bookings        Booking[]
   shopSales       ShopSale[]
   freeTrialFollowUps FreeTrialFollowUp[]
+  freezeRequests  MembershipFreezeRequest[]
 
   @@index([status])
 }
@@ -496,6 +500,29 @@ model RankRecord {
   @@index([status, createdAt])
 }
 
+// Staff-submitted freeze requests that must be approved by an admin before the freeze
+// actually takes effect (unlike unfreeze, which staff can do directly).
+model MembershipFreezeRequest {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+  days     Int
+  reason   String
+  photoUrl String?
+
+  status          RecordStatus @default(PENDING)
+  createdAt       DateTime     @default(now())
+  createdById     String
+  createdBy       User         @relation("FreezeRequestCreatedBy", fields: [createdById], references: [id])
+  reviewedById    String?
+  reviewedBy      User?        @relation("FreezeRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  @@index([memberId])
+  @@index([status, createdAt])
+}
+
 model EmailIntegration {
   id                   String   @id @default(cuid())
   userId               String   @unique
@@ -540,6 +567,20 @@ model TrainingPlanCard {
   updatedAt   DateTime @updatedAt
 
   @@unique([date, categoryKey])
+}
+
+// Dashboard announcement board -- distinct from the Communications page's outbound
+// email/SMS broadcasts, this is a persistent in-app board any authenticated user sees.
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([isPinned, createdAt])
 }
 
 model FreeTrialToken {

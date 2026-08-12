@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getAuthSession();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || !["ADMIN", "STAFF"].includes((session.user as any).role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

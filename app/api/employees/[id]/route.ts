@@ -23,14 +23,17 @@ const schema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getAuthSession();
-  if (!session || (session.user as any).role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const role = (session.user as any).role;
 
   const body = await req.json();
 
-  // Guardian-only update — bypass the full profile schema
+  // Guardian-only update — bypass the full profile schema. Staff can do this even though
+  // the full employee-edit form below stays admin-only (role/employeeTypes are more sensitive).
   if (Object.keys(body).length === 1 && "guardianUserId" in body) {
+    if (!["ADMIN", "STAFF"].includes(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const emp = await prisma.employee.findUnique({ where: { id: params.id } });
     if (!emp) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const updated = await prisma.employee.update({
@@ -38,6 +41,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: { guardianUserId: body.guardianUserId ?? null },
     });
     return NextResponse.json(updated);
+  }
+
+  if (role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const parsed = schema.safeParse(body);

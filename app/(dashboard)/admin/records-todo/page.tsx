@@ -50,6 +50,7 @@ export default async function RecordsTodoPage() {
         openFollowUps={openFollowUps}
         services={services}
         canApprove={isAdminOrCoach(session)}
+        canApproveFreeze={role === "ADMIN"}
       />
     </div>
   );

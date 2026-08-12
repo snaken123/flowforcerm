@@ -7,12 +7,14 @@ import { PendingReceiptsClient } from "./pending-receipts-client";
 import { PendingStoreSalesClient } from "./pending-store-sales-client";
 import { PendingPaymentsClient } from "./pending-payments-client";
 import { FreeTrialFollowUpsClient } from "./free-trial-followups-client";
+import { PendingFreezeRequestsClient } from "./pending-freeze-requests-client";
 
 interface Props {
   pendingPayments: any[];
   openFollowUps: any[];
   services: any[];
   canApprove: boolean;
+  canApproveFreeze: boolean;
 }
 
 const SECTIONS = [
@@ -21,9 +23,10 @@ const SECTIONS = [
   { key: "receipts", label: "Pending Receipts", description: "Payments flagged as needing a receipt, but none attached yet." },
   { key: "sales", label: "Pending Store Sales", description: "Sales missing a payment mode or a required receipt." },
   { key: "records", label: "Pending Records", description: "Achievements submitted by members, awaiting approval." },
+  { key: "freezes", label: "Pending Freeze Requests", description: "Staff-submitted freeze requests awaiting admin approval." },
 ] as const;
 
-export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, canApprove }: Props) {
+export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, canApprove, canApproveFreeze }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   function toggle(key: string) {
@@ -63,6 +66,7 @@ export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, ca
                 {key === "receipts" && <PendingReceiptsClient />}
                 {key === "sales" && <PendingStoreSalesClient />}
                 {key === "records" && <RecordsTodoClient canApprove={canApprove} />}
+                {key === "freezes" && <PendingFreezeRequestsClient canApprove={canApproveFreeze} />}
               </>
             )}
           </div>

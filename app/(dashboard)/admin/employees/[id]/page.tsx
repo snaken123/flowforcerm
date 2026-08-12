@@ -28,6 +28,7 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
     <EmployeeDetailClient
       employee={employee}
       isAdmin={role === "ADMIN"}
+      isStaff={role === "STAFF"}
     />
   );
 }

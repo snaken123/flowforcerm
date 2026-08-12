@@ -14,7 +14,7 @@ CREATE TYPE "BillingCycle" AS ENUM ('MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNU
 CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'PENDING', 'OVERDUE', 'WAIVED');
 
 -- CreateEnum
-CREATE TYPE "BookingStatus" AS ENUM ('CONFIRMED', 'CANCELLED', 'ATTENDED');
+CREATE TYPE "BookingStatus" AS ENUM ('CONFIRMED', 'ATTENDED', 'CANCELLED', 'NO_SHOW');
 
 -- CreateEnum
 CREATE TYPE "RecordStatus" AS ENUM ('APPROVED', 'PENDING', 'REJECTED');
@@ -24,6 +24,12 @@ CREATE TYPE "ShopCategory" AS ENUM ('DRINKS', 'MERCHANDISE');
 
 -- CreateEnum
 CREATE TYPE "ShopInventoryLogType" AS ENUM ('COUNT', 'ADJUSTMENT');
+
+-- CreateEnum
+CREATE TYPE "FreeTrialFollowUpStatus" AS ENUM ('OPEN', 'CONVERTED', 'DECLINED');
+
+-- CreateEnum
+CREATE TYPE "TenantStatus" AS ENUM ('PROVISIONING', 'ACTIVE', 'SUSPENDED', 'FAILED');
 
 -- CreateTable
 CREATE TABLE "Account" (
@@ -137,6 +143,7 @@ CREATE TABLE "Member" (
 CREATE TABLE "Employee" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "guardianUserId" TEXT,
     "employeeNumber" TEXT,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
@@ -296,6 +303,7 @@ CREATE TABLE "Subscription" (
     "frozenAt" TIMESTAMP(3),
     "frozenUntil" TIMESTAMP(3),
     "notes" TEXT,
+    "isTrial" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -315,7 +323,7 @@ CREATE TABLE "Payment" (
     "notes" TEXT,
     "paidAt" TIMESTAMP(3),
     "dueDate" TIMESTAMP(3),
-    "needsReceipt" BOOLEAN NOT NULL DEFAULT false,
+    "needsReceipt" BOOLEAN NOT NULL DEFAULT true,
     "receiptUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -355,6 +363,23 @@ CREATE TABLE "RankRecord" (
     "rejectionReason" TEXT,
 
     CONSTRAINT "RankRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MembershipFreezeRequest" (
+    "id" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "days" INTEGER NOT NULL,
+    "reason" TEXT NOT NULL,
+    "photoUrl" TEXT,
+    "status" "RecordStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT NOT NULL,
+    "reviewedById" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "rejectionReason" TEXT,
+
+    CONSTRAINT "MembershipFreezeRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -405,6 +430,18 @@ CREATE TABLE "TrainingPlanCard" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TrainingPlanCard_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Announcement" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "isPinned" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT NOT NULL,
+
+    CONSTRAINT "Announcement_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -462,6 +499,7 @@ CREATE TABLE "ShopSale" (
     "needsReceipt" BOOLEAN NOT NULL DEFAULT true,
     "total" DOUBLE PRECISION NOT NULL,
     "notes" TEXT,
+    "resolvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ShopSale_pkey" PRIMARY KEY ("id")
@@ -526,6 +564,69 @@ CREATE TABLE "KioskDevice" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "KioskDevice_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "FreeTrialFollowUp" (
+    "id" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "subscriptionId" TEXT NOT NULL,
+    "checkInId" TEXT,
+    "status" "FreeTrialFollowUpStatus" NOT NULL DEFAULT 'OPEN',
+    "declineReason" TEXT,
+    "declineReasonDetail" TEXT,
+    "notes" TEXT,
+    "resolvedById" TEXT,
+    "resolvedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "FreeTrialFollowUp_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Tenant" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "subdomain" TEXT NOT NULL,
+    "status" "TenantStatus" NOT NULL DEFAULT 'PROVISIONING',
+    "databaseUrlEnc" TEXT NOT NULL,
+    "directUrlEnc" TEXT NOT NULL,
+    "neonProjectId" TEXT NOT NULL,
+    "brandName" TEXT,
+    "logoUrl" TEXT,
+    "primaryColor" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "provisionedAt" TIMESTAMP(3),
+    "createdBySuperAdminId" TEXT,
+
+    CONSTRAINT "Tenant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SuperAdmin" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "totpSecret" TEXT,
+    "totpEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SuperAdmin_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProvisioningLog" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "step" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "detail" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProvisioningLog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -658,10 +759,19 @@ CREATE INDEX "RankRecord_memberId_idx" ON "RankRecord"("memberId");
 CREATE INDEX "RankRecord_status_createdAt_idx" ON "RankRecord"("status", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "MembershipFreezeRequest_memberId_idx" ON "MembershipFreezeRequest"("memberId");
+
+-- CreateIndex
+CREATE INDEX "MembershipFreezeRequest_status_createdAt_idx" ON "MembershipFreezeRequest"("status", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EmailIntegration_userId_key" ON "EmailIntegration"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TrainingPlanCard_date_categoryKey_key" ON "TrainingPlanCard"("date", "categoryKey");
+
+-- CreateIndex
+CREATE INDEX "Announcement_isPinned_createdAt_idx" ON "Announcement"("isPinned", "createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "FreeTrialToken_token_key" ON "FreeTrialToken"("token");
@@ -699,6 +809,30 @@ CREATE INDEX "ShopInventoryLog_createdAt_idx" ON "ShopInventoryLog"("createdAt")
 -- CreateIndex
 CREATE UNIQUE INDEX "KioskDevice_token_key" ON "KioskDevice"("token");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "FreeTrialFollowUp_subscriptionId_key" ON "FreeTrialFollowUp"("subscriptionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "FreeTrialFollowUp_checkInId_key" ON "FreeTrialFollowUp"("checkInId");
+
+-- CreateIndex
+CREATE INDEX "FreeTrialFollowUp_memberId_idx" ON "FreeTrialFollowUp"("memberId");
+
+-- CreateIndex
+CREATE INDEX "FreeTrialFollowUp_status_idx" ON "FreeTrialFollowUp"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Tenant_subdomain_key" ON "Tenant"("subdomain");
+
+-- CreateIndex
+CREATE INDEX "Tenant_status_idx" ON "Tenant"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SuperAdmin_email_key" ON "SuperAdmin"("email");
+
+-- CreateIndex
+CREATE INDEX "ProvisioningLog_tenantId_idx" ON "ProvisioningLog"("tenantId");
+
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -716,6 +850,9 @@ ALTER TABLE "Member" ADD CONSTRAINT "Member_guardianUserId_fkey" FOREIGN KEY ("g
 
 -- AddForeignKey
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Employee" ADD CONSTRAINT "Employee_guardianUserId_fkey" FOREIGN KEY ("guardianUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ServicePackage" ADD CONSTRAINT "ServicePackage_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -802,7 +939,19 @@ ALTER TABLE "RankRecord" ADD CONSTRAINT "RankRecord_createdById_fkey" FOREIGN KE
 ALTER TABLE "RankRecord" ADD CONSTRAINT "RankRecord_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "MembershipFreezeRequest" ADD CONSTRAINT "MembershipFreezeRequest_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MembershipFreezeRequest" ADD CONSTRAINT "MembershipFreezeRequest_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MembershipFreezeRequest" ADD CONSTRAINT "MembershipFreezeRequest_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "EmailIntegration" ADD CONSTRAINT "EmailIntegration_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Announcement" ADD CONSTRAINT "Announcement_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ShopItemSizeStock" ADD CONSTRAINT "ShopItemSizeStock_shopItemId_fkey" FOREIGN KEY ("shopItemId") REFERENCES "ShopItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -827,4 +976,19 @@ ALTER TABLE "ShopInventoryLog" ADD CONSTRAINT "ShopInventoryLog_shopItemId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "ShopInventoryLog" ADD CONSTRAINT "ShopInventoryLog_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FreeTrialFollowUp" ADD CONSTRAINT "FreeTrialFollowUp_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FreeTrialFollowUp" ADD CONSTRAINT "FreeTrialFollowUp_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FreeTrialFollowUp" ADD CONSTRAINT "FreeTrialFollowUp_checkInId_fkey" FOREIGN KEY ("checkInId") REFERENCES "CheckIn"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FreeTrialFollowUp" ADD CONSTRAINT "FreeTrialFollowUp_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProvisioningLog" ADD CONSTRAINT "ProvisioningLog_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

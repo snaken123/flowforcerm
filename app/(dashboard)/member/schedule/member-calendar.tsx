@@ -476,7 +476,7 @@ export function MemberCalendar({
                       <div className="flex flex-col gap-2 w-full">
                         <p className="text-sm text-muted-foreground">
                           {cancelWithinCutoff
-                            ? "You are canceling within 4 hours of class start — your session will NOT be returned. Are you sure?"
+                            ? "You are canceling within 4 hours of class start — your session will NOT be returned. If you believe this should be an exception, please coordinate with the front desk. Are you sure?"
                             : "Cancel this booking? Your session will be returned to your balance."}
                         </p>
                         <div className="flex gap-2 justify-end">

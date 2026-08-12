@@ -22,7 +22,7 @@ const STATUS_STYLES: Record<string, { label: string; icon: any; className: strin
   CANCELLED: { label: "Cancelled", icon: XCircle, className: "bg-red-100 text-red-700 border-red-200" },
 };
 
-export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isAdmin: boolean }) {
+export function EmployeeDetailClient({ employee, isAdmin, isStaff }: { employee: any; isAdmin: boolean; isStaff?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState("info");
   const [historySortDir, setHistorySortDir] = useState<"asc" | "desc">("desc");
@@ -151,7 +151,7 @@ export function EmployeeDetailClient({ employee, isAdmin }: { employee: any; isA
       </div>
 
       {/* Guardian Account Card */}
-      {isAdmin && (
+      {(isAdmin || isStaff) && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">

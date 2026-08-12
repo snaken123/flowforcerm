@@ -14,6 +14,7 @@ import { LocationSelect } from "@/components/location-select";
 import { DAY_NAMES_FULL, DAY_NAMES } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
+import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
 
 function getWeekStart(date: Date) {
   const d = new Date(date);
@@ -296,6 +297,9 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   const [addResults, setAddResults] = useState<any[]>([]);
   const [addSearching, setAddSearching] = useState(false);
   const [addingMember, setAddingMember] = useState<string | null>(null);
+  const [assignPackageTarget, setAssignPackageTarget] = useState<any | null>(null);
+  const [assignPackageServices, setAssignPackageServices] = useState<any[]>([]);
+  const [loadingPackagesFor, setLoadingPackagesFor] = useState<string | null>(null);
   const addSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guestDialog, setGuestDialog] = useState(false);
   const [guestForm, setGuestForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
@@ -487,6 +491,27 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
       } catch { setAddResults([]); }
       finally { setAddSearching(false); }
     }, 300);
+  }
+
+  async function openAssignPackage(person: any) {
+    setLoadingPackagesFor(person.id);
+    try {
+      if (assignPackageServices.length === 0) {
+        const res = await fetch("/api/services?withPackages=true");
+        const data = await res.json();
+        setAssignPackageServices(Array.isArray(data) ? data : data.services ?? []);
+      }
+      setAssignPackageTarget({
+        id: person.id,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        subscriptions: person.subscriptions ?? [],
+      });
+    } catch {
+      toast({ variant: "destructive", title: "Could not load memberships", description: "Please try again." });
+    } finally {
+      setLoadingPackagesFor(null);
+    }
   }
 
   function refreshCardCounts() {
@@ -732,7 +757,9 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   }
 
   function initiateRemoveBooking(b: any) {
-    const wasDeducted = b.status === "ATTENDED" || b.status === "NO_SHOW";
+    // ATTENDED bookings can no longer be removed at all — the server enforces this too.
+    if (b.status === "ATTENDED") return;
+    const wasDeducted = b.status === "NO_SHOW";
     const isLimited = b.subscription?.sessionsTotal != null;
     if (wasDeducted && isLimited) {
       setRemoveBookingTarget(b);
@@ -1537,7 +1564,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {!isEmp && canInteract && (
+                              {!isEmp && canInteract && b.status !== "ATTENDED" && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -1640,7 +1667,15 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                                 {alreadyBooked ? (
                                   <span className="text-[10px] text-muted-foreground shrink-0">Already booked</span>
                                 ) : !hasPackage ? (
-                                  <span className="text-[10px] text-destructive shrink-0 text-right">No matching<br/>package</span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="shrink-0 text-xs h-7 border-destructive/50 text-destructive hover:bg-destructive/5"
+                                    disabled={loadingPackagesFor === person.id}
+                                    onClick={() => openAssignPackage(person)}
+                                  >
+                                    {loadingPackagesFor === person.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Get Package"}
+                                  </Button>
                                 ) : (
                                   <Button size="sm" className="shrink-0 text-xs h-7" disabled={addingMember === person.id} onClick={() => addAthleteToClass(person)}>
                                     {addingMember === person.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : needsPayment ? "Assign" : "Add"}
@@ -1906,8 +1941,7 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
           </DialogHeader>
           {removeBookingTarget && (
             <p className="text-sm text-muted-foreground">
-              This booking is marked as <strong>{removeBookingTarget.status === "NO_SHOW" ? "No Show" : "Attended"}</strong>
-              {" "}and a session was deducted. Would you like to return the session to this member&apos;s balance?
+              This booking is marked as <strong>No Show</strong> and a session was deducted. Would you like to return the session to this member&apos;s balance?
             </p>
           )}
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -1929,6 +1963,17 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {assignPackageTarget && (
+        <AssignMembershipDialog
+          open={!!assignPackageTarget}
+          onOpenChange={(o) => { if (!o) setAssignPackageTarget(null); }}
+          member={assignPackageTarget}
+          services={assignPackageServices}
+          timeZone={timeZone}
+          onAssigned={() => { setAssignPackageTarget(null); handleAddSearch(addSearch); }}
+        />
+      )}
     </div>
   );
 }

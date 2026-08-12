@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/lib/use-toast";
+import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
+import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
 
 interface Student {
   id: string;
@@ -240,6 +242,11 @@ export function CoachDashboard({
       <div>
         <h1 className="text-2xl font-bold">Good day, {employeeName}!</h1>
         <p className="text-muted-foreground">{dateStr}</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TodaysWodCard showPlanLink={true} />
+        <AnnouncementBoardCard canManage={true} />
       </div>
 
       <div>

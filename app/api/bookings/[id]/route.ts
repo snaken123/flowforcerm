@@ -89,6 +89,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (booking.status === "CANCELLED") {
     return NextResponse.json({ error: "Already cancelled" }, { status: 409 });
   }
+  // Once attendance is marked, the booking is a historical record — nobody, including
+  // admin/staff, can cancel it. Members already hit an equivalent check above; this
+  // covers admin/staff/store, which previously had no such restriction.
+  if (booking.status === "ATTENDED") {
+    return NextResponse.json({ error: "Cannot cancel a booking that has already been attended." }, { status: 403 });
+  }
 
   // For member self-cancellation, enforce the 4-hour rule server-side:
   // session is only returned if cancellation is more than 4 hours before class start.

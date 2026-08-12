@@ -336,15 +336,21 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
 
   async function confirmCancelBooking() {
     if (!cancelBooking) return;
+    // A session was only ever deducted if the booking was marked NO_SHOW (the cron) or
+    // ATTENDED (blocked from cancellation entirely, see the row action above) — a still-
+    // CONFIRMED booking never consumed a session, so there's nothing to return.
+    const wasDeducted = cancelBooking.status === "NO_SHOW";
+    const isLimited = cancelBooking.subscription?.sessionsTotal != null;
+    const returnSession = wasDeducted && isLimited;
     setCancellingBooking(true);
     try {
       const res = await fetch(`/api/bookings/${cancelBooking.id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: cancelReason, returnSession: true }),
+        body: JSON.stringify({ reason: cancelReason, returnSession }),
       });
       if (!res.ok) throw new Error();
-      toast({ title: "Booking cancelled", description: cancelBooking.subscription?.sessionsTotal != null ? "Session returned to membership." : undefined });
+      toast({ title: "Booking cancelled", description: returnSession ? "Session returned to membership." : undefined });
       setCancelBooking(null);
       setCancelReason("");
       router.refresh();
@@ -522,6 +528,14 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
   const [freezing, setFreezing] = useState(false);
   const [freezeFile, setFreezeFile] = useState<File | null>(null);
   const [freezePreview, setFreezePreview] = useState<string | null>(null);
+
+  // Staff freeze request — submits to a queue for admin approval instead of freezing directly
+  const [showFreezeRequest, setShowFreezeRequest] = useState(false);
+  const [freezeRequestDays, setFreezeRequestDays] = useState("7");
+  const [freezeRequestReason, setFreezeRequestReason] = useState("");
+  const [submittingFreezeRequest, setSubmittingFreezeRequest] = useState(false);
+  const [freezeRequestFile, setFreezeRequestFile] = useState<File | null>(null);
+  const [freezeRequestPreview, setFreezeRequestPreview] = useState<string | null>(null);
   const [showUnfreezeAll, setShowUnfreezeAll] = useState(false);
   const [unfreezeReason, setUnfreezeReason] = useState("");
   const [unfreezePassword, setUnfreezePassword] = useState("");
@@ -628,6 +642,44 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
       toast({ variant: "destructive", title: e.message ?? "Could not remove freeze" });
     } finally {
       setUnfreezing(false);
+    }
+  }
+
+  async function submitFreezeRequest() {
+    setSubmittingFreezeRequest(true);
+    try {
+      let photoUrl: string | undefined;
+      if (freezeRequestFile) {
+        const fd = new FormData();
+        fd.append("file", freezeRequestFile);
+        fd.append("memberId", member.id);
+        fd.append("lastName", member.lastName);
+        fd.append("sport", "Freeze Request");
+        fd.append("package", `${freezeRequestDays}days`);
+        fd.append("amount", "0");
+        fd.append("paymentMethod", "Freeze Request");
+        const upRes = await fetch("/api/upload-receipt", { method: "POST", body: fd });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          photoUrl = upData.link;
+        }
+      }
+      const res = await fetch(`/api/members/${member.id}/freeze-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: Number(freezeRequestDays), reason: freezeRequestReason, photoUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast({ title: "Freeze request submitted", description: "An admin will review it in To Do." });
+      setShowFreezeRequest(false);
+      setFreezeRequestReason("");
+      setFreezeRequestFile(null);
+      setFreezeRequestPreview(null);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: e.message ?? "Could not submit freeze request" });
+    } finally {
+      setSubmittingFreezeRequest(false);
     }
   }
 
@@ -830,14 +882,18 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard className="h-4 w-4" />Memberships
             </CardTitle>
-            {isAdmin && visibleSubs.length > 0 && (
+            {(isAdmin || isStaff) && visibleSubs.length > 0 && (
               hasFrozen ? (
                 <Button size="sm" variant="outline" className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => { setShowUnfreezeAll(true); setUnfreezeReason(""); setUnfreezePassword(""); }}>
                   <Snowflake className="h-3 w-3 mr-1" />Remove Freeze
                 </Button>
-              ) : (
+              ) : isAdmin ? (
                 <Button size="sm" variant="outline" className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => { setShowFreezeAll(true); setFreezeDays("7"); }}>
                   <Snowflake className="h-3 w-3 mr-1" />Freeze
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => { setShowFreezeRequest(true); setFreezeRequestDays("7"); setFreezeRequestReason(""); }}>
+                  <Snowflake className="h-3 w-3 mr-1" />Request Freeze
                 </Button>
               )
             )}
@@ -1167,7 +1223,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
                             </td>
                             {isAdmin && (
                               <td className="px-4 py-2.5">
-                                {b.status !== "CANCELLED" && (
+                                {b.status !== "CANCELLED" && b.status !== "ATTENDED" && (
                                   <button type="button" onClick={() => { setCancelBooking(b); setCancelReason(""); }}
                                     className="text-muted-foreground hover:text-destructive transition-colors">
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -1612,7 +1668,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
               <Input placeholder="Enter reason for removing freeze..." value={unfreezeReason} onChange={(e) => setUnfreezeReason(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Admin Password</Label>
+              <Label>Your Password</Label>
               <Input type="password" placeholder="Enter your password to confirm..." value={unfreezePassword} onChange={(e) => setUnfreezePassword(e.target.value)} />
             </div>
             <div className="space-y-1">
@@ -1703,6 +1759,57 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
             >
               {freezing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Freeze Memberships
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Freeze dialog (staff) — queues for admin approval instead of freezing directly */}
+      <Dialog open={showFreezeRequest} onOpenChange={(o) => { if (!o) { setShowFreezeRequest(false); setFreezeRequestReason(""); setFreezeRequestFile(null); setFreezeRequestPreview(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Snowflake className="h-4 w-4 text-blue-500" />
+              Request Freeze
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This won&apos;t freeze the membership yet — it sends a request to an admin for approval, who will see these details plus any photo you attach.
+            </p>
+            <div className="space-y-1">
+              <Label>Days to freeze</Label>
+              <Input type="number" min="1" value={freezeRequestDays} onChange={(e) => setFreezeRequestDays(e.target.value)} placeholder="7" />
+            </div>
+            <div className="space-y-1">
+              <Label>Reason</Label>
+              <Input placeholder="Enter reason for freezing..." value={freezeRequestReason} onChange={(e) => setFreezeRequestReason(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Photo / Proof <span className="text-muted-foreground">(optional)</span></Label>
+              {freezeRequestPreview ? (
+                <div className="relative">
+                  <img src={freezeRequestPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg border" />
+                  <button onClick={() => { setFreezeRequestFile(null); setFreezeRequestPreview(null); }} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"><X className="h-3 w-3 text-white" /></button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
+                  <Camera className="h-5 w-5 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Take or upload photo</span>
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFreezeRequestFile(f); setFreezeRequestPreview(URL.createObjectURL(f)); } }} />
+                </label>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFreezeRequest(false)}>Cancel</Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!freezeRequestDays || Number(freezeRequestDays) < 1 || !freezeRequestReason.trim() || submittingFreezeRequest}
+              onClick={submitFreezeRequest}
+            >
+              {submittingFreezeRequest && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Request
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1863,7 +1970,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
             <p className="text-muted-foreground">
               Cancel <span className="font-medium text-foreground">{cancelBooking?.session?.classType}</span> on{" "}
               <span className="font-medium text-foreground">{cancelBooking ? formatDate(cancelBooking.session.startsAt) : ""}</span>?
-              {cancelBooking?.subscription?.sessionsTotal != null && " The session will be returned to their membership balance."}
+              {cancelBooking?.status === "NO_SHOW" && cancelBooking?.subscription?.sessionsTotal != null && " A session was deducted for this no-show — it will be returned to their membership balance."}
             </p>
             <div className="space-y-1">
               <Label>Reason <span className="text-muted-foreground">(optional)</span></Label>
