@@ -3,8 +3,8 @@ export const revalidate = 30;
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Users, UserCheck, TrendingUp, AlertCircle, CreditCard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { UserCheck, TrendingUp, CreditCard } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, timeAgo } from "@/lib/utils";
 import { DashboardSearch } from "./dashboard-search";
@@ -13,6 +13,7 @@ import { manilaDateStr, manilaDayBoundaries, manilaDayOfWeek } from "@/lib/time"
 import { getTenantTimezone } from "@/lib/tenant-context";
 import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
 import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
+import { CustomizableDashboardGrid } from "@/components/dashboard/customizable-dashboard-grid";
 
 async function getCoachDashboardData(employeeId: string) {
   const now = new Date();
@@ -410,135 +411,12 @@ export default async function DashboardPage() {
         <DashboardSearch />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TodaysWodCard showPlanLink={true} />
-        <AnnouncementBoardCard canManage={true} />
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalMembers}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeMembers} active</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Today's Check-ins</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.todayCheckins}</div>
-            <p className="text-xs text-muted-foreground">so far today</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.newThisMonth}</div>
-            <p className="text-xs text-muted-foreground">new members</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Payments</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.overduePayments}</div>
-            <p className="text-xs text-muted-foreground">need attention</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Recent check-ins */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Check-ins</CardTitle>
-            <CardDescription>Members who checked in recently</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {recentCheckins.map((c: any) => (
-                <li key={c.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                    {(c.member.firstName?.[0] ?? "?") + (c.member.lastName?.[0] ?? "")}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{c.member.firstName} {c.member.lastName}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{timeAgo(c.checkedInAt)}</span>
-                </li>
-              ))}
-              {recentCheckins.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No check-ins today</p>
-              )}
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* New members */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Newest Members</CardTitle>
-            <CardDescription>Recently joined members</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {recentMembers.map((m: any) => (
-                <li key={m.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
-                    {m.firstName[0]}{m.lastName[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{m.firstName} {m.lastName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {m.subscriptions.map((s: any) => s.service.name).join(", ") || "No subscriptions"}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{formatDate(m.joinDate)}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Expiring subscriptions */}
-      {expiringSubscriptions.length > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              Expiring Soon
-            </CardTitle>
-            <CardDescription>Subscriptions expiring in the next 7 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {expiringSubscriptions.map((sub: any) => (
-                <li key={sub.id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{sub.member.firstName} {sub.member.lastName}</span>
-                  <span className="text-muted-foreground">{sub.service.name}</span>
-                  <Badge variant="warning">Expires {formatDate(sub.endDate)}</Badge>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      <CustomizableDashboardGrid
+        stats={stats}
+        recentCheckins={recentCheckins}
+        expiringSubscriptions={expiringSubscriptions}
+        recentMembers={recentMembers}
+      />
     </div>
   );
 }
