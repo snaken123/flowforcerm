@@ -571,16 +571,33 @@ model TrainingPlanCard {
 
 // Dashboard announcement board -- distinct from the Communications page's outbound
 // email/SMS broadcasts, this is a persistent in-app board any authenticated user sees.
+// COACH isn't a Role -- it's an Employee.employeeTypes tag, so a coach-only user (role
+// STAFF) and a plain staff user need to be independently targetable. Resolved in
+// lib/announcement-recipients.ts, not via the Role enum.
+enum AnnouncementAudience {
+  ADMIN
+  STAFF
+  COACH
+  MEMBER
+}
+
 model Announcement {
-  id          String   @id @default(cuid())
+  id          String                 @id @default(cuid())
   title       String
-  content     String   @db.Text
-  isPinned    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  content     String                 @db.Text
+  isPinned    Boolean                @default(false)
+  audience    AnnouncementAudience[]
+  sendAt      DateTime?              // null = live immediately
+  expiresAt   DateTime?              // null = never expires
+  sendEmail   Boolean                @default(false)
+  sendSms     Boolean                @default(false)
+  notifiedAt  DateTime?              // stamped once email/SMS actually dispatched -- prevents double-send
+  createdAt   DateTime               @default(now())
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([isPinned, createdAt])
+  @@index([sendAt, notifiedAt])
 }
 
 model FreeTrialToken {

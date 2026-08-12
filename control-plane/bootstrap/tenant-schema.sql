@@ -20,6 +20,9 @@ CREATE TYPE "BookingStatus" AS ENUM ('CONFIRMED', 'ATTENDED', 'CANCELLED', 'NO_S
 CREATE TYPE "RecordStatus" AS ENUM ('APPROVED', 'PENDING', 'REJECTED');
 
 -- CreateEnum
+CREATE TYPE "AnnouncementAudience" AS ENUM ('ADMIN', 'STAFF', 'COACH', 'MEMBER');
+
+-- CreateEnum
 CREATE TYPE "ShopCategory" AS ENUM ('DRINKS', 'MERCHANDISE');
 
 -- CreateEnum
@@ -438,6 +441,12 @@ CREATE TABLE "Announcement" (
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
+    "audience" "AnnouncementAudience"[],
+    "sendAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "sendEmail" BOOLEAN NOT NULL DEFAULT false,
+    "sendSms" BOOLEAN NOT NULL DEFAULT false,
+    "notifiedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdById" TEXT NOT NULL,
 
@@ -772,6 +781,9 @@ CREATE UNIQUE INDEX "TrainingPlanCard_date_categoryKey_key" ON "TrainingPlanCard
 
 -- CreateIndex
 CREATE INDEX "Announcement_isPinned_createdAt_idx" ON "Announcement"("isPinned", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Announcement_sendAt_notifiedAt_idx" ON "Announcement"("sendAt", "notifiedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "FreeTrialToken_token_key" ON "FreeTrialToken"("token");

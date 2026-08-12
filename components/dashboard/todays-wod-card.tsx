@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Dumbbell, Loader2, ArrowRight } from "lucide-react";
+import { Dumbbell, Loader2, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrainingPlanReadOnlyView } from "@/components/training-plan/training-plan-read-only-view";
 import { TRAINING_PLAN_CATEGORIES, type TrainingPlanCell } from "@/lib/training-plan";
@@ -13,6 +13,16 @@ type TrainingPlanCardData = { categoryKey: string; rows: TrainingPlanCell[][]; n
 export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
   const timeZone = useTenantTimezone();
   const [cards, setCards] = useState<TrainingPlanCardData[] | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCategory(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   useEffect(() => {
     const today = new Date().toLocaleDateString("en-CA", { timeZone });
@@ -51,10 +61,19 @@ export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
               if (!card) return null;
               const hasContent = card.rows.some((row: TrainingPlanCell[]) => row.some((cell) => cell.text.trim())) || card.notes.trim();
               if (!hasContent) return null;
+              const isCollapsed = collapsed.has(cat.key);
               return (
                 <div key={cat.key} className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: cat.color }}>{cat.defaultLabel}</p>
-                  <TrainingPlanReadOnlyView rows={card.rows} notes={card.notes} color={cat.color} compact />
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(cat.key)}
+                    className="w-full flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none"
+                    style={{ color: cat.color }}
+                  >
+                    {cat.defaultLabel}
+                    {isCollapsed ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronUp className="h-3.5 w-3.5 shrink-0" />}
+                  </button>
+                  {!isCollapsed && <TrainingPlanReadOnlyView rows={card.rows} notes={card.notes} color={cat.color} compact />}
                 </div>
               );
             })}
