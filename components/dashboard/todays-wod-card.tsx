@@ -10,27 +10,31 @@ import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 type TrainingPlanCardData = { categoryKey: string; rows: TrainingPlanCell[][]; notes: string };
 
-// Which categories default to collapsed on load -- a personal display preference, so it
+// Which categories default to EXPANDED on load -- a personal display preference, so it
 // lives in localStorage rather than being sent to the server. Absent/unset = starts
-// expanded (today's current behavior). Chevron clicks below only ever change the current
-// view, never this stored default.
-const STORAGE_KEY = "todaysWodDefaultCollapsed";
+// collapsed. Chevron clicks below only ever change the current view, never this stored
+// default.
+const STORAGE_KEY = "todaysWodDefaultExpanded";
+const ALL_CATEGORY_KEYS = TRAINING_PLAN_CATEGORIES.map((c) => c.key);
 
 export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
   const timeZone = useTenantTimezone();
   const [cards, setCards] = useState<TrainingPlanCardData[] | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [defaultCollapsed, setDefaultCollapsed] = useState<Set<string>>(new Set());
+  // Starts with everything collapsed (SSR-safe -- ALL_CATEGORY_KEYS is a static import,
+  // not a browser API, so this doesn't cause a hydration mismatch the way reading
+  // localStorage here would).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(ALL_CATEGORY_KEYS));
+  const [defaultExpanded, setDefaultExpanded] = useState<Set<string>>(new Set());
 
-  // Reads localStorage after hydration (it's unavailable during SSR, so this can't run
-  // in the initial useState without causing a server/client mismatch).
+  // Reads localStorage after hydration (it's unavailable during SSR) and un-collapses
+  // whichever categories are checked as "start expanded".
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
       if (Array.isArray(saved) && saved.length > 0) {
         const savedSet = new Set<string>(saved);
-        setDefaultCollapsed(savedSet);
-        setCollapsed(savedSet);
+        setDefaultExpanded(savedSet);
+        setCollapsed(new Set(ALL_CATEGORY_KEYS.filter((k) => !savedSet.has(k))));
       }
     } catch {}
   }, []);
@@ -47,10 +51,10 @@ export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
   // The checkbox: checked = "start expanded". Updates the persisted default AND applies
   // immediately to the current view, so checking/unchecking never looks like a no-op.
   function setStartExpanded(key: string, startExpanded: boolean) {
-    setDefaultCollapsed((prev) => {
+    setDefaultExpanded((prev) => {
       const next = new Set(prev);
-      if (startExpanded) next.delete(key);
-      else next.add(key);
+      if (startExpanded) next.add(key);
+      else next.delete(key);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
@@ -100,7 +104,7 @@ export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
               const hasContent = card.rows.some((row: TrainingPlanCell[]) => row.some((cell) => cell.text.trim())) || card.notes.trim();
               if (!hasContent) return null;
               const isCollapsed = collapsed.has(cat.key);
-              const startsExpanded = !defaultCollapsed.has(cat.key);
+              const startsExpanded = defaultExpanded.has(cat.key);
               return (
                 <div key={cat.key} className="space-y-1">
                   <div className="w-full flex items-center gap-2">
