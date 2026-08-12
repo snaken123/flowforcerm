@@ -4,7 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { getLoginLimiter } from "./rate-limit";
 
 export const authOptions: NextAuthOptions = {
@@ -33,9 +33,20 @@ export const authOptions: NextAuthOptions = {
           // If Redis is unavailable, fail open (don't lock users out)
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+        } catch (e) {
+          // P2021 = table doesn't exist -- a misprovisioned tenant database, not a bad
+          // login. Surface it distinctly so it doesn't get misread as "wrong password".
+          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2021") {
+            console.error("[auth] tenant database is missing expected schema (table not found):", e.meta);
+            return null;
+          }
+          throw e;
+        }
 
         if (!user || !user.password) return null;
 

@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
 import { controlPlanePrisma } from "../lib/db";
 import { encryptSecret } from "../lib/crypto";
 
@@ -24,6 +25,36 @@ async function main() {
     throw new Error("SEED_TENANT1_DATABASE_URL, SEED_TENANT1_DIRECT_URL, and SEED_TENANT1_NEON_PROJECT_ID must be set");
   }
 
+  // Guard against seeding a tenant onto the control-plane's own database -- exactly the
+  // mistake that once left the "ffrm" tenant pointed at a database with no gym schema at
+  // all, silently breaking login and password reset for it.
+  if (process.env.CONTROL_PLANE_DATABASE_URL) {
+    const controlPlaneHost = new URL(process.env.CONTROL_PLANE_DATABASE_URL).hostname;
+    const tenantHost = new URL(tenantDbUrl).hostname;
+    if (tenantHost === controlPlaneHost) {
+      throw new Error(
+        `SEED_TENANT1_DATABASE_URL (${tenantHost}) points at the same host as CONTROL_PLANE_DATABASE_URL. ` +
+          "Refusing to seed a tenant onto the control-plane's own database -- point it at a dedicated tenant database instead."
+      );
+    }
+  }
+
+  // Confirm the target database actually has the gym schema applied before trusting it.
+  const tenantDbCheck = new PrismaClient({ datasourceUrl: tenantDbUrl });
+  try {
+    const tables = await tenantDbCheck.$queryRaw<{ tablename: string }[]>`
+      SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+    `;
+    if (!tables.some((t) => t.tablename === "User")) {
+      throw new Error(
+        'SEED_TENANT1_DATABASE_URL has no "User" table -- run the schema bootstrap ' +
+          "(control-plane/bootstrap/tenant-schema.sql) against it before seeding this tenant."
+      );
+    }
+  } finally {
+    await tenantDbCheck.$disconnect();
+  }
+
   const tenant = await controlPlanePrisma.tenant.upsert({
     where: { subdomain: "ffrm" },
     update: {
@@ -41,6 +72,14 @@ async function main() {
       brandName: "FlowForceRM",
       timezone: "Asia/Manila",
       provisionedAt: new Date(),
+    },
+  });
+  await controlPlanePrisma.provisioningLog.create({
+    data: {
+      tenantId: tenant.id,
+      step: "seeded_via_seed_script",
+      status: "success",
+      detail: tenantNeonProjectId,
     },
   });
   console.log("Tenant #1 ready:", tenant.subdomain, tenant.id);

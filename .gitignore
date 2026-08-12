@@ -28,6 +28,9 @@ npm-debug.log*
 # Test reports
 test-reports/
 
+# personal Claude Code local overrides
+.claude/settings.local.json
+
 # stray reserved-name artifact from source repo
 nul
 .neon

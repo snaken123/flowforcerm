@@ -1,0 +1,39 @@
+name: Bootstrap SQL check
+
+# Regenerates control-plane/bootstrap/tenant-schema.sql from prisma/schema.prisma and fails
+# if the committed file is out of date. That file is applied verbatim to every newly
+# provisioned tenant's database (see control-plane/lib/provision-tenant.ts), so letting it
+# drift from the real schema means new tenants silently get an incomplete database.
+on:
+  pull_request:
+    paths:
+      - "prisma/schema.prisma"
+      - "control-plane/bootstrap/tenant-schema.sql"
+  push:
+    branches: [main]
+    paths:
+      - "prisma/schema.prisma"
+      - "control-plane/bootstrap/tenant-schema.sql"
+
+jobs:
+  check-bootstrap-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Regenerate tenant bootstrap SQL
+        run: npm run db:bootstrap-sql
+
+      - name: Fail if bootstrap SQL is out of date
+        run: |
+          if ! git diff --exit-code -- control-plane/bootstrap/tenant-schema.sql; then
+            echo "::error::control-plane/bootstrap/tenant-schema.sql is out of date relative to prisma/schema.prisma. Run 'npm run db:bootstrap-sql' locally and commit the result."
+            exit 1
+          fi
