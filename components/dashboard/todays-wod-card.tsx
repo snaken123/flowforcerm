@@ -10,15 +10,53 @@ import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 type TrainingPlanCardData = { categoryKey: string; rows: TrainingPlanCell[][]; notes: string };
 
+// Which categories default to collapsed on load -- a personal display preference, so it
+// lives in localStorage rather than being sent to the server. Absent/unset = starts
+// expanded (today's current behavior). Chevron clicks below only ever change the current
+// view, never this stored default.
+const STORAGE_KEY = "todaysWodDefaultCollapsed";
+
 export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
   const timeZone = useTenantTimezone();
   const [cards, setCards] = useState<TrainingPlanCardData[] | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [defaultCollapsed, setDefaultCollapsed] = useState<Set<string>>(new Set());
+
+  // Reads localStorage after hydration (it's unavailable during SSR, so this can't run
+  // in the initial useState without causing a server/client mismatch).
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+      if (Array.isArray(saved) && saved.length > 0) {
+        const savedSet = new Set<string>(saved);
+        setDefaultCollapsed(savedSet);
+        setCollapsed(savedSet);
+      }
+    } catch {}
+  }, []);
 
   function toggleCategory(key: string) {
     setCollapsed((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // The checkbox: checked = "start expanded". Updates the persisted default AND applies
+  // immediately to the current view, so checking/unchecking never looks like a no-op.
+  function setStartExpanded(key: string, startExpanded: boolean) {
+    setDefaultCollapsed((prev) => {
+      const next = new Set(prev);
+      if (startExpanded) next.delete(key);
+      else next.add(key);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (startExpanded) next.delete(key);
       else next.add(key);
       return next;
     });
@@ -62,17 +100,28 @@ export function TodaysWodCard({ showPlanLink }: { showPlanLink: boolean }) {
               const hasContent = card.rows.some((row: TrainingPlanCell[]) => row.some((cell) => cell.text.trim())) || card.notes.trim();
               if (!hasContent) return null;
               const isCollapsed = collapsed.has(cat.key);
+              const startsExpanded = !defaultCollapsed.has(cat.key);
               return (
                 <div key={cat.key} className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategory(cat.key)}
-                    className="w-full flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none"
-                    style={{ color: cat.color }}
-                  >
-                    {cat.defaultLabel}
-                    {isCollapsed ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronUp className="h-3.5 w-3.5 shrink-0" />}
-                  </button>
+                  <div className="w-full flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={startsExpanded}
+                      onChange={(e) => setStartExpanded(cat.key, e.target.checked)}
+                      title="Start this section expanded"
+                      className="h-3.5 w-3.5 shrink-0 accent-current cursor-pointer"
+                      style={{ color: cat.color }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(cat.key)}
+                      className="flex-1 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none"
+                      style={{ color: cat.color }}
+                    >
+                      {cat.defaultLabel}
+                      {isCollapsed ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronUp className="h-3.5 w-3.5 shrink-0" />}
+                    </button>
+                  </div>
                   {!isCollapsed && <TrainingPlanReadOnlyView rows={card.rows} notes={card.notes} color={cat.color} compact />}
                 </div>
               );
