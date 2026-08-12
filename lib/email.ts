@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
-import { getTenantIdOrNull } from "@/lib/tenant-context";
+import { getTenantIdOrNull, getTenantSubdomain } from "@/lib/tenant-context";
 
 // Lazy singleton — constructed on first send, not at module load, so builds/routes
 // that merely import this file don't crash when RESEND_API_KEY isn't set yet.
@@ -16,6 +16,21 @@ export function getResend(): Resend {
 
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = process.env.EMAIL_FROM ?? "FlowForceRM <noreply@flowforcerm.com>";
+
+// Builds a link back to a specific gym's own subdomain -- APP_URL alone isn't enough
+// because it's a single global value (NEXTAUTH_URL) that can't reflect whichever tenant
+// actually triggered the email. Falls back to *.localhost for local dev, where NEXTAUTH_URL
+// has no subdomain of its own.
+export function tenantOrigin(subdomain: string): string {
+  try {
+    const base = new URL(APP_URL);
+    if (base.hostname === "localhost") {
+      base.hostname = `${subdomain}.localhost`;
+      return base.origin;
+    }
+  } catch {}
+  return `https://${subdomain}.flowforcerm.com`;
+}
 
 // Sales-lead inbox — gets notified of new marketing-site contact-form submissions.
 export const NOTIFY_EMAIL = "marketing@flowforcerm.com";
@@ -52,12 +67,18 @@ export async function sendActivationEmail({
   to,
   firstName,
   tempPassword,
+  subdomain,
 }: {
   to: string;
   firstName: string;
   tempPassword: string;
+  // Only needed when called outside a tenant-resolved request (e.g. during
+  // control-plane provisioning, before any request has ever hit the new tenant's
+  // subdomain). In-app callers running inside a tenant request can omit it.
+  subdomain?: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
+  const origin = tenantOrigin(subdomain ?? getTenantSubdomain());
   const result = await getResend().emails.send({
     from: await resolveEmailFrom(),
     to,
@@ -73,7 +94,7 @@ export async function sendActivationEmail({
           <p style="margin:4px 0;font-size:15px"><strong>Temporary password:</strong> <code style="background:#e4e4e7;padding:2px 6px;border-radius:4px">${tempPassword}</code></p>
         </div>
 
-        <a href="${APP_URL}/login" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+        <a href="${origin}/login" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
           Log in to the Member Portal →
         </a>
 
@@ -98,7 +119,7 @@ export async function sendActivationLinkEmail({
   token: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
-  const setupUrl = `${APP_URL}/reset-password?token=${token}`;
+  const setupUrl = `${tenantOrigin(getTenantSubdomain())}/reset-password?token=${token}`;
   const { error } = await getResend().emails.send({
     from: await resolveEmailFrom(),
     to,
@@ -131,7 +152,7 @@ export async function sendPasswordResetEmail({
   token: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
-  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+  const resetUrl = `${tenantOrigin(getTenantSubdomain())}/reset-password?token=${token}`;
   const { error } = await getResend().emails.send({
     from: await resolveEmailFrom(),
     to,
@@ -235,6 +256,7 @@ export async function sendWelcomeEmail({
   tempPassword: string;
 }) {
   if (!to || to.endsWith("@flowforcerm.local")) return;
+  const origin = tenantOrigin(getTenantSubdomain());
   const { error } = await getResend().emails.send({
     from: await resolveEmailFrom(),
     to,
@@ -250,7 +272,7 @@ export async function sendWelcomeEmail({
           <p style="margin:4px 0;font-size:15px"><strong>Temporary password:</strong> <code style="background:#e4e4e7;padding:2px 6px;border-radius:4px">${tempPassword}</code></p>
         </div>
 
-        <a href="${APP_URL}/login" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+        <a href="${origin}/login" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
           Log in to the Member Portal →
         </a>
 

@@ -126,7 +126,7 @@ export async function provisionTenant(input: ProvisionTenantInput) {
     // succeeded. The temp password is returned to the caller as a fallback either way.
     let emailSent = true;
     try {
-      await sendActivationEmail({ to: input.adminEmail, firstName: input.adminName, tempPassword });
+      await sendActivationEmail({ to: input.adminEmail, firstName: input.adminName, tempPassword, subdomain: input.subdomain });
       await log(tenant.id, "activation_email_sent", "success");
     } catch (emailErr) {
       emailSent = false;
