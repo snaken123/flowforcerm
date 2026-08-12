@@ -103,8 +103,16 @@ export default async function middleware(req: NextRequest) {
   }
 
   // superadmin.flowforcerm.com never goes through tenant resolution or gym auth —
-  // it's a wholly separate system (see control-plane/lib/superadmin-auth.ts).
+  // it's a wholly separate system (see control-plane/lib/superadmin-auth.ts). "/" and
+  // "/login" have no page of their own under app/superadmin, so without this redirect
+  // they'd silently fall through to the gym marketing site / tenant login instead.
   if (isSuperAdminHost(host)) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/superadmin", req.url));
+    }
+    if (pathname === "/login") {
+      return NextResponse.redirect(new URL("/superadmin/login", req.url));
+    }
     return NextResponse.next();
   }
 

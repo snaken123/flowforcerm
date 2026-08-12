@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (memberStatus === "ACTIVE") {
-          sendWelcomeEmail({ to: email, firstName, tempPassword }).catch(console.error);
+          await sendWelcomeEmail({ to: email, firstName, tempPassword }).catch(console.error);
         }
 
         memberId = user.member!.id;
