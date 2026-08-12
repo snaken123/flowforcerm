@@ -1,9 +1,18 @@
 "use client";
 
-import { GripVertical, Maximize2, Minimize2, X } from "lucide-react";
+import { GripVertical, X } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { CardId, CardWidth } from "@/lib/dashboard-layout";
+
+// Maps a card's width (out of 4) to how many columns it spans at each breakpoint: 1 col
+// on mobile always, then scaled up from the grid's own responsive column count (2 on
+// tablet, 4 on wide screens) in customizable-dashboard-grid.tsx.
+function widthClass(width: CardWidth): string {
+  if (width === 4) return "sm:col-span-2 xl:col-span-4";
+  if (width === 2) return "sm:col-span-2";
+  return "";
+}
 
 // Wraps a dashboard card with drag/resize/remove chrome, but only when editMode is on --
 // in normal view this renders its children with zero extra markup, so the dashboard
@@ -29,7 +38,7 @@ export function DashboardCardShell({
   });
 
   if (!editMode) {
-    return <div className={width === 2 ? "sm:col-span-2" : ""}>{children}</div>;
+    return <div className={widthClass(width)}>{children}</div>;
   }
 
   const style: React.CSSProperties = {
@@ -39,7 +48,7 @@ export function DashboardCardShell({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={width === 2 ? "sm:col-span-2" : ""}>
+    <div ref={setNodeRef} style={style} className={widthClass(width)}>
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <button
           type="button"
@@ -54,10 +63,10 @@ export function DashboardCardShell({
           <button
             type="button"
             onClick={onToggleWidth}
-            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-            title={width === 2 ? "Shrink to half width" : "Expand to full width"}
+            className="px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums text-muted-foreground hover:text-foreground hover:bg-muted"
+            title={`Width: ${width} of 4 columns — click to resize`}
           >
-            {width === 2 ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {width}/4
           </button>
           <button
             type="button"

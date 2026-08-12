@@ -62,7 +62,8 @@ export function CustomizableDashboardGrid({
   }
 
   function toggleWidth(id: CardId) {
-    updateLayout(layout.map((c) => (c.id === id ? { ...c, width: c.width === 2 ? 1 : 2 } : c)));
+    const next: Record<number, 1 | 2 | 4> = { 1: 2, 2: 4, 4: 1 };
+    updateLayout(layout.map((c) => (c.id === id ? { ...c, width: next[c.width] } : c)));
   }
 
   function removeCard(id: CardId) {
@@ -252,7 +253,7 @@ export function CustomizableDashboardGrid({
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={visible.map((c) => c.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {visible.map((c) => {
               const content = renderCardContent(c.id);
               if (!content) return null;

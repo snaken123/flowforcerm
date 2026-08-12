@@ -13,7 +13,9 @@ export type CardId =
   | "newest-members"
   | "expiring-soon";
 
-export type CardWidth = 1 | 2;
+// Out of a 4-column grid on wide screens (2 columns on tablet, 1 on mobile -- see
+// widthClass() in dashboard-card-shell.tsx for how each width maps at each breakpoint).
+export type CardWidth = 1 | 2 | 4;
 
 export type CardLayoutItem = { id: CardId; width: CardWidth; hidden: boolean };
 
@@ -29,22 +31,24 @@ export const CARD_LABELS: Record<CardId, string> = {
   "expiring-soon": "Expiring Soon",
 };
 
-// Order here = default display order. Matches today's fixed layout: WOD + Announcements
-// side by side, stat tiles paired two-up, Recent Check-ins + Newest Members side by
-// side, Expiring Soon full-width.
+// Order here = default display order. WOD + Announcements half-width side by side, all
+// 4 stat tiles quarter-width in one row, Recent Check-ins + Newest Members half-width
+// side by side, Expiring Soon full-width.
 export const DEFAULT_LAYOUT: CardLayoutItem[] = [
-  { id: "wod", width: 1, hidden: false },
-  { id: "announcements", width: 1, hidden: false },
+  { id: "wod", width: 2, hidden: false },
+  { id: "announcements", width: 2, hidden: false },
   { id: "stat-total-members", width: 1, hidden: false },
   { id: "stat-today-checkins", width: 1, hidden: false },
   { id: "stat-new-month", width: 1, hidden: false },
   { id: "stat-overdue-payments", width: 1, hidden: false },
-  { id: "recent-checkins", width: 1, hidden: false },
-  { id: "newest-members", width: 1, hidden: false },
-  { id: "expiring-soon", width: 2, hidden: false },
+  { id: "recent-checkins", width: 2, hidden: false },
+  { id: "newest-members", width: 2, hidden: false },
+  { id: "expiring-soon", width: 4, hidden: false },
 ];
 
-const STORAGE_KEY = "adminDashboardLayout";
+// Bumped because the width semantics changed (out of 4 columns now, not 2) -- an old
+// saved layout under the previous key would misinterpret its stored widths.
+const STORAGE_KEY = "adminDashboardLayoutV2";
 
 // Merges a saved layout against DEFAULT_LAYOUT so a future code change that adds/removes
 // a card doesn't break an existing saved preference: unknown ids are dropped, missing
