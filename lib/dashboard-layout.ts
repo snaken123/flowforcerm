@@ -15,7 +15,7 @@ export type CardId =
 
 // Out of a 4-column grid on wide screens (2 columns on tablet, 1 on mobile -- see
 // widthClass() in dashboard-card-shell.tsx for how each width maps at each breakpoint).
-export type CardWidth = 1 | 2 | 4;
+export type CardWidth = 1 | 2 | 3 | 4;
 
 export type CardLayoutItem = { id: CardId; width: CardWidth; hidden: boolean };
 

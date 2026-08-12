@@ -62,7 +62,7 @@ export function CustomizableDashboardGrid({
   }
 
   function toggleWidth(id: CardId) {
-    const next: Record<number, 1 | 2 | 4> = { 1: 2, 2: 4, 4: 1 };
+    const next: Record<number, 1 | 2 | 3 | 4> = { 1: 2, 2: 3, 3: 4, 4: 1 };
     updateLayout(layout.map((c) => (c.id === id ? { ...c, width: next[c.width] } : c)));
   }
 

@@ -10,6 +10,7 @@ import type { CardId, CardWidth } from "@/lib/dashboard-layout";
 // tablet, 4 on wide screens) in customizable-dashboard-grid.tsx.
 function widthClass(width: CardWidth): string {
   if (width === 4) return "sm:col-span-2 xl:col-span-4";
+  if (width === 3) return "sm:col-span-2 xl:col-span-3";
   if (width === 2) return "sm:col-span-2";
   return "";
 }
