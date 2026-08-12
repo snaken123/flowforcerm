@@ -41,7 +41,7 @@ export function NewTenantForm() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ subdomain: string; adminEmail: string; tempPassword: string; emailSent: boolean } | null>(null);
+  const [result, setResult] = useState<{ subdomain: string; adminEmail: string; tempPassword: string; emailSent: boolean; domainReady: boolean } | null>(null);
   const [timeZones] = useState<string[]>(listTimeZones);
 
   const {
@@ -70,6 +70,7 @@ export function NewTenantForm() {
         adminEmail: data.adminEmail,
         tempPassword: body.tempPassword,
         emailSent: body.emailSent,
+        domainReady: body.domainReady,
       });
       reset();
       router.refresh();
@@ -97,6 +98,11 @@ export function NewTenantForm() {
         <p className="text-emerald-400 font-semibold mb-3">
           {result.subdomain}.flowforcerm.com is live
         </p>
+        {!result.domainReady && (
+          <p className="text-sm text-amber-400 mb-2">
+            Domain isn't verified on Vercel yet — it may take a bit longer, or use "Retry Domain Setup" on the tenant list below.
+          </p>
+        )}
         {result.emailSent ? (
           <p className="text-sm text-[#888]">Activation email sent to {result.adminEmail}.</p>
         ) : (

@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { controlPlanePrisma } from "./db";
 import { encryptSecret } from "./crypto";
 import { createTenantNeonProject, deleteTenantNeonProject } from "./neon-api";
+import { ensureTenantDomain } from "./vercel-api";
 import { sendActivationEmail } from "@/lib/email";
 import { isValidTimeZone } from "@/lib/time";
 
@@ -121,6 +122,19 @@ export async function provisionTenant(input: ProvisionTenantInput) {
     }
     await log(tenant.id, "admin_seeded", "success", input.adminEmail);
 
+    // Non-fatal, same reasoning as the email step below: the tenant is otherwise fully
+    // provisioned, so a Vercel hiccup shouldn't roll back real infrastructure that
+    // already succeeded. Surfaced to the superadmin so they can retry via the tenant
+    // list's "Retry Domain Setup" action instead of losing the whole tenant.
+    let domainReady = false;
+    try {
+      domainReady = await ensureTenantDomain(input.subdomain);
+      await log(tenant.id, domainReady ? "vercel_domain_verified" : "vercel_domain_pending", domainReady ? "success" : "warning");
+    } catch (domainErr) {
+      const domainMessage = domainErr instanceof Error ? domainErr.message : String(domainErr);
+      await log(tenant.id, "vercel_domain_failed", "error", domainMessage);
+    }
+
     // Non-fatal: the tenant is otherwise fully provisioned at this point, so a down/
     // misconfigured mail provider shouldn't roll back real infrastructure that already
     // succeeded. The temp password is returned to the caller as a fallback either way.
@@ -140,7 +154,7 @@ export async function provisionTenant(input: ProvisionTenantInput) {
     });
     await log(tenant.id, "activated", "success");
 
-    return { tenant: activated, tempPassword, emailSent };
+    return { tenant: activated, tempPassword, emailSent, domainReady };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await log(tenant.id, "provisioning_failed", "error", message);
