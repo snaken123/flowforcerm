@@ -183,7 +183,7 @@ export default async function middleware(req: NextRequest) {
       ) {
         return NextResponse.redirect(new URL("/change-password", req.url));
       }
-      const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees", "/admin/reports"];
+      const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees", "/admin/reports", "/admin/records-todo"];
       if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
         const allowed =
           (token.role === "STAFF" || token.role === "STORE") &&
