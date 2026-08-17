@@ -11,6 +11,12 @@ node_modules/
 .next/
 out/
 
+# next-pwa build output -- regenerated fresh on every `next build`; committing it
+# means a browser's already-installed service worker can go stale against routes
+# added after the last time someone happened to commit this file
+public/sw.js
+public/workbox-*.js
+
 # Prisma generated client
 node_modules/.prisma/
 
