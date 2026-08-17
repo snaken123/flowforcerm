@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getResend, tenantOrigin } from "@/lib/email";
 import { getTenantSubdomain } from "@/lib/tenant-context";
 import { isRateLimited, getClientIp } from "@/lib/rate-limit";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
-    replyTo: "members@flowforcerm.com",
+    replyTo: MEMBERS_EMAIL,
     to: email,
     subject: "Confirm your free trial at FlowForceRM",
     html: `
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
         </a>
         <p style="font-size:13px;color:#888">If you didn't request this, you can ignore this email.</p>
         <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb"/>
-        <p style="font-size:12px;color:#aaa">FlowForceRM · members@flowforcerm.com</p>
+        <p style="font-size:12px;color:#aaa">FlowForceRM · ${MEMBERS_EMAIL}</p>
       </div>
     `,
   });

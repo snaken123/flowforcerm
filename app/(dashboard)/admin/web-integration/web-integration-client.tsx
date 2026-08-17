@@ -311,42 +311,43 @@ export function WebIntegrationClient({ services, baseUrl }: { services: Service[
     [servicesWithPkgs]
   );
 
-  // Restore visibility from localStorage, falling back to all selected
-  const [selectedPkgIds, setSelectedPkgIds] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set(allPkgIds);
+  // Seeded with the same server-safe default on both server and client render --
+  // reading localStorage inside the useState initializer made the client's first
+  // render diverge from what the server sent (a real hydration mismatch), since SSR
+  // has no window/localStorage to read from. Restored from localStorage in the effect
+  // below instead, after mount, accepting one frame of default state.
+  const [selectedPkgIds, setSelectedPkgIds] = useState<Set<string>>(() => new Set(allPkgIds));
+  const [cardOrder, setCardOrder] = useState<Service[]>(defaultOrder);
+
+  const [showPriceSettings, setShowPriceSettings] = useState(false);
+  const [draftPkgIds, setDraftPkgIds] = useState<Set<string>>(new Set());
+  const [showReorder, setShowReorder] = useState(false);
+  const [draftOrder, setDraftOrder] = useState<Service[]>([]);
+
+  // Restore visibility + order from localStorage post-mount (client-only, so it can't
+  // cause a hydration mismatch here).
+  useEffect(() => {
     try {
       const saved = localStorage.getItem("pricelist_packages");
       if (saved) {
         const ids = JSON.parse(saved) as string[];
-        // Only keep ids that still exist
         const valid = ids.filter((id) => allPkgIds.includes(id));
-        if (valid.length > 0) return new Set(valid);
+        if (valid.length > 0) setSelectedPkgIds(new Set(valid));
       }
     } catch {}
-    return new Set(allPkgIds);
-  });
-
-  // Restore card order from localStorage, falling back to default
-  const [cardOrder, setCardOrder] = useState<Service[]>(() => {
-    if (typeof window === "undefined") return defaultOrder;
     try {
       const saved = localStorage.getItem("pricelist_order");
       if (saved) {
         const ids = JSON.parse(saved) as string[];
         const byId = Object.fromEntries(servicesWithPkgs.map((s) => [s.id, s]));
         const restored = ids.map((id) => byId[id]).filter(Boolean) as Service[];
-        // Append any new services not in saved order
         const missing = servicesWithPkgs.filter((s) => !ids.includes(s.id));
-        if (restored.length > 0) return [...restored, ...missing];
+        if (restored.length > 0) setCardOrder([...restored, ...missing]);
       }
     } catch {}
-    return defaultOrder;
-  });
-
-  const [showPriceSettings, setShowPriceSettings] = useState(false);
-  const [draftPkgIds, setDraftPkgIds] = useState<Set<string>>(new Set());
-  const [showReorder, setShowReorder] = useState(false);
-  const [draftOrder, setDraftOrder] = useState<Service[]>([]);
+    // Intentionally runs once on mount only -- this restores saved state, it
+    // shouldn't re-run and clobber user edits if the services list changes later.
+  }, []);
 
   // Hydrate from DB on mount (overrides localStorage if DB has a value)
   useEffect(() => {

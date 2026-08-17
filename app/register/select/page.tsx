@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertCircle, Clock, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 import { Suspense } from "react";
 
 type Slot = {
@@ -365,7 +366,7 @@ function SelectContent() {
       <Card>
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
         <h2 className="font-bold text-xl text-center mb-2">Something went wrong</h2>
-        <p className="text-sm text-zinc-500 text-center">Please contact our front desk at members@flowforcerm.com</p>
+        <p className="text-sm text-zinc-500 text-center">Please contact our front desk at {MEMBERS_EMAIL}</p>
       </Card>
     );
   }

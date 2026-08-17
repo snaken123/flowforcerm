@@ -49,6 +49,16 @@ export function slugify(text: string): string {
 export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+// "HH:MM" 24h -> "h:mm A" 12h, dropping ":00" for on-the-hour times (e.g. "7 AM").
+// Was reimplemented separately in six different files -- this is the single source now.
+export function formatTime(t: string | null | undefined): string {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
 export function formatTimeSlot(startTime: string, endTime: string): string {
   const fmt = (t: string) => {
     const [h, m] = t.split(":").map(Number);

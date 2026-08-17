@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/lib/use-toast";
+import { formatTime } from "@/lib/utils";
 import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
 import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
 
@@ -27,13 +28,6 @@ interface ScheduleItem {
   bookings: number;
   checkIns: number;
   coaches: { employee: { id: string; firstName: string; lastName: string } }[];
-}
-
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
 function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayStr: string }) {

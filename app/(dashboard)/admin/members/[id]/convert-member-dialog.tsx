@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,15 +31,58 @@ interface Props {
 
 type Step = 1 | 2 | 3;
 
+const schema = z
+  .object({
+    memberNumber: z.string().optional(),
+    serviceId: z.string().min(1, "Service is required"),
+    startDate: z.string().min(1, "Start date is required"),
+    subType: z.enum(["session", "date"]),
+    sessionsTotal: z.string().optional(),
+    endDate: z.string().optional(),
+    price: z.string().min(1, "Price is required"),
+    paymentMethod: z.string(),
+    billingCycle: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.subType === "session") {
+      const n = parseInt(data.sessionsTotal ?? "", 10);
+      if (!data.sessionsTotal || isNaN(n) || n < 1) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["sessionsTotal"], message: "Total sessions is required" });
+      }
+    }
+    const priceNum = parseFloat(data.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["price"], message: "Enter a valid price" });
+    }
+  });
+
+type FormData = z.infer<typeof schema>;
+
 export function ConvertMemberDialog({ memberId, memberName, services, open, onOpenChange, onConverted }: Props) {
   const { toast } = useToast();
   const timeZone = useTenantTimezone();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
-
-  // Step 1: confirm identity / member number
-  const [memberNumber, setMemberNumber] = useState("");
   const [memberNumberPrefix, setMemberNumberPrefix] = useState("NS");
+  const [result, setResult] = useState<{ memberNumber: string; serviceName: string } | null>(null);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      memberNumber: "",
+      serviceId: "",
+      startDate: new Date().toLocaleDateString("en-CA", { timeZone }),
+      subType: "session",
+      sessionsTotal: "10",
+      endDate: "",
+      price: "",
+      paymentMethod: "cash",
+      billingCycle: "MONTHLY",
+    },
+  });
+  const { register, watch, setValue, handleSubmit, formState: { errors } } = form;
+  const subType = watch("subType");
+
   useEffect(() => {
     fetch("/api/member-number-prefix")
       .then((r) => r.json())
@@ -44,30 +90,19 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
       .catch(() => {});
   }, []);
 
-  // Step 2: subscription details
-  const [serviceId, setServiceId] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone }));
-  const [subType, setSubType] = useState<"session" | "date">("session");
-  const [sessionsTotal, setSessionsTotal] = useState("10");
-  const [endDate, setEndDate] = useState("");
-  const [price, setPrice] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [billingCycle, setBillingCycle] = useState("MONTHLY");
-
-  // Step 3: result
-  const [result, setResult] = useState<{ memberNumber: string; serviceName: string } | null>(null);
-
   function reset() {
     setStep(1);
-    setMemberNumber("");
-    setServiceId("");
-    setStartDate(new Date().toLocaleDateString("en-CA", { timeZone }));
-    setSubType("session");
-    setSessionsTotal("10");
-    setEndDate("");
-    setPrice("");
-    setPaymentMethod("cash");
-    setBillingCycle("MONTHLY");
+    form.reset({
+      memberNumber: "",
+      serviceId: "",
+      startDate: new Date().toLocaleDateString("en-CA", { timeZone }),
+      subType: "session",
+      sessionsTotal: "10",
+      endDate: "",
+      price: "",
+      paymentMethod: "cash",
+      billingCycle: "MONTHLY",
+    });
     setResult(null);
   }
 
@@ -76,25 +111,25 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
     onOpenChange(open);
   }
 
-  async function handleConvert() {
-    if (!serviceId || !startDate || !price) {
-      toast({ variant: "destructive", title: "Please fill in all required fields." });
-      return;
-    }
+  async function goToStep2() {
+    setStep(2);
+  }
+
+  async function onSubmit(data: FormData) {
     setLoading(true);
     try {
       const body: Record<string, unknown> = {
-        memberNumber: memberNumber.trim() || undefined,
-        serviceId,
-        startDate,
-        price: parseFloat(price),
-        paymentMethod,
-        billingCycle,
+        memberNumber: data.memberNumber?.trim() || undefined,
+        serviceId: data.serviceId,
+        startDate: data.startDate,
+        price: parseFloat(data.price),
+        paymentMethod: data.paymentMethod,
+        billingCycle: data.billingCycle,
       };
-      if (subType === "session") {
-        body.sessionsTotal = parseInt(sessionsTotal, 10);
+      if (data.subType === "session") {
+        body.sessionsTotal = parseInt(data.sessionsTotal!, 10);
       } else {
-        body.endDate = endDate || undefined;
+        body.endDate = data.endDate || undefined;
       }
 
       const res = await fetch(`/api/members/${memberId}/convert`, {
@@ -102,13 +137,13 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const resData = await res.json();
       if (!res.ok) {
-        toast({ variant: "destructive", title: data.error ?? "Conversion failed" });
+        toast({ variant: "destructive", title: resData.error ?? "Conversion failed" });
         return;
       }
-      const svc = services.find((s) => s.id === serviceId);
-      setResult({ memberNumber: data.member.memberNumber, serviceName: svc?.name ?? "" });
+      const svc = services.find((s) => s.id === data.serviceId);
+      setResult({ memberNumber: resData.member.memberNumber, serviceName: svc?.name ?? "" });
       setStep(3);
       onConverted();
     } catch {
@@ -136,21 +171,20 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
               <Input
                 id="memberNumber"
                 placeholder={`${memberNumberPrefix}-00001`}
-                value={memberNumber}
-                onChange={(e) => setMemberNumber(e.target.value)}
+                {...register("memberNumber")}
               />
             </div>
             <DialogFooter>
-              <Button onClick={() => setStep(2)}>Next: Subscription</Button>
+              <Button onClick={goToStep2}>Next: Subscription</Button>
             </DialogFooter>
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label>Service *</Label>
-              <Select value={serviceId} onValueChange={setServiceId}>
+              <Select value={watch("serviceId")} onValueChange={(v) => setValue("serviceId", v, { shouldValidate: true })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
@@ -165,16 +199,18 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
                   ))}
                 </SelectContent>
               </Select>
+              {errors.serviceId && <p className="text-sm text-destructive">{errors.serviceId.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Start Date *</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <Input type="date" {...register("startDate")} />
+              {errors.startDate && <p className="text-sm text-destructive">{errors.startDate.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Subscription Type</Label>
-              <Select value={subType} onValueChange={(v) => setSubType(v as "session" | "date")}>
+              <Select value={subType} onValueChange={(v) => setValue("subType", v as "session" | "date")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="session">Session-based</SelectItem>
@@ -186,23 +222,25 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
             {subType === "session" ? (
               <div className="space-y-2">
                 <Label>Total Sessions *</Label>
-                <Input type="number" min={1} value={sessionsTotal} onChange={(e) => setSessionsTotal(e.target.value)} />
+                <Input type="number" min={1} {...register("sessionsTotal")} />
+                {errors.sessionsTotal && <p className="text-sm text-destructive">{errors.sessionsTotal.message}</p>}
               </div>
             ) : (
               <div className="space-y-2">
                 <Label>End Date</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input type="date" {...register("endDate")} />
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Price (₱) *</Label>
-                <Input type="number" min={0} step={0.01} value={price} onChange={(e) => setPrice(e.target.value)} />
+                <Input type="number" min={0} step={0.01} {...register("price")} />
+                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select value={watch("paymentMethod")} onValueChange={(v) => setValue("paymentMethod", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">Cash</SelectItem>
@@ -215,13 +253,13 @@ export function ConvertMemberDialog({ memberId, memberName, services, open, onOp
             </div>
 
             <DialogFooter className="flex gap-2">
-              <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
-              <Button onClick={handleConvert} disabled={loading || !serviceId || !price}>
+              <Button type="button" variant="ghost" onClick={() => setStep(1)}>Back</Button>
+              <Button type="submit" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Convert Member
               </Button>
             </DialogFooter>
-          </div>
+          </form>
         )}
 
         {step === 3 && result && (

@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/db";
+
 // Admin-editable legal documents: waiver/privacy text live in SystemSetting rows,
 // falling back to these code-level defaults (the text that used to be hardcoded,
 // verbatim, in both setup-account/page.tsx and member/profile/documents-section.tsx).
@@ -368,4 +370,20 @@ export interface LegalDocuments {
   privacyText: string;
   rulesPdfUrl: string;
   handbookPdfUrl: string;
+}
+
+// Shared by the API route and any server component that needs these documents
+// (e.g. the Settings page, which fetches this server-side to avoid a client round trip).
+export async function getLegalDocuments(): Promise<LegalDocuments> {
+  const rows = await prisma.systemSetting.findMany({
+    where: { key: { in: Object.values(LEGAL_KEYS) } },
+  });
+  const byKey = new Map(rows.map((r) => [r.key, r.value]));
+
+  return {
+    waiverText: byKey.get(LEGAL_KEYS.waiverText) ?? DEFAULT_WAIVER_TEXT,
+    privacyText: byKey.get(LEGAL_KEYS.privacyText) ?? DEFAULT_PRIVACY_TEXT,
+    rulesPdfUrl: byKey.get(LEGAL_KEYS.rulesPdfUrl) ?? DEFAULT_RULES_PDF_URL,
+    handbookPdfUrl: byKey.get(LEGAL_KEYS.handbookPdfUrl) ?? DEFAULT_HANDBOOK_PDF_URL,
+  };
 }

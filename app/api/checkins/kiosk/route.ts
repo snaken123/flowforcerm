@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaNow } from "@/lib/time";
+import { isValidKioskDevice } from "@/lib/kiosk-auth";
 import { z } from "zod";
 import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
 
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const role = (session.user as any).role;
+  if (!["ADMIN", "STAFF", "KIOSK"].includes(role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (role === "KIOSK" && !(await isValidKioskDevice(req))) {
+    return NextResponse.json({ error: "Unregistered device.", code: "invalid_device_token" }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = schema.safeParse(body);

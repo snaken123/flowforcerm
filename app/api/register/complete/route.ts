@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getResend, tenantOrigin } from "@/lib/email";
 import { getTenantSubdomain } from "@/lib/tenant-context";
 import { manilaDayBoundaries } from "@/lib/time";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
   // Confirmation email to registrant
   await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
-    replyTo: "members@flowforcerm.com",
+    replyTo: MEMBERS_EMAIL,
     to: freeTrialToken.email,
     subject: "You're booked! Free trial at FlowForceRM",
     html: `
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
           Questions? Reply to this email or call us. We can't wait to see you on the mats!
         </p>
         <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb"/>
-        <p style="font-size:12px;color:#aaa">FlowForceRM · members@flowforcerm.com</p>
+        <p style="font-size:12px;color:#aaa">FlowForceRM · ${MEMBERS_EMAIL}</p>
       </div>
     `,
   });
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
   // Staff notification
   await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",
-    to: "members@flowforcerm.com",
+    to: MEMBERS_EMAIL,
     subject: `New free trial registration — ${freeTrialToken.firstName} ${freeTrialToken.lastName}`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#111">

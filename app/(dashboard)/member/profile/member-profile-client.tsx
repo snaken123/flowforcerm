@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, formatCurrency, getInitials } from "@/lib/utils";
+import { makeSubscriptionSortPriority } from "@/lib/subscription-priority";
 import { toast } from "@/lib/use-toast";
 import { DocumentsSection } from "./documents-section";
 import { RecordStatusIndicator, recordTextClass } from "@/components/records/record-status-badge";
@@ -214,12 +215,7 @@ export function MemberProfileClient({ member }: { member: any }) {
 
   const fullName = `${member.firstName} ${member.lastName}`;
 
-  const ninetyDaysFromNow = Date.now() + 90 * 86400000;
-  const sortPriority = (s: any) => {
-    if (!s.sessionsTotal && s.endDate && new Date(s.endDate).getTime() > ninetyDaysFromNow) return 0;
-    if (!s.sessionsTotal && !s.endDate) return 1;
-    return 2;
-  };
+  const sortPriority = makeSubscriptionSortPriority();
   const visibleSubs = member.subscriptions
     .filter((s: any) => s.status === "ACTIVE" || s.status === "PAUSED")
     .sort((a: any, b: any) => {

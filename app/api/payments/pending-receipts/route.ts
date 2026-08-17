@@ -17,6 +17,7 @@ export async function GET() {
       subscription: { include: { service: { select: { name: true, color: true } } } },
     },
     orderBy: { createdAt: "asc" },
+    take: 200,
   });
 
   return NextResponse.json(payments);

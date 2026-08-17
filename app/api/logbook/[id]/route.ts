@@ -43,6 +43,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
+  if (parsed.data.subscriptionId !== undefined) {
+    const existing = await prisma.booking.findUnique({ where: { id: params.id }, select: { memberId: true } });
+    if (!existing?.memberId) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    const ownsSub = await prisma.subscription.findFirst({
+      where: { id: parsed.data.subscriptionId, memberId: existing.memberId },
+    });
+    if (!ownsSub) return NextResponse.json({ error: "Subscription does not belong to this member" }, { status: 403 });
+  }
+
   const booking = await prisma.booking.update({
     where: { id: params.id },
     data: {

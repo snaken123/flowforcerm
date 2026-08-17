@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDate, getInitials, formatTime } from "@/lib/utils";
 import Link from "next/link";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -23,13 +23,6 @@ function isClassExpiredNow(endTime: string): boolean {
   const [h, m] = endTime.split(":").map(Number);
   const now = new Date();
   return now.getHours() * 60 + now.getMinutes() > h * 60 + m;
-}
-
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
 // ─── Close lock ─────────────────────────────────────────────────────────────

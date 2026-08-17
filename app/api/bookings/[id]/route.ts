@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaDateStr } from "@/lib/time";
+import { isWithinCancellationCutoff, CANCELLATION_CUTOFF_HOURS } from "@/lib/booking-rules";
 import { z } from "zod";
 
 const cancelSchema = z.object({
@@ -103,9 +104,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const isMemberCancelling = !["ADMIN", "STAFF", "STORE"].includes(role);
   if (isMemberCancelling && booking.scheduledDate && booking.schedule?.startTime) {
     const dateStr = booking.scheduledDate.toISOString().slice(0, 10);
-    const classTime = new Date(`${dateStr}T${booking.schedule.startTime}:00+08:00`);
-    const hoursUntilClass = (classTime.getTime() - Date.now()) / (1000 * 60 * 60);
-    withinCutoff = hoursUntilClass < 4;
+    withinCutoff = isWithinCancellationCutoff(dateStr, booking.schedule.startTime);
     effectiveReturnSession = !withinCutoff;
   }
 
@@ -114,7 +113,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   // overwritten, so a front-desk note added before cancellation isn't lost.
   const cancellerName = session.user?.name ?? session.user?.email ?? "Unknown";
   const cancelNote = isMemberCancelling && withinCutoff
-    ? `Canceled by ${cancellerName}. Canceled less than 4 hours before class — session not returned.`
+    ? `Canceled by ${cancellerName}. Canceled less than ${CANCELLATION_CUTOFF_HOURS} hours before class — session not returned.`
     : `Canceled by ${cancellerName}. ${effectiveReturnSession ? "Returned session." : "Session not returned."}`;
 
   await prisma.booking.update({

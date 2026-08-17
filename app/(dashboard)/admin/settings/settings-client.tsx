@@ -47,45 +47,23 @@ function listTimeZones(): string[] {
   ];
 }
 
-function BrandingSection() {
-  const [branding, setBranding] = useState<Branding>({
-    gymName: "",
-    slogan: "",
-    logoUrl: null,
-    primaryColor: "#2563eb",
-    accentColor: "#f1f5f9",
-    emailFromName: "",
-    smsSenderName: "",
-    timezone: "Asia/Manila",
-  });
+function BrandingSection({ initialBranding }: { initialBranding: any }) {
+  const [branding, setBranding] = useState<Branding>(() => ({
+    gymName: initialBranding?.gymName ?? "",
+    slogan: initialBranding?.slogan ?? "",
+    logoUrl: initialBranding?.logoUrl ?? null,
+    primaryColor: initialBranding?.primaryColor ?? "#2563eb",
+    accentColor: initialBranding?.accentColor ?? "#f1f5f9",
+    emailFromName: initialBranding?.emailFromName ?? "",
+    smsSenderName: initialBranding?.smsSenderName ?? "",
+    timezone: initialBranding?.timezone ?? "Asia/Manila",
+  }));
   const [timeZones] = useState<string[]>(listTimeZones);
-  const [loaded, setLoaded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/branding")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.branding) {
-          setBranding({
-            gymName: data.branding.gymName ?? "",
-            slogan: data.branding.slogan ?? "",
-            logoUrl: data.branding.logoUrl,
-            primaryColor: data.branding.primaryColor ?? "#2563eb",
-            accentColor: data.branding.accentColor ?? "#f1f5f9",
-            emailFromName: data.branding.emailFromName ?? "",
-            smsSenderName: data.branding.smsSenderName ?? "",
-            timezone: data.branding.timezone ?? "Asia/Manila",
-          });
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, []);
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -134,8 +112,6 @@ function BrandingSection() {
       setSaving(false);
     }
   }
-
-  if (!loaded) return null;
 
   return (
     <Card>
@@ -301,26 +277,15 @@ type LegalDocuments = {
   handbookPdfUrl: string;
 };
 
-function LegalDocumentsSection() {
-  const [docs, setDocs] = useState<LegalDocuments | null>(null);
-  const [waiverText, setWaiverText] = useState("");
-  const [privacyText, setPrivacyText] = useState("");
+function LegalDocumentsSection({ initialDocuments }: { initialDocuments: LegalDocuments }) {
+  const [docs, setDocs] = useState<LegalDocuments | null>(initialDocuments);
+  const [waiverText, setWaiverText] = useState(initialDocuments.waiverText);
+  const [privacyText, setPrivacyText] = useState(initialDocuments.privacyText);
   const [savingText, setSavingText] = useState(false);
   const [textSaved, setTextSaved] = useState(false);
   const [textError, setTextError] = useState("");
   const [uploadingKind, setUploadingKind] = useState<"rules" | "handbook" | null>(null);
   const [uploadError, setUploadError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/legal-documents")
-      .then((r) => r.json())
-      .then((data: LegalDocuments) => {
-        setDocs(data);
-        setWaiverText(data.waiverText);
-        setPrivacyText(data.privacyText);
-      })
-      .catch(() => {});
-  }, []);
 
   async function saveText() {
     setSavingText(true);
@@ -547,9 +512,9 @@ function PasswordForm({ account, label, icon: Icon, email }: {
 
 type KioskDevice = { id: string; label: string; createdAt: string };
 
-function KioskDevicesSection() {
-  const [devices, setDevices] = useState<KioskDevice[]>([]);
-  const [loading, setLoading] = useState(true);
+function KioskDevicesSection({ initialDevices }: { initialDevices: KioskDevice[] }) {
+  const [devices, setDevices] = useState<KioskDevice[]>(initialDevices);
+  const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [adding, setAdding] = useState(false);
@@ -567,8 +532,6 @@ function KioskDevicesSection() {
       setLoading(false);
     }
   }
-
-  useEffect(() => { load(); }, []);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -723,16 +686,20 @@ function KioskDevicesSection() {
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 
-export function SettingsClient({ showSpecializedRoles }: { showSpecializedRoles: boolean }) {
-  const [accounts, setAccounts] = useState<{ kiosk: AccountInfo; store: AccountInfo }>({ kiosk: null, store: null });
-
-  useEffect(() => {
-    if (!showSpecializedRoles) return;
-    fetch("/api/admin/system-accounts")
-      .then((r) => r.json())
-      .then(setAccounts)
-      .catch(() => {});
-  }, [showSpecializedRoles]);
+export function SettingsClient({
+  showSpecializedRoles,
+  initialBranding,
+  initialLegalDocuments,
+  initialKioskDevices,
+  initialAccounts,
+}: {
+  showSpecializedRoles: boolean;
+  initialBranding: any;
+  initialLegalDocuments: LegalDocuments;
+  initialKioskDevices: KioskDevice[];
+  initialAccounts: { kiosk: AccountInfo; store: AccountInfo };
+}) {
+  const [accounts] = useState<{ kiosk: AccountInfo; store: AccountInfo }>(initialAccounts);
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -746,12 +713,12 @@ export function SettingsClient({ showSpecializedRoles }: { showSpecializedRoles:
 
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Branding</h2>
-        <BrandingSection />
+        <BrandingSection initialBranding={initialBranding} />
       </div>
 
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Legal Documents</h2>
-        <LegalDocumentsSection />
+        <LegalDocumentsSection initialDocuments={initialLegalDocuments} />
       </div>
 
       {showSpecializedRoles && (
@@ -774,7 +741,7 @@ export function SettingsClient({ showSpecializedRoles }: { showSpecializedRoles:
             </div>
           </div>
 
-          <KioskDevicesSection />
+          <KioskDevicesSection initialDevices={initialKioskDevices} />
         </>
       )}
     </div>

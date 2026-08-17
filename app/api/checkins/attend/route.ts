@@ -3,6 +3,14 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { isValidKioskDevice } from "@/lib/kiosk-auth";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
+import { z } from "zod";
+
+const schema = z.object({
+  memberId: z.string(),
+  classIds: z.array(z.string()).min(1),
+  scheduleId: z.string().optional(),
+  scheduledDate: z.string().optional(),
+});
 
 // POST /api/checkins/attend
 // Body: { memberId, classIds: string[], scheduleId?: string, scheduledDate?: string }
@@ -19,10 +27,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unregistered device.", code: "invalid_device_token" }, { status: 403 });
   }
 
-  const { memberId, classIds, scheduleId, scheduledDate: scheduledDateStr } = await req.json();
-  if (!memberId || !Array.isArray(classIds) || classIds.length === 0) {
-    return NextResponse.json({ error: "Missing memberId or classIds" }, { status: 400 });
-  }
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { memberId, classIds, scheduleId, scheduledDate: scheduledDateStr } = parsed.data;
 
   const member = await prisma.member.findUnique({
     where: { id: memberId },
@@ -80,11 +87,19 @@ export async function POST(req: NextRequest) {
         return matches && s.sessionsTotal !== null && s.sessionsUsed < s.sessionsTotal;
       });
 
+      // deductedSubId only gets set if the atomic guard below actually succeeded --
+      // member.subscriptions was read outside the transaction, so a concurrent
+      // check-in for the same member could have already exhausted this subscription's
+      // sessions by the time we get here. updateMany + the sessionsUsed guard makes the
+      // increment itself race-safe; a bare update() would let two concurrent requests
+      // both pass the pre-check above and both increment past sessionsTotal.
+      let deductedSubId: string | null = null;
       if (matchingSub) {
-        await tx.subscription.update({
-          where: { id: matchingSub.id },
+        const result = await tx.subscription.updateMany({
+          where: { id: matchingSub.id, sessionsUsed: { lt: matchingSub.sessionsTotal! } },
           data: { sessionsUsed: { increment: 1 } },
         });
+        if (result.count > 0) deductedSubId = matchingSub.id;
       }
 
       // Find the booking for this specific schedule+date occurrence; fall back to sessionId only if no scheduleId given
@@ -111,7 +126,7 @@ export async function POST(req: NextRequest) {
             sessionId: classId,
             scheduleId: scheduleId ?? null,
             scheduledDate,
-            subscriptionId: matchingSub?.id ?? null,
+            subscriptionId: deductedSubId,
             status: "ATTENDED",
             bookedById: (session.user as any).id ?? null,
           },

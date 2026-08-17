@@ -138,19 +138,18 @@ export async function POST(req: NextRequest) {
         throw new Error(`INSUFFICIENT_STOCK:${si?.name ?? item.shopItemId}`);
       }
 
-      // Validate and deduct per-size stock if a size was selected
+      // Validate and deduct per-size stock if a size was selected -- updateMany with the
+      // same stock >= qty guard used for item-level stock above, so two concurrent sales
+      // of the last unit of one size can't both pass a plain findUnique-then-update read.
       if (item.selectedSize) {
-        const sizeRow = await tx.shopItemSizeStock.findUnique({
-          where: { shopItemId_size: { shopItemId: item.shopItemId, size: item.selectedSize } },
+        const sizeResult = await tx.shopItemSizeStock.updateMany({
+          where: { shopItemId: item.shopItemId, size: item.selectedSize, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
         });
-        if (!sizeRow || sizeRow.stock < item.quantity) {
+        if (sizeResult.count === 0) {
           const si = shopItemMap[item.shopItemId];
           throw new Error(`INSUFFICIENT_SIZE_STOCK:${si?.name ?? item.shopItemId}:${item.selectedSize}`);
         }
-        await tx.shopItemSizeStock.update({
-          where: { shopItemId_size: { shopItemId: item.shopItemId, size: item.selectedSize } },
-          data: { stock: { decrement: item.quantity } },
-        });
       }
 
       await tx.shopInventoryLog.create({

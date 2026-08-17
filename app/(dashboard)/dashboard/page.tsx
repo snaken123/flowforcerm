@@ -15,6 +15,7 @@ import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
 import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
 import { CustomizableDashboardGrid } from "@/components/dashboard/customizable-dashboard-grid";
 import { isFeatureEnabled, FLAG_COMMUNICATIONS, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
+import { makeSubscriptionSortPriority } from "@/lib/subscription-priority";
 
 async function getCoachDashboardData(employeeId: string) {
   const now = new Date();
@@ -231,12 +232,7 @@ export default async function DashboardPage() {
 
   if (role === "MEMBER") {
     const { member } = data as any;
-    const ninetyDaysFromNow = Date.now() + 90 * 86400000;
-    const sortPriority = (s: any) => {
-      if (!s.sessionsTotal && s.endDate && new Date(s.endDate).getTime() > ninetyDaysFromNow) return 0;
-      if (!s.sessionsTotal && !s.endDate) return 1;
-      return 2;
-    };
+    const sortPriority = makeSubscriptionSortPriority();
     const now2 = new Date();
     const visibleSubs = (member?.subscriptions ?? [])
       .filter((s: any) => {

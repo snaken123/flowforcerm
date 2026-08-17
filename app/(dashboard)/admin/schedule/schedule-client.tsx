@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Plus, Loader2, ChevronDown, Check, Trash2, ChevronLeft, ChevronRight, CalendarX, CalendarRange, LayoutGrid, Calendar, Copy, Pencil, CheckSquare, Search, CheckCircle2, UserPlus, X as XIcon, SlidersHorizontal, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LocationSelect } from "@/components/location-select";
-import { DAY_NAMES_FULL, DAY_NAMES } from "@/lib/utils";
+import { DAY_NAMES_FULL, DAY_NAMES, formatTime } from "@/lib/utils";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
@@ -72,14 +72,6 @@ function timeToMinutes(t: string) {
   if (!t) return 0;
   const [h, m] = t.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
-}
-
-function formatTime(t: string) {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const ampm = (h || 0) >= 12 ? "PM" : "AM";
-  const hour = (h || 0) % 12 || 12;
-  return (m || 0) === 0 ? `${hour} ${ampm}` : `${hour}:${(m || 0).toString().padStart(2, "0")} ${ampm}`;
 }
 
 function isWholeDay(startTime: string, endTime: string) {
@@ -361,9 +353,15 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
     ? `${MONTH_NAMES[firstDate.getMonth()]} ${firstDate.getDate()} – ${MONTH_NAMES[lastDate.getMonth()]} ${lastDate.getDate()}, ${lastDate.getFullYear()}`
     : `${MONTH_NAMES[firstDate.getMonth()]} ${firstDate.getDate()}, ${firstDate.getFullYear()} – ${MONTH_NAMES[lastDate.getMonth()]} ${lastDate.getDate()}, ${lastDate.getFullYear()}`;
 
-  const weekGrid: Record<number, any[]> = {};
-  for (const day of DAYS) weekGrid[day] = [];
-  for (const sched of schedules) weekGrid[sched.dayOfWeek].push(sched);
+  // Rebuilding this grouped-by-day-of-week index is the base input to every cell in
+  // the grid below (getVisibleItems, layoutDay), so memoizing it avoids redoing that
+  // work on renders triggered by unrelated local state (dialog open/close, search input).
+  const weekGrid: Record<number, any[]> = useMemo(() => {
+    const grid: Record<number, any[]> = {};
+    for (const day of DAYS) grid[day] = [];
+    for (const sched of schedules) grid[sched.dayOfWeek].push(sched);
+    return grid;
+  }, [schedules]);
 
   const classColorMap: Record<string, string> = {};
   classes.forEach((c, i) => { classColorMap[c.id] = c.color || DAY_COLORS[i % DAY_COLORS.length]; });

@@ -24,6 +24,9 @@ import Link from "next/link";
 import { toast } from "@/lib/use-toast";
 import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
+import { formatTime } from "@/lib/utils";
+
+export { formatTime };
 
 export interface LogbookEntry {
   id: string;
@@ -63,13 +66,6 @@ export interface LogbookEntry {
 
 export type SortKey = "dateBooked" | "athleteId" | "athlete" | "classTime" | "sessions" | "expiration" | "membership" | "attendance";
 export type SortDir = "asc" | "desc";
-
-export function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
 
 export function formatDateShort(d: string | Date) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, CheckCircle2, AlertCircle } from "lucide-react";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 
 type Step = "form" | "sent" | "exists";
 
@@ -129,7 +130,7 @@ export default function RegisterWidget() {
             <p className="text-sm text-zinc-600">
               If you think this is a mistake, please coordinate with our front desk — we'd be happy to help!
             </p>
-            <p className="text-xs text-zinc-400">members@flowforcerm.com</p>
+            <p className="text-xs text-zinc-400">{MEMBERS_EMAIL}</p>
             <button
               onClick={() => { setStep("form"); setEmail(""); setError(""); }}
               className="text-sm text-zinc-500 underline underline-offset-2 hover:text-zinc-800 transition-colors"

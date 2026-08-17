@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getResend, resolveEmailFrom } from "@/lib/email";
 import { requireFeature, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 
 export async function GET() {
   const gate = requireFeature(FLAG_COMMUNICATIONS);
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       try {
         const sendResult = await getResend().batch.send(batch.map((r) => ({
           from,
-          replyTo: "members@flowforcerm.com",
+          replyTo: MEMBERS_EMAIL,
           to: r.email,
           subject,
           html: `

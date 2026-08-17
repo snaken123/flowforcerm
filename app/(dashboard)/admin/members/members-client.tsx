@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, UserPlus, Filter, Trash2, CheckCircle2, Clock, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Loader2, Eye, CreditCard } from "lucide-react";
@@ -157,7 +157,7 @@ export function MembersClient({
     setDeleting(false);
   }
 
-  const filtered = membersList.sort((a, b) => {
+  const filtered = useMemo(() => [...membersList].sort((a, b) => {
     let aVal: any, bVal: any;
     if (sortCol === "lastName") { aVal = `${a.lastName} ${a.firstName}`.toLowerCase(); bVal = `${b.lastName} ${b.firstName}`.toLowerCase(); }
     else if (sortCol === "status") { aVal = a.status; bVal = b.status; }
@@ -168,7 +168,7 @@ export function MembersClient({
     if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
     if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
     return 0;
-  });
+  }), [membersList, sortCol, sortDir]);
 
   return (
     <div className="space-y-6">

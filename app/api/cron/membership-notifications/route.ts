@@ -4,6 +4,7 @@ import { getPrismaClientForTenant } from "@/lib/db";
 import { getActiveTenants } from "@/control-plane/lib/tenant-resolution";
 import { getResend, tenantOrigin } from "@/lib/email";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
+import { MEMBERS_EMAIL } from "@/lib/contact-info";
 
 const FROM = "FlowForceRM <noreply@flowforcerm.com>";
 
@@ -120,7 +121,7 @@ async function runForTenant(prisma: PrismaClient, subdomain: string): Promise<st
 
       await getResend().emails.send({
         from: FROM,
-        replyTo: "members@flowforcerm.com",
+        replyTo: MEMBERS_EMAIL,
         to: email,
         subject,
         html: bodyHtml,
@@ -203,7 +204,7 @@ async function runForTenant(prisma: PrismaClient, subdomain: string): Promise<st
 
       await getResend().emails.send({
         from: FROM,
-        replyTo: "members@flowforcerm.com",
+        replyTo: MEMBERS_EMAIL,
         to: email,
         subject,
         html: bodyHtml,

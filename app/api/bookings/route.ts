@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaNow } from "@/lib/time";
+import { z } from "zod";
+
+const postSchema = z.object({
+  sessionId: z.string(),
+  scheduleId: z.string(),
+  subscriptionId: z.string().optional().nullable(),
+  memberId: z.string().optional(),
+  employeeId: z.string().optional(),
+  scheduledDate: z.string().optional().nullable(),
+});
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -49,13 +59,19 @@ export async function POST(req: NextRequest) {
 
   const role = (session.user as any).role;
   const userId = (session.user as any).id;
-  const { sessionId, scheduleId, subscriptionId, memberId: bodyMemberId, employeeId: bodyEmployeeId, scheduledDate: scheduledDateRaw } = await req.json();
-  if (!sessionId || !scheduleId) return NextResponse.json({ error: "sessionId and scheduleId required" }, { status: 400 });
+  const parsed = postSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { sessionId, scheduleId, subscriptionId, memberId: bodyMemberId, employeeId: bodyEmployeeId, scheduledDate: scheduledDateRaw } = parsed.data;
 
   const scheduledDate = scheduledDateRaw ? new Date(scheduledDateRaw + "T00:00:00Z") : null;
 
   // Employee booking (staff adding an employee/coach)
   if (bodyEmployeeId && ["ADMIN", "STAFF", "STORE"].includes(role)) {
+    if (subscriptionId) {
+      const ownsSub = await prisma.subscription.findFirst({ where: { id: subscriptionId, employeeId: bodyEmployeeId } });
+      if (!ownsSub) return NextResponse.json({ error: "Subscription does not belong to this employee" }, { status: 403 });
+    }
+
     const existing = await prisma.booking.findFirst({
       where: {
         employeeId: bodyEmployeeId,
@@ -129,6 +145,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "This class has already ended. You can no longer book it." }, { status: 403 });
       }
     }
+  }
+
+  if (subscriptionId) {
+    const ownsSub = await prisma.subscription.findFirst({ where: { id: subscriptionId, memberId } });
+    if (!ownsSub) return NextResponse.json({ error: "Subscription does not belong to this member" }, { status: 403 });
   }
 
   const existing = await prisma.booking.findFirst({

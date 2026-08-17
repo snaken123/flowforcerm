@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatDate, formatCurrency, timeAgo, getInitials } from "@/lib/utils";
+import { makeSubscriptionSortPriority } from "@/lib/subscription-priority";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 import { MEMBER_SOURCE_OPTIONS } from "@/lib/member-source";
@@ -550,12 +551,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
   // 1 = annual (has endDate > 90 days, no sessions) — always top
   // 2 = unlimited (no endDate, no sessions)
   // 3 = everything else, by endDate asc then startDate asc
-  const ninetyDaysFromNow = Date.now() + 90 * 86400000;
-  const sortPriority = (s: any) => {
-    if (!s.sessionsTotal && s.endDate && new Date(s.endDate).getTime() > ninetyDaysFromNow) return 0;
-    if (!s.sessionsTotal && !s.endDate) return 1;
-    return 2;
-  };
+  const sortPriority = makeSubscriptionSortPriority();
   const now = Date.now();
   const visibleSubs = member.subscriptions
     .filter((s: any) => {
@@ -581,6 +577,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      let receiptFailed = false;
       if (freezeFile) {
         try {
           const fd = new FormData();
@@ -591,10 +588,16 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
           fd.append("package", `${freezeDays}days`);
           fd.append("amount", "0");
           fd.append("paymentMethod", "Freeze");
-          await fetch("/api/upload-receipt", { method: "POST", body: fd });
-        } catch {}
+          const uploadRes = await fetch("/api/upload-receipt", { method: "POST", body: fd });
+          receiptFailed = !uploadRes.ok;
+        } catch {
+          receiptFailed = true;
+        }
       }
       toast({ title: "Memberships frozen", description: `Frozen for ${freezeDays} day(s).` });
+      if (receiptFailed) {
+        toast({ variant: "destructive", title: "Receipt upload failed", description: "The freeze was applied, but the receipt could not be saved. Please upload it again from the member's record." });
+      }
       setShowFreezeAll(false);
       setFreezeReason("");
       setFreezePassword("");
@@ -618,6 +621,7 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      let receiptFailed = false;
       if (unfreezeFile) {
         try {
           const fd = new FormData();
@@ -628,10 +632,16 @@ export function MemberDetailClient({ member, services, freeTrialFollowUps = [], 
           fd.append("package", "RemoveFreeze");
           fd.append("amount", "0");
           fd.append("paymentMethod", "Unfreeze");
-          await fetch("/api/upload-receipt", { method: "POST", body: fd });
-        } catch {}
+          const uploadRes = await fetch("/api/upload-receipt", { method: "POST", body: fd });
+          receiptFailed = !uploadRes.ok;
+        } catch {
+          receiptFailed = true;
+        }
       }
       toast({ title: "Freeze removed", description: "All memberships restored." });
+      if (receiptFailed) {
+        toast({ variant: "destructive", title: "Receipt upload failed", description: "The freeze was removed, but the receipt could not be saved. Please upload it again from the member's record." });
+      }
       setShowUnfreezeAll(false);
       setUnfreezeReason("");
       setUnfreezePassword("");

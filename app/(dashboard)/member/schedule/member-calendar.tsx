@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/lib/use-toast";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
+import { isWithinCancellationCutoff, CANCELLATION_CUTOFF_HOURS } from "@/lib/booking-rules";
+import { formatTime } from "@/lib/utils";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -32,13 +34,6 @@ function addDays(date: Date, n: number) {
 function timeToMinutes(t: string) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
-}
-
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
 function layoutDay(items: any[]) {
@@ -176,7 +171,7 @@ export function MemberCalendar({
         description: data.sessionReturned
           ? "Your session has been returned to your balance."
           : data.withinCutoff
-          ? "You cancelled within 4 hours of class start — your session was not returned."
+          ? `You cancelled within ${CANCELLATION_CUTOFF_HOURS} hours of class start — your session was not returned.`
           : undefined,
       });
       setSelected(null);
@@ -476,7 +471,7 @@ export function MemberCalendar({
                       <div className="flex flex-col gap-2 w-full">
                         <p className="text-sm text-muted-foreground">
                           {cancelWithinCutoff
-                            ? "You are canceling within 4 hours of class start — your session will NOT be returned. If you believe this should be an exception, please coordinate with the front desk. Are you sure?"
+                            ? `You are canceling within ${CANCELLATION_CUTOFF_HOURS} hours of class start — your session will NOT be returned. If you believe this should be an exception, please coordinate with the front desk. Are you sure?`
                             : "Cancel this booking? Your session will be returned to your balance."}
                         </p>
                         <div className="flex gap-2 justify-end">
@@ -489,10 +484,10 @@ export function MemberCalendar({
                       </div>
                     ) : (
                     <Button variant="outline" onClick={() => {
-                      const hours = selected?.startTime && selectedDate
-                        ? (new Date(`${selectedDate.toLocaleDateString("en-CA")}T${selected.startTime}:00+08:00`).getTime() - Date.now()) / 3600000
-                        : Infinity;
-                      setCancelWithinCutoff(hours < 4);
+                      const withinCutoff = selected?.startTime && selectedDate
+                        ? isWithinCancellationCutoff(selectedDate.toLocaleDateString("en-CA"), selected.startTime)
+                        : false;
+                      setCancelWithinCutoff(withinCutoff);
                       setCancelConfirmId(booking!.id);
                     }} disabled={loading} className="text-destructive border-destructive/30 hover:bg-destructive/10">
                       Cancel Reservation
