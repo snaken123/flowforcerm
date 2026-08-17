@@ -1,6 +1,6 @@
 import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { isAdminOrCoach } from "@/lib/permissions";
+import { isAdminOrCoach, isCoachOnly } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { RecordsTodoLayout } from "./records-todo-layout";
 
@@ -12,39 +12,46 @@ export default async function RecordsTodoPage() {
   const role = (session.user as any).role;
   if (!["ADMIN", "STAFF"].includes(role)) redirect("/dashboard");
 
-  const [pendingPayments, openFollowUps, services] = await Promise.all([
-    prisma.payment.findMany({
-      where: { status: "PENDING" },
-      include: {
-        member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
-        employee: { select: { id: true, firstName: true, lastName: true } },
-        subscription: { include: { service: { select: { name: true, color: true } } } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.freeTrialFollowUp.findMany({
-      where: { status: "OPEN" },
-      include: {
-        member: {
-          select: {
-            id: true, firstName: true, lastName: true, memberNumber: true,
-            subscriptions: {
-              where: { isTrial: true },
-              select: { id: true, service: { select: { id: true, name: true, color: true } } },
-            },
+  // Coach-only accounts only see the achievement-approval queue below -- skip the
+  // financial/administrative queries entirely rather than fetching data they'll
+  // never see rendered.
+  const coachOnly = isCoachOnly(session);
+
+  const [pendingPayments, openFollowUps, services] = coachOnly
+    ? [[], [], []]
+    : await Promise.all([
+        prisma.payment.findMany({
+          where: { status: "PENDING" },
+          include: {
+            member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
+            employee: { select: { id: true, firstName: true, lastName: true } },
+            subscription: { include: { service: { select: { name: true, color: true } } } },
           },
-        },
-        subscription: { include: { service: { select: { id: true, name: true } } } },
-        checkIn: { select: { checkedInAt: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.service.findMany({
-      where: { isActive: true },
-      include: { packages: { where: { isActive: true }, orderBy: { memberPrice: "asc" } } },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.freeTrialFollowUp.findMany({
+          where: { status: "OPEN" },
+          include: {
+            member: {
+              select: {
+                id: true, firstName: true, lastName: true, memberNumber: true,
+                subscriptions: {
+                  where: { isTrial: true },
+                  select: { id: true, service: { select: { id: true, name: true, color: true } } },
+                },
+              },
+            },
+            subscription: { include: { service: { select: { id: true, name: true } } } },
+            checkIn: { select: { checkedInAt: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        }),
+        prisma.service.findMany({
+          where: { isActive: true },
+          include: { packages: { where: { isActive: true }, orderBy: { memberPrice: "asc" } } },
+          orderBy: { name: "asc" },
+        }),
+      ]);
 
   return (
     <div className="space-y-8">
@@ -59,6 +66,7 @@ export default async function RecordsTodoPage() {
         services={services}
         canApprove={isAdminOrCoach(session)}
         canApproveFreeze={role === "ADMIN"}
+        coachOnly={coachOnly}
       />
     </div>
   );

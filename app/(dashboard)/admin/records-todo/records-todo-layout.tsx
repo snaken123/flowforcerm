@@ -15,6 +15,10 @@ interface Props {
   services: any[];
   canApprove: boolean;
   canApproveFreeze: boolean;
+  // Pure coaches (no ADMIN/STAFF employee tag) only need the achievement-approval
+  // queue -- the rest are financial/administrative sections meant for front-desk
+  // staff and admins.
+  coachOnly: boolean;
 }
 
 const SECTIONS = [
@@ -26,8 +30,11 @@ const SECTIONS = [
   { key: "freezes", label: "Pending Freeze Requests", description: "Staff-submitted freeze requests awaiting admin approval." },
 ] as const;
 
-export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, canApprove, canApproveFreeze }: Props) {
+const COACH_VISIBLE_SECTIONS = new Set(["records"]);
+
+export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, canApprove, canApproveFreeze, coachOnly }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const visibleSections = coachOnly ? SECTIONS.filter((s) => COACH_VISIBLE_SECTIONS.has(s.key)) : SECTIONS;
 
   function toggle(key: string) {
     setCollapsed((prev) => {
@@ -40,7 +47,7 @@ export function RecordsTodoLayout({ pendingPayments, openFollowUps, services, ca
 
   return (
     <div className="space-y-8">
-      {SECTIONS.map(({ key, label, description }) => {
+      {visibleSections.map(({ key, label, description }) => {
         const isCollapsed = collapsed.has(key);
         return (
           <div key={key} className="space-y-3">
