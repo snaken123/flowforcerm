@@ -14,6 +14,7 @@ import { getTenantTimezone } from "@/lib/tenant-context";
 import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
 import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
 import { CustomizableDashboardGrid } from "@/components/dashboard/customizable-dashboard-grid";
+import { isFeatureEnabled, FLAG_COMMUNICATIONS, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 async function getCoachDashboardData(employeeId: string) {
   const now = new Date();
@@ -21,29 +22,30 @@ async function getCoachDashboardData(employeeId: string) {
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
 
-  const employee = await prisma.employee.findUnique({
-    where: { id: employeeId },
-    select: {
-      firstName: true,
-      lastName: true,
-      taughtServices: { select: { serviceId: true, service: { select: { id: true, name: true, color: true } } } },
-    },
-  });
+  const [employee, schedules] = await Promise.all([
+    prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        firstName: true,
+        lastName: true,
+        taughtServices: { select: { serviceId: true, service: { select: { id: true, name: true, color: true } } } },
+      },
+    }),
+    prisma.classSchedule.findMany({
+      where: {
+        isActive: true,
+        dayOfWeek: todayDow,
+        coaches: { some: { employeeId } },
+      },
+      include: {
+        coaches: { include: { employee: { select: { id: true, firstName: true, lastName: true } } } },
+        exceptions: { select: { date: true } },
+      },
+      orderBy: { startTime: "asc" },
+    }),
+  ]);
 
   const taughtServiceIds = employee?.taughtServices.map((t) => t.serviceId) ?? [];
-
-  const schedules = await prisma.classSchedule.findMany({
-    where: {
-      isActive: true,
-      dayOfWeek: todayDow,
-      coaches: { some: { employeeId } },
-    },
-    include: {
-      coaches: { include: { employee: { select: { id: true, firstName: true, lastName: true } } } },
-      exceptions: { select: { date: true } },
-    },
-    orderBy: { startTime: "asc" },
-  });
 
   const classIds = [...new Set(schedules.map((s) => s.classId))];
   const classDefs = classIds.length > 0
@@ -203,6 +205,8 @@ export default async function DashboardPage() {
   const employeeTypes: string[] = (session.user as any).employeeTypes ?? [];
   const employeeId: string | null = (session.user as any).employeeId ?? null;
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
+  const showWod = isFeatureEnabled(FLAG_SPECIALIZED_ROLES);
+  const showAnnouncements = isFeatureEnabled(FLAG_COMMUNICATIONS);
 
   if (isCoachOnly && employeeId) {
     const coachData = await getCoachDashboardData(employeeId);
@@ -217,6 +221,8 @@ export default async function DashboardPage() {
         dateStr={dateStr}
         schedulesWithData={schedulesWithData}
         todayStr={manilaToday}
+        showWod={showWod}
+        showAnnouncements={showAnnouncements}
       />
     );
   }
@@ -255,10 +261,12 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Here's your membership overview.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TodaysWodCard showPlanLink={false} />
-          <AnnouncementBoardCard canManage={false} />
-        </div>
+        {(showWod || showAnnouncements) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {showWod && <TodaysWodCard showPlanLink={false} />}
+            {showAnnouncements && <AnnouncementBoardCard canManage={false} />}
+          </div>
+        )}
 
         <Card>
           <CardHeader className="pb-2">
@@ -416,6 +424,7 @@ export default async function DashboardPage() {
         recentCheckins={recentCheckins}
         expiringSubscriptions={expiringSubscriptions}
         recentMembers={recentMembers}
+        disabledCards={[...(showWod ? [] : ["wod" as const]), ...(showAnnouncements ? [] : ["announcements" as const])]}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 async function requireAdmin() {
   const session = await getAuthSession();
@@ -11,6 +12,9 @@ async function requireAdmin() {
 }
 
 export async function GET() {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const devices = await (prisma as any).kioskDevice.findMany({
     orderBy: { createdAt: "desc" },

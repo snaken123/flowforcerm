@@ -302,9 +302,7 @@ function RegistrationCard({ baseUrl }: { baseUrl: string }) {
   );
 }
 
-export function WebIntegrationClient({ services }: { services: Service[] }) {
-  const baseUrl = "https://flowforcerm.com";
-
+export function WebIntegrationClient({ services, baseUrl }: { services: Service[]; baseUrl: string }) {
   const servicesWithPkgs = useMemo(() => services.filter((s) => s.packages.length > 0), [services]);
   const allPkgIds = useMemo(() => services.flatMap((s) => s.packages.map((p) => p.id)), [services]);
 

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { requireFeature, FLAG_WEB_INTEGRATION } from "@/lib/feature-flags";
 
 const KEY_PACKAGES = "pricelist_packages";
 const KEY_ORDER = "pricelist_order";
 
 export async function GET() {
+  const gate = requireFeature(FLAG_WEB_INTEGRATION);
+  if (gate) return gate;
+
   const [pkgs, order] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: KEY_PACKAGES } }),
     prisma.systemSetting.findUnique({ where: { key: KEY_ORDER } }),
@@ -17,6 +21,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_WEB_INTEGRATION);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -65,7 +65,7 @@ export async function GET() {
   const schedules = await prisma.classSchedule.findMany({
     where: { isActive: true },
     include: {
-      classDef: true,
+      classDef: { include: { allowedServices: true } },
       coaches: { include: { employee: { select: { id: true, firstName: true, lastName: true } } } },
     },
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getResend } from "@/lib/email";
+import { getResend, tenantOrigin } from "@/lib/email";
+import { getTenantSubdomain } from "@/lib/tenant-context";
 import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 import crypto from "crypto";
-
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
     data: { token, email, firstName, lastName, phone, expiresAt },
   });
 
-  const verifyUrl = `${APP_URL}/register/select?token=${token}`;
+  const verifyUrl = `${tenantOrigin(getTenantSubdomain())}/register/select?token=${token}`;
 
   await getResend().emails.send({
     from: "FlowForceRM <noreply@flowforcerm.com>",

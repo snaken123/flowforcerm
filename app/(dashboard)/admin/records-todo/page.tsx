@@ -25,7 +25,15 @@ export default async function RecordsTodoPage() {
     prisma.freeTrialFollowUp.findMany({
       where: { status: "OPEN" },
       include: {
-        member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
+        member: {
+          select: {
+            id: true, firstName: true, lastName: true, memberNumber: true,
+            subscriptions: {
+              where: { isTrial: true },
+              select: { id: true, service: { select: { id: true, name: true, color: true } } },
+            },
+          },
+        },
         subscription: { include: { service: { select: { id: true, name: true } } } },
         checkIn: { select: { checkedInAt: true } },
       },

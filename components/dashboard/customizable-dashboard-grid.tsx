@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate, timeAgo } from "@/lib/utils";
 import { TodaysWodCard } from "@/components/dashboard/todays-wod-card";
 import { AnnouncementBoardCard } from "@/components/dashboard/announcement-board-card";
+import { LogbookCard } from "@/components/dashboard/logbook-card";
 import { DashboardCardShell } from "@/components/dashboard/dashboard-card-shell";
 import { DEFAULT_LAYOUT, CARD_LABELS, loadDashboardLayout, saveDashboardLayout, type CardId, type CardLayoutItem } from "@/lib/dashboard-layout";
 
@@ -27,11 +28,16 @@ export function CustomizableDashboardGrid({
   recentCheckins,
   expiringSubscriptions,
   recentMembers,
+  disabledCards = [],
 }: {
   stats: { totalMembers: number; activeMembers: number; todayCheckins: number; newThisMonth: number; overduePayments: number };
   recentCheckins: any[];
   expiringSubscriptions: any[];
   recentMembers: any[];
+  // Cards hidden by a tenant-level feature flag being off -- unlike a personally-hidden
+  // card, these never show in the "Hidden" restore tray, since the gym doesn't have
+  // access to them at all, not just chosen not to see them.
+  disabledCards?: CardId[];
 }) {
   const [layout, setLayout] = useState<CardLayoutItem[]>(DEFAULT_LAYOUT);
   const [editMode, setEditMode] = useState(false);
@@ -214,13 +220,16 @@ export function CustomizableDashboardGrid({
             </CardContent>
           </Card>
         );
+      case "logbook":
+        return <LogbookCard />;
       default:
         return null;
     }
   }
 
-  const visible = layout.filter((c) => c.id === "expiring-soon" ? c.hidden === false && expiringSubscriptions.length > 0 : !c.hidden);
-  const hidden = layout.filter((c) => c.hidden && !(c.id === "expiring-soon" && expiringSubscriptions.length === 0));
+  const notDisabled = (c: CardLayoutItem) => !disabledCards.includes(c.id);
+  const visible = layout.filter((c) => notDisabled(c) && (c.id === "expiring-soon" ? c.hidden === false && expiringSubscriptions.length > 0 : !c.hidden));
+  const hidden = layout.filter((c) => notDisabled(c) && c.hidden && !(c.id === "expiring-soon" && expiringSubscriptions.length === 0));
 
   return (
     <div className="space-y-3">

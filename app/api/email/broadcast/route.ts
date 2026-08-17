@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getResend, resolveEmailFrom } from "@/lib/email";
+import { requireFeature, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
 
 export async function GET() {
+  const gate = requireFeature(FLAG_COMMUNICATIONS);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -17,6 +21,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = requireFeature(FLAG_COMMUNICATIONS);
+    if (gate) return gate;
+
     const session = await getAuthSession();
     if (!session || (session.user as any).role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

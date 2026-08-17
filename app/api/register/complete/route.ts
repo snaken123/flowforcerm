@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getResend } from "@/lib/email";
+import { getResend, tenantOrigin } from "@/lib/email";
+import { getTenantSubdomain } from "@/lib/tenant-context";
 import { manilaDayBoundaries } from "@/lib/time";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 
 type SelectedClass = {
   serviceId: string;
@@ -171,7 +170,7 @@ export async function POST(req: NextRequest) {
         <p style="margin-top:16px;font-size:14px;color:#444">Booked classes:</p>
         <ul style="font-size:14px;line-height:1.8;color:#333;padding-left:20px">${classSummary}</ul>
         <p style="font-size:13px;color:#888;margin-top:16px">
-          View their profile in the CRM: <a href="${APP_URL}/admin/members">${APP_URL}/admin/members</a>
+          View their profile in the CRM: <a href="${tenantOrigin(getTenantSubdomain())}/admin/members">${tenantOrigin(getTenantSubdomain())}/admin/members</a>
         </p>
       </div>
     `,

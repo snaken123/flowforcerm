@@ -293,6 +293,8 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [slotCheckIns, setSlotCheckIns] = useState<any[]>([]);
   const [removeBookingTarget, setRemoveBookingTarget] = useState<any | null>(null);
+  const [attendanceUpdatingId, setAttendanceUpdatingId] = useState<string | null>(null);
+  const [removingBookingId, setRemovingBookingId] = useState<string | null>(null);
   const [addSearch, setAddSearch] = useState("");
   const [addResults, setAddResults] = useState<any[]>([]);
   const [addSearching, setAddSearching] = useState(false);
@@ -732,27 +734,39 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
   }
 
   async function toggleAttendance(bookingId: string) {
+    if (attendanceUpdatingId === bookingId) return;
+    setAttendanceUpdatingId(bookingId);
     const next = !attendance[bookingId];
     setAttendance((prev) => ({ ...prev, [bookingId]: next }));
-    await fetch(`/api/bookings/${bookingId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: next ? "ATTENDED" : "CONFIRMED" }),
-    });
+    try {
+      await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next ? "ATTENDED" : "CONFIRMED" }),
+      });
+    } finally {
+      setAttendanceUpdatingId(null);
+    }
   }
 
   async function removeBooking(bookingId: string, returnSession: boolean) {
-    const res = await fetch(`/api/bookings/${bookingId}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ returnSession }),
-    });
-    setRemoveBookingTarget(null);
-    if (res.ok) {
-      await refreshBookings();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      toast({ variant: "destructive", title: "Error", description: d.error ?? "Could not remove booking" });
+    if (removingBookingId === bookingId) return;
+    setRemovingBookingId(bookingId);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnSession }),
+      });
+      setRemoveBookingTarget(null);
+      if (res.ok) {
+        await refreshBookings();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast({ variant: "destructive", title: "Error", description: d.error ?? "Could not remove booking" });
+      }
+    } finally {
+      setRemovingBookingId(null);
     }
   }
 
@@ -1570,9 +1584,12 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   title="Remove booking"
+                                  disabled={removingBookingId === b.id}
                                   onClick={() => initiateRemoveBooking(b)}
                                 >
-                                  <XIcon className="h-4 w-4" />
+                                  {removingBookingId === b.id
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <XIcon className="h-4 w-4" />}
                                 </Button>
                               )}
                               {b.status === "NO_SHOW" ? (
@@ -1584,11 +1601,15 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
                                   size="sm"
                                   variant={checked ? "default" : "outline"}
                                   className={`shrink-0 text-xs ${checked ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white" : ""}`}
+                                  disabled={attendanceUpdatingId === b.id}
                                   onClick={() => toggleAttendance(b.id)}
                                 >
-                                  {checked
-                                    ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />Attended</>
-                                    : "Check In"}
+                                  {attendanceUpdatingId === b.id
+                                    ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                    : checked
+                                    ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                    : null}
+                                  {checked ? "Attended" : "Check In"}
                                 </Button>
                               )}
                             </div>
@@ -1945,19 +1966,23 @@ export function ScheduleClient({ schedules, classes, employees, isAdmin, userRol
             </p>
           )}
           <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setRemoveBookingTarget(null)}>
+            <Button variant="outline" disabled={!!removingBookingId} onClick={() => setRemoveBookingTarget(null)}>
               Cancel
             </Button>
             <Button
               variant="outline"
+              disabled={!!removingBookingId}
               onClick={() => removeBookingTarget && removeBooking(removeBookingTarget.id, false)}
             >
+              {removingBookingId === removeBookingTarget?.id && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
               No, just remove
             </Button>
             <Button
               variant="destructive"
+              disabled={!!removingBookingId}
               onClick={() => removeBookingTarget && removeBooking(removeBookingTarget.id, true)}
             >
+              {removingBookingId === removeBookingTarget?.id && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
               Yes, return session
             </Button>
           </DialogFooter>

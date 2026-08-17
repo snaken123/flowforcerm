@@ -100,13 +100,22 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   // session is only returned if cancellation is more than 4 hours before class start.
   let effectiveReturnSession = parsed.data.returnSession;
   let withinCutoff = false;
-  if (!["ADMIN", "STAFF", "STORE"].includes(role) && booking.scheduledDate && booking.schedule?.startTime) {
+  const isMemberCancelling = !["ADMIN", "STAFF", "STORE"].includes(role);
+  if (isMemberCancelling && booking.scheduledDate && booking.schedule?.startTime) {
     const dateStr = booking.scheduledDate.toISOString().slice(0, 10);
     const classTime = new Date(`${dateStr}T${booking.schedule.startTime}:00+08:00`);
     const hoursUntilClass = (classTime.getTime() - Date.now()) / (1000 * 60 * 60);
     withinCutoff = hoursUntilClass < 4;
     effectiveReturnSession = !withinCutoff;
   }
+
+  // Auto-logged on the booking's own notes so anyone looking at the Logbook can see what
+  // happened to a cancelled entry without opening the member's record -- appended, not
+  // overwritten, so a front-desk note added before cancellation isn't lost.
+  const cancellerName = session.user?.name ?? session.user?.email ?? "Unknown";
+  const cancelNote = isMemberCancelling && withinCutoff
+    ? `Canceled by ${cancellerName}. Canceled less than 4 hours before class — session not returned.`
+    : `Canceled by ${cancellerName}. ${effectiveReturnSession ? "Returned session." : "Session not returned."}`;
 
   await prisma.booking.update({
     where: { id: params.id },
@@ -115,6 +124,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       cancelledAt: new Date(),
       cancelReason: parsed.data.reason ?? null,
       sessionReturned: effectiveReturnSession,
+      notes: [booking.notes, cancelNote].filter(Boolean).join("\n"),
     },
   });
 

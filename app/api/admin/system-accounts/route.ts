@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 const schema = z.object({
   account: z.enum(["kiosk", "store"]),
@@ -11,6 +12,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -43,6 +47,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

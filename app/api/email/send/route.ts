@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getGmailClient } from "@/lib/gmail";
 import { z } from "zod";
+import { requireFeature, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
 
 const schema = z.object({
   to: z.string().email(),
@@ -13,6 +14,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_COMMUNICATIONS);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

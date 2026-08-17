@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { requireFeature, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
 
 const schema = z.object({
   addresses: z.array(z.string().email()).min(1, "At least one address must be selected"),
 });
 
 export async function PATCH(req: NextRequest) {
+  const gate = requireFeature(FLAG_COMMUNICATIONS);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -374,6 +374,7 @@ model Booking {
   cancelledAt      DateTime?
   cancelReason     String?
   sessionReturned  Boolean       @default(false)
+  notes            String?       // front-desk logbook notes, distinct from cancelReason
 
   createdAt        DateTime      @default(now())
 

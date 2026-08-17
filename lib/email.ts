@@ -40,14 +40,16 @@ export const NOTIFY_EMAIL = "marketing@flowforcerm.com";
 export const TODO_EMAIL = "ToDo-List@flowforcerm.com";
 
 // Resolves the display name emails should be sent from: the tenant's own TenantBranding.emailFromName
-// when this request is running in a resolved tenant context, falling back to the platform default
-// otherwise (platform-level sends, or a tenant that hasn't set a custom name).
+// when explicitly set, else "<gymName> Team" derived automatically from their gym name (set during
+// customization/Settings), falling back to the platform default otherwise (platform-level sends, or a
+// request with no resolved tenant at all).
 export async function resolveEmailFrom(): Promise<string> {
   const tenantId = getTenantIdOrNull();
   if (!tenantId) return FROM;
   try {
     const branding = await prisma.tenantBranding.findFirst();
     if (branding?.emailFromName) return `${branding.emailFromName} <noreply@flowforcerm.com>`;
+    if (branding?.gymName) return `${branding.gymName} Team <noreply@flowforcerm.com>`;
   } catch (err) {
     console.error("[email] failed to resolve tenant branding for FROM name", err);
   }

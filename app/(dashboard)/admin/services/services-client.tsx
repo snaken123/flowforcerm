@@ -94,6 +94,7 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
   const [addPackageFor, setAddPackageFor] = useState<any | null>(null);
   const [editingPkg, setEditingPkg] = useState<{ serviceId: string; pkg: any } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [items, setItems] = useState(initial);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
@@ -193,6 +194,9 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
   }
 
   async function toggleActive(service: any) {
+    const key = `${service.id}:active`;
+    if (togglingId === key) return;
+    setTogglingId(key);
     try {
       await fetch(`/api/services/${service.id}`, {
         method: "PATCH",
@@ -203,10 +207,15 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
       router.refresh();
     } catch {
       toast({ variant: "destructive", title: "Error" });
+    } finally {
+      setTogglingId(null);
     }
   }
 
   async function toggleFreeTrial(service: any) {
+    const key = `${service.id}:trial`;
+    if (togglingId === key) return;
+    setTogglingId(key);
     try {
       await fetch(`/api/services/${service.id}`, {
         method: "PATCH",
@@ -217,6 +226,8 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
       router.refresh();
     } catch {
       toast({ variant: "destructive", title: "Error" });
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -384,13 +395,25 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
+                    disabled={togglingId === `${service.id}:trial`}
                     onClick={() => toggleFreeTrial(service)}
                     title={service.freeTrialEnabled ? "Disable free trial" : "Enable free trial"}
                   >
-                    <FlaskConical className={`h-3.5 w-3.5 ${service.freeTrialEnabled ? "text-blue-500" : "text-muted-foreground"}`} />
+                    {togglingId === `${service.id}:trial`
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <FlaskConical className={`h-3.5 w-3.5 ${service.freeTrialEnabled ? "text-blue-500" : "text-muted-foreground"}`} />}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(service)} title={service.isActive ? "Deactivate" : "Activate"}>
-                    {service.isActive
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={togglingId === `${service.id}:active`}
+                    onClick={() => toggleActive(service)}
+                    title={service.isActive ? "Deactivate" : "Activate"}
+                  >
+                    {togglingId === `${service.id}:active`
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : service.isActive
                       ? <ToggleRight className="h-4 w-4 text-green-600" />
                       : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
                   </Button>

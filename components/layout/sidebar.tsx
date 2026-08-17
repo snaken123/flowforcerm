@@ -17,6 +17,7 @@ const QRScannerDialog = lazy(() =>
 );
 import { getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FLAG_COMMUNICATIONS, FLAG_SPECIALIZED_ROLES, FLAG_WEB_INTEGRATION } from "@/lib/feature-flags-constants";
 
 type NavItem = {
   label: string;
@@ -25,6 +26,7 @@ type NavItem = {
   roles: string[];
   exact?: boolean; // skip prefix-matching for active-highlight (needed when another sibling's href starts with this one's)
   requiresCoach?: boolean; // only ADMIN or a COACH-tagged STAFF may see this item, even if role alone would qualify
+  requiresFlag?: string; // hidden entirely unless this optional feature bundle is enabled for the tenant (see lib/feature-flags.ts)
 };
 
 type NavEntry =
@@ -42,12 +44,12 @@ const navEntries: NavEntry[] = [
     type: "group", key: "schedule", label: "Schedule", icon: Calendar,
     items: [
       { label: "Class Schedule", href: "/admin/schedule", icon: Calendar, roles: ["ADMIN", "STAFF"], exact: true },
-      { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"] },
+      { label: "Training Plan", href: "/admin/schedule/training-plan", icon: ListChecks, roles: ["ADMIN", "STAFF"], requiresFlag: FLAG_SPECIALIZED_ROLES },
     ],
   },
   { type: "link", item: { label: "To Do", href: "/admin/records-todo", icon: ListChecks, roles: ["ADMIN", "STAFF"] } },
-  { type: "link", item: { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN"] } },
-  { type: "link", item: { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"] } },
+  { type: "link", item: { label: "Reports", href: "/admin/reports", icon: BarChart2, roles: ["ADMIN", "STAFF"] } },
+  { type: "link", item: { label: "Store", href: "/admin/store", icon: ShoppingBag, roles: ["ADMIN", "STAFF", "STORE"], requiresFlag: FLAG_SPECIALIZED_ROLES } },
   // Member-only
   { type: "link", item: { label: "Athlete ID", href: "/member/athlete-id", icon: IdCard, roles: ["MEMBER"] } },
   { type: "link", item: { label: "My Profile", href: "/member/profile", icon: Users, roles: ["MEMBER"] } },
@@ -55,7 +57,7 @@ const navEntries: NavEntry[] = [
     type: "group", key: "member-schedule", label: "My Schedule", icon: Calendar,
     items: [
       { label: "Available Classes", href: "/member/schedule", icon: Calendar, roles: ["MEMBER"], exact: true },
-      { label: "Training Plan", href: "/member/schedule/training-plan", icon: ListChecks, roles: ["MEMBER"] },
+      { label: "Training Plan", href: "/member/schedule/training-plan", icon: ListChecks, roles: ["MEMBER"], requiresFlag: FLAG_SPECIALIZED_ROLES },
     ],
   },
   { type: "link", item: { label: "My Billing", href: "/member/billing", icon: CreditCard, roles: ["MEMBER"] } },
@@ -64,8 +66,8 @@ const navEntries: NavEntry[] = [
   {
     type: "group", key: "comms", label: "Communications", icon: Mail, hiddenForCoachOnly: true,
     items: [
-      { label: "Broadcast", href: "/admin/communications", icon: Megaphone, roles: ["ADMIN"] },
-      { label: "Email", href: "/admin/email", icon: Mail, roles: ["ADMIN"] },
+      { label: "Broadcast", href: "/admin/communications", icon: Megaphone, roles: ["ADMIN"], requiresFlag: FLAG_COMMUNICATIONS },
+      { label: "Email", href: "/admin/email", icon: Mail, roles: ["ADMIN"], requiresFlag: FLAG_COMMUNICATIONS },
     ],
   },
   {
@@ -74,21 +76,30 @@ const navEntries: NavEntry[] = [
       { label: "Employees", href: "/admin/employees", icon: UserCog, roles: ["ADMIN"] },
       { label: "Memberships", href: "/admin/services", icon: Dumbbell, roles: ["ADMIN"] },
       { label: "Classes", href: "/admin/classes", icon: GraduationCap, roles: ["ADMIN"] },
-      { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"] },
+      { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"], requiresFlag: FLAG_WEB_INTEGRATION },
       { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
       { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
     ],
   },
 ];
 
-export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | null; logoUrl?: string | null; slogan?: string | null }) {
+export function Sidebar({
+  brandName, logoUrl, slogan, enabledFlags = [], role, employeeTypes,
+}: {
+  brandName?: string | null;
+  logoUrl?: string | null;
+  slogan?: string | null;
+  enabledFlags?: string[];
+  // Resolved server-side in the layout and passed down so nav filtering is correct
+  // on the very first render — see the comment in app/(dashboard)/layout.tsx.
+  role: string;
+  employeeTypes: string[];
+}) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [todoCount, setTodoCount] = useState(0);
-  const role = (session?.user as any)?.role ?? "MEMBER";
-  const employeeTypes: string[] = (session?.user as any)?.employeeTypes ?? [];
   const isCoachOnly = employeeTypes.length > 0 && !employeeTypes.includes("ADMIN") && !employeeTypes.includes("STAFF");
   const isCoach = employeeTypes.includes("COACH");
   const isAdminOrCoach = role === "ADMIN" || (role === "STAFF" && isCoach);
@@ -116,10 +127,11 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
     "/admin/records-todo",
     ...navEntries.filter((e): e is Extract<NavEntry, { type: "link" }> => e.type === "link" && !!e.item.requiresCoach).map((e) => e.item.href),
   ];
+  const hasFlag = (item: NavItem) => !item.requiresFlag || enabledFlags.includes(item.requiresFlag);
   const visibleEntries = navEntries
     .map((entry) => {
       if (entry.type === "link") return entry;
-      const items = entry.items.filter((item) => item.roles.includes(role));
+      const items = entry.items.filter((item) => item.roles.includes(role) && hasFlag(item));
       return { ...entry, items };
     })
     .filter((entry) => {
@@ -127,6 +139,7 @@ export function Sidebar({ brandName, logoUrl, slogan }: { brandName?: string | n
         if (!entry.item.roles.includes(role)) return false;
         if (entry.item.requiresCoach && !isAdminOrCoach) return false;
         if (isCoachOnly && !coachAllowedHrefs.includes(entry.item.href)) return false;
+        if (!hasFlag(entry.item)) return false;
         return true;
       }
       if (entry.items.length === 0) return false;

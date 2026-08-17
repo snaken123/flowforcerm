@@ -1,13 +1,18 @@
 import { prisma } from "@/lib/db";
 import { ScheduleEmbedClient } from "./schedule-embed-client";
+import { manilaDateStr } from "@/lib/time";
 
 export const revalidate = 60;
 
 export const metadata = { title: "Class Schedule — FlowForceRM" };
 
 export default async function EmbedSchedulePage() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Resolved in the tenant's own timezone (not the server's UTC, not the visitor's
+  // browser timezone) and passed down as a fixed string so server and client agree on
+  // exactly what "today" is -- computing `new Date()` independently on each side is
+  // what caused the hydration mismatch this used to have.
+  const todayStr = manilaDateStr();
+  const today = new Date(todayStr + "T00:00:00Z");
 
   const [schedules, classes] = await Promise.all([
     prisma.classSchedule.findMany({
@@ -27,5 +32,5 @@ export default async function EmbedSchedulePage() {
     }),
   ]);
 
-  return <ScheduleEmbedClient schedules={schedules} classes={classes} />;
+  return <ScheduleEmbedClient schedules={schedules} classes={classes} todayStr={todayStr} />;
 }

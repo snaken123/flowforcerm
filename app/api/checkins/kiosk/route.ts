@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaNow } from "@/lib/time";
 import { z } from "zod";
+import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 const schema = z.object({
   memberId: z.string(),
@@ -11,6 +12,9 @@ const schema = z.object({
 const COOLDOWN_MINUTES = 30;
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

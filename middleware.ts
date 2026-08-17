@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEdgeToken } from "./lib/edge-jwt";
+import { FLAG_COMMUNICATIONS, FLAG_SPECIALIZED_ROLES, FLAG_WEB_INTEGRATION } from "./lib/feature-flags";
+
+// Page routes gated behind an optional feature bundle -- everything else (members,
+// schedule, records, reports, employees, other settings) is core and always on. See
+// lib/feature-flags.ts for the matching requireFeature() check on the API routes
+// underneath these pages.
+const FLAG_GATED_PATHS: { prefix: string; flag: string }[] = [
+  { prefix: "/admin/communications", flag: FLAG_COMMUNICATIONS },
+  { prefix: "/admin/email", flag: FLAG_COMMUNICATIONS },
+  { prefix: "/admin/store", flag: FLAG_SPECIALIZED_ROLES },
+  { prefix: "/kiosk", flag: FLAG_SPECIALIZED_ROLES },
+  { prefix: "/attendance/kiosk", flag: FLAG_SPECIALIZED_ROLES },
+  { prefix: "/admin/schedule/training-plan", flag: FLAG_SPECIALIZED_ROLES },
+  { prefix: "/member/schedule/training-plan", flag: FLAG_SPECIALIZED_ROLES },
+  { prefix: "/admin/web-integration", flag: FLAG_WEB_INTEGRATION },
+];
 
 type ResolvedTenant = {
   id: string;
@@ -132,6 +148,11 @@ export default async function middleware(req: NextRequest) {
     return new NextResponse(`This ${tenant.brandName ?? "gym"} account is currently inactive.`, { status: 402 });
   }
 
+  const flagGate = FLAG_GATED_PATHS.find((g) => pathname === g.prefix || pathname.startsWith(g.prefix + "/"));
+  if (flagGate && !tenant.activeFlags.includes(flagGate.flag)) {
+    return new NextResponse("This feature is not enabled for your gym.", { status: 403 });
+  }
+
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-tenant-id", tenant.id);
   requestHeaders.set("x-tenant-subdomain", tenant.subdomain);
@@ -162,7 +183,7 @@ export default async function middleware(req: NextRequest) {
       ) {
         return NextResponse.redirect(new URL("/change-password", req.url));
       }
-      const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees"];
+      const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees", "/admin/reports"];
       if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
         const allowed =
           (token.role === "STAFF" || token.role === "STORE") &&

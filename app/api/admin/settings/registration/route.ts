@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { requireFeature, FLAG_WEB_INTEGRATION } from "@/lib/feature-flags";
 
 const KEY = "registration_welcome_message";
 const DEFAULT = "Join FlowForceRM for a FREE trial class! Try Yoga, Judo, or Brazilian Jiujitsu — no experience needed. Sign up below and we'll send you a link to reserve your spot.";
 
 export async function GET() {
+  const gate = requireFeature(FLAG_WEB_INTEGRATION);
+  if (gate) return gate;
+
   const setting = await prisma.systemSetting.findUnique({ where: { key: KEY } });
   return NextResponse.json({ message: setting?.value ?? DEFAULT });
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_WEB_INTEGRATION);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

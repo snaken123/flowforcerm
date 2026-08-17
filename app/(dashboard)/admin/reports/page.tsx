@@ -11,7 +11,8 @@ export const revalidate = 300;
 export default async function ReportsPage() {
   const session = await getAuthSession();
   if (!session) redirect("/login");
-  if ((session.user as any).role !== "ADMIN") redirect("/dashboard");
+  const role = (session.user as any).role;
+  if (!["ADMIN", "STAFF"].includes(role)) redirect("/dashboard");
 
   const now = new Date();
   const tenantTimeZone = getTenantTimezone();
@@ -94,6 +95,7 @@ export default async function ReportsPage() {
 
   return (
     <ReportsClient
+      role={role}
       monthlyData={monthlyData}
       serviceData={serviceData}
       statusData={statusData}

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { google } from "googleapis";
+import { isFeatureEnabled, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
 
 export async function GET(req: NextRequest) {
+  if (!isFeatureEnabled(FLAG_COMMUNICATIONS)) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
   const session = await getAuthSession();
   if (!session) {
     return NextResponse.redirect(new URL("/login", req.url));

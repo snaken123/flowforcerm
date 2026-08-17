@@ -11,7 +11,8 @@ export type CardId =
   | "stat-overdue-payments"
   | "recent-checkins"
   | "newest-members"
-  | "expiring-soon";
+  | "expiring-soon"
+  | "logbook";
 
 // Out of a 4-column grid on wide screens (2 columns on tablet, 1 on mobile -- see
 // widthClass() in dashboard-card-shell.tsx for how each width maps at each breakpoint).
@@ -29,6 +30,7 @@ export const CARD_LABELS: Record<CardId, string> = {
   "recent-checkins": "Recent Check-ins",
   "newest-members": "Newest Members",
   "expiring-soon": "Expiring Soon",
+  logbook: "Logbook",
 };
 
 // Order here = default display order. WOD + Announcements half-width side by side, all
@@ -44,6 +46,7 @@ export const DEFAULT_LAYOUT: CardLayoutItem[] = [
   { id: "recent-checkins", width: 2, hidden: false },
   { id: "newest-members", width: 2, hidden: false },
   { id: "expiring-soon", width: 4, hidden: false },
+  { id: "logbook", width: 4, hidden: false },
 ];
 
 // Bumped because the width semantics changed (out of 4 columns now, not 2) -- an old

@@ -174,7 +174,7 @@ export function FreeTrialFollowUpsClient({
     <div className="space-y-2">
       {localFollowUps.map((fu) => {
         const name = `${fu.member.firstName} ${fu.member.lastName}`;
-        const serviceName = fu.subscription?.service?.name ?? "—";
+        const trialServices: any[] = fu.member.subscriptions ?? [];
         const checkInDate = fu.checkIn
           ? new Date(fu.checkIn.checkedInAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })
           : null;
@@ -203,7 +203,15 @@ export function FreeTrialFollowUpsClient({
                   {fu.member.memberNumber && (
                     <span className="text-xs font-mono text-muted-foreground">{fu.member.memberNumber}</span>
                   )}
-                  <span className="text-xs text-muted-foreground">{serviceName}</span>
+                  {trialServices.map((sub) => (
+                    <span
+                      key={sub.id}
+                      className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                      style={{ borderColor: sub.service.color, color: sub.service.color }}
+                    >
+                      {sub.service.name}
+                    </span>
+                  ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {checkInDate ? `Checked in: ${checkInDate}` : "Not yet attended"}

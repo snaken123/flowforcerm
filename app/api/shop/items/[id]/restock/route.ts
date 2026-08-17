@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
+import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
 
@@ -15,6 +16,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || !["ADMIN", "STAFF", "STORE"].includes((session.user as any).role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

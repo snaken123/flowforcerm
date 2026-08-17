@@ -723,15 +723,16 @@ function KioskDevicesSection() {
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 
-export function SettingsClient() {
+export function SettingsClient({ showSpecializedRoles }: { showSpecializedRoles: boolean }) {
   const [accounts, setAccounts] = useState<{ kiosk: AccountInfo; store: AccountInfo }>({ kiosk: null, store: null });
 
   useEffect(() => {
+    if (!showSpecializedRoles) return;
     fetch("/api/admin/system-accounts")
       .then((r) => r.json())
       .then(setAccounts)
       .catch(() => {});
-  }, []);
+  }, [showSpecializedRoles]);
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -753,25 +754,29 @@ export function SettingsClient() {
         <LegalDocumentsSection />
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">System Accounts</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PasswordForm
-            account="kiosk"
-            label="Kiosk"
-            icon={Monitor}
-            email={accounts.kiosk?.email ?? undefined}
-          />
-          <PasswordForm
-            account="store"
-            label="Store"
-            icon={ShoppingBag}
-            email={accounts.store?.email ?? undefined}
-          />
-        </div>
-      </div>
+      {showSpecializedRoles && (
+        <>
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">System Accounts</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <PasswordForm
+                account="kiosk"
+                label="Kiosk"
+                icon={Monitor}
+                email={accounts.kiosk?.email ?? undefined}
+              />
+              <PasswordForm
+                account="store"
+                label="Store"
+                icon={ShoppingBag}
+                email={accounts.store?.email ?? undefined}
+              />
+            </div>
+          </div>
 
-      <KioskDevicesSection />
+          <KioskDevicesSection />
+        </>
+      )}
     </div>
   );
 }

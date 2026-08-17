@@ -40,7 +40,13 @@ export default async function PricelistEmbedPage({ searchParams }: { searchParam
 
   return (
     <>
-      <style>{`
+      {/* dangerouslySetInnerHTML, not JSX text children -- React HTML-escapes quote
+          characters in text children (even inside <style>), but <style> is a raw-text
+          HTML element the browser never entity-decodes, so any escaped quote here
+          (the @import url('...') and font-family: 'Inter' below both have one) made the
+          server and client renders permanently disagree -- see the identical fix and
+          longer explanation in app/embed/schedule/schedule-embed-client.tsx. */}
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body, html {
           margin: 0; padding: 0;
@@ -95,7 +101,7 @@ export default async function PricelistEmbedPage({ searchParams }: { searchParam
           .ns-title { font-size: 22px; }
           .ns-grid { columns: 1; }
         }
-      `}</style>
+      ` }} />
 
       <div className="ns-wrap">
         <div className="ns-header">

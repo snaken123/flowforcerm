@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/db";
 import { WebIntegrationClient } from "./web-integration-client";
+import { getTenantSubdomain } from "@/lib/tenant-context";
+import { tenantOrigin } from "@/lib/email";
 
 export const metadata = { title: "Web Integration" };
 export const revalidate = 300;
 
 export default async function WebIntegrationPage() {
+  const baseUrl = tenantOrigin(getTenantSubdomain());
   const services = await prisma.service.findMany({
     where: { isActive: true },
     select: {
@@ -18,5 +21,5 @@ export default async function WebIntegrationPage() {
     orderBy: { name: "asc" },
   });
 
-  return <WebIntegrationClient services={services} />;
+  return <WebIntegrationClient services={services} baseUrl={baseUrl} />;
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { CATEGORY_KEYS, MAX_ROWS, canEditTrainingPlan, isGridEmpty, normalizeGrid } from "@/lib/training-plan";
+import { requireFeature, FLAG_SPECIALIZED_ROLES } from "@/lib/feature-flags";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -23,6 +24,9 @@ const bodySchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -48,6 +52,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const gate = requireFeature(FLAG_SPECIALIZED_ROLES);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!canEditTrainingPlan(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

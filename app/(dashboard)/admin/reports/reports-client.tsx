@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import { TrendingUp, Users, DollarSign, CheckSquare, Loader2, FileDown, Printer, Calendar } from "lucide-react";
+import { LogbookReportCard } from "@/components/reports/logbook-report-card";
 
 const ReportsCharts = dynamic(
   () => import("./reports-charts").then((m) => ({ default: m.ReportsCharts })),
@@ -253,11 +254,13 @@ function MonthlyRevenueCard() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ReportsClient({
-  monthlyData, serviceData, statusData, checkInData, totalRevenue,
+  role, monthlyData, serviceData, statusData, checkInData, totalRevenue,
 }: {
+  role: string;
   monthlyData: any[]; serviceData: any[]; statusData: any[];
   checkInData: any[]; totalRevenue: number;
 }) {
+  const isAdmin = role === "ADMIN";
   const totalMembers = statusData.reduce((sum, s) => sum + s.count, 0);
   const activeMembers = statusData.find((s) => s.status === "ACTIVE")?.count ?? 0;
 
@@ -268,43 +271,49 @@ export function ReportsClient({
         <p className="text-muted-foreground">Analytics and insights for your gym</p>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMembers}</div>
-            <p className="text-xs text-muted-foreground">{activeMembers} active</p>
-          </CardContent>
-        </Card>
+      {isAdmin && (
+        <>
+          {/* Summary stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalMembers}</div>
+                <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrencyPlain(totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">all time</p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrencyPlain(totalRevenue)}</div>
+                <p className="text-xs text-muted-foreground">all time</p>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Revenue cards */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <DailyRevenueCard />
-        <MonthlyRevenueCard />
-      </div>
+          {/* Revenue cards */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <DailyRevenueCard />
+            <MonthlyRevenueCard />
+          </div>
 
-      <ReportsCharts
-        monthlyData={monthlyData}
-        serviceData={serviceData}
-        statusData={statusData}
-        checkInData={checkInData}
-      />
+          <ReportsCharts
+            monthlyData={monthlyData}
+            serviceData={serviceData}
+            statusData={statusData}
+            checkInData={checkInData}
+          />
+        </>
+      )}
+
+      <LogbookReportCard canEdit={isAdmin} />
     </div>
   );
 }

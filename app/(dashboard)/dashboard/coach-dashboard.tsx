@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Calendar, Clock, CheckCircle2, Circle, UserPlus } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, Circle, UserPlus, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayS
   const [walkInQuery, setWalkInQuery] = useState("");
   const [walkInResults, setWalkInResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [showWalkIn, setShowWalkIn] = useState(false);
   const { toast } = useToast();
 
@@ -98,6 +99,7 @@ function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayS
   }
 
   async function checkInWalkIn(member: any) {
+    setCheckingInId(member.id);
     try {
       const res = await fetch("/api/checkins/attend", {
         method: "POST",
@@ -120,6 +122,8 @@ function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayS
       setShowWalkIn(false);
     } catch {
       toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setCheckingInId(null);
     }
   }
 
@@ -204,7 +208,14 @@ function AttendanceCard({ schedule, todayStr }: { schedule: ScheduleItem; todayS
                 {walkInResults.map((m) => (
                   <li key={m.id} className="flex items-center justify-between px-2 py-1.5 hover:bg-muted/50">
                     <span>{m.firstName} {m.lastName} <span className="text-muted-foreground text-xs">#{m.memberNumber}</span></span>
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => checkInWalkIn(m)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-[10px]"
+                      disabled={checkingInId === m.id}
+                      onClick={() => checkInWalkIn(m)}
+                    >
+                      {checkingInId === m.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                       Check In
                     </Button>
                   </li>
@@ -231,11 +242,15 @@ export function CoachDashboard({
   dateStr,
   schedulesWithData,
   todayStr,
+  showWod = true,
+  showAnnouncements = true,
 }: {
   employeeName: string;
   dateStr: string;
   schedulesWithData: ScheduleItem[];
   todayStr: string;
+  showWod?: boolean;
+  showAnnouncements?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -244,10 +259,12 @@ export function CoachDashboard({
         <p className="text-muted-foreground">{dateStr}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TodaysWodCard showPlanLink={true} />
-        <AnnouncementBoardCard canManage={true} />
-      </div>
+      {(showWod || showAnnouncements) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {showWod && <TodaysWodCard showPlanLink={true} />}
+          {showAnnouncements && <AnnouncementBoardCard canManage={true} />}
+        </div>
+      )}
 
       <div>
         <h2 className="text-base font-semibold mb-3 flex items-center gap-2">

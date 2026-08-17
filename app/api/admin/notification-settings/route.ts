@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { requireFeature, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
 
 const KEYS = [
   "expiry_warning_enabled",
@@ -13,6 +14,9 @@ const KEYS = [
 ];
 
 export async function GET() {
+  const gate = requireFeature(FLAG_COMMUNICATIONS);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -30,6 +34,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireFeature(FLAG_COMMUNICATIONS);
+  if (gate) return gate;
+
   const session = await getAuthSession();
   if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

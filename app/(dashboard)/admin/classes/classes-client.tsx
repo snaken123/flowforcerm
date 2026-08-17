@@ -281,6 +281,7 @@ export function ClassesClient({
 
   async function onDelete(id: string) {
     if (!confirm("Delete this class?")) return;
+    setLoading(true);
     try {
       const res = await fetch(`/api/classes/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
@@ -289,6 +290,8 @@ export function ClassesClient({
       router.refresh();
     } catch {
       toast({ variant: "destructive", title: "Could not delete class" });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -406,9 +409,10 @@ export function ClassesClient({
               variant="destructive"
               size="sm"
               className="w-full"
+              disabled={loading}
               onClick={() => editSession && onDelete(editSession.id)}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               Delete Class
             </Button>
           </div>

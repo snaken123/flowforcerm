@@ -114,6 +114,7 @@ function SelectContent() {
   const [sports, setSports] = useState<SportGroup[]>([]);
   // Kids sports (kids judo/bjj)
   const [kidsSports, setKidsSports] = useState<SportGroup[]>([]);
+  const [kidsFetched, setKidsFetched] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(false);
 
   const [isKid, setIsKid] = useState(false);
@@ -166,11 +167,11 @@ function SelectContent() {
 
   // Fetch kids classes when kids mode toggled on
   useEffect(() => {
-    if (!isKid || kidsSports.length > 0) return;
+    if (!isKid || kidsFetched) return;
     fetch("/api/register/classes?kids=true")
       .then((r) => r.json())
-      .then((d) => setKidsSports(d));
-  }, [isKid]);
+      .then((d) => { setKidsSports(d); setKidsFetched(true); });
+  }, [isKid, kidsFetched]);
 
   // When kids mode changes, clear kids selections
   useEffect(() => {
@@ -196,7 +197,7 @@ function SelectContent() {
   const kidsGroupBSlots = allKidsSlots.filter((s) => KIDS_GROUP_B_DAYS.includes(slotDayOfWeek(s.date)));
 
   // Kids service meta for display
-  const kidsServiceName = kidsSports[0]?.serviceName ?? "Kids Judo & Jiujitsu";
+  const kidsServiceName = kidsSports[0]?.serviceName ?? "Kids Classes";
   const kidsServiceColor = kidsSports[0]?.serviceColor ?? "#6366f1";
 
   function toggleAdultSlot(serviceId: string, slot: Slot) {
@@ -457,10 +458,12 @@ function SelectContent() {
                   <h3 className="font-bold text-sm uppercase tracking-wide text-zinc-800">{kidsServiceName}</h3>
                 </div>
 
-                {kidsSports.length === 0 ? (
+                {!kidsFetched ? (
                   <div className="flex justify-center py-6">
                     <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
                   </div>
+                ) : kidsSports.length === 0 ? (
+                  <p className="text-sm text-zinc-500">No kids classes available. Please contact us directly.</p>
                 ) : allKidsSlots.length === 0 ? (
                   <p className="text-sm text-zinc-500">No kids classes available in the next 14 days. Please contact us directly.</p>
                 ) : (

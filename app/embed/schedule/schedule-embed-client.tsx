@@ -64,9 +64,13 @@ function layoutDay(events: any[]): { event: any; col: number; totalCols: number 
   });
 }
 
-export function ScheduleEmbedClient({ schedules, classes }: { schedules: any[]; classes: any[] }) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export function ScheduleEmbedClient({ schedules, classes, todayStr }: { schedules: any[]; classes: any[]; todayStr: string }) {
+  // Parsed without a "Z" suffix so the resulting Date's local Y/M/D match todayStr
+  // exactly, regardless of the viewer's own browser timezone -- keeps server and
+  // client agreeing on what "today" is (this used to independently call `new Date()`
+  // on each side, which could genuinely disagree near midnight and caused a hydration
+  // mismatch).
+  const today = new Date(todayStr + "T00:00:00");
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"week" | "day">("week");
@@ -162,9 +166,14 @@ export function ScheduleEmbedClient({ schedules, classes }: { schedules: any[]; 
 
   return (
     <>
-      <style>{`
+      {/* dangerouslySetInnerHTML, not JSX text children -- React HTML-escapes text
+          children (quotes become &quot;/&#x27;) even inside <style>, but <style> is a
+          raw-text HTML element the browser never entity-decodes, so any escaped quote
+          char here caused the server and client renders to permanently disagree. Setting
+          innerHTML directly bypasses that escaping and matches what the browser parses. */}
+      <style dangerouslySetInnerHTML={{ __html: `
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; color: #111; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f9fafb; color: #111; }
         .wrapper { padding: 16px; max-width: 1100px; margin: 0 auto; }
 
         .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -226,7 +235,7 @@ export function ScheduleEmbedClient({ schedules, classes }: { schedules: any[]; 
         .modal-icon { width: 32px; height: 32px; border-radius: 8px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; }
         .modal-row-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; }
         .modal-row-value { font-size: 14px; font-weight: 600; color: #111; margin-top: 1px; }
-      `}</style>
+      ` }} />
 
       <div className="wrapper">
 

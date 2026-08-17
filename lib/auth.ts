@@ -38,9 +38,7 @@ export const authOptions: NextAuthOptions = {
           user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
-        } catch (e) {
-          // P2021 = table doesn't exist -- a misprovisioned tenant database, not a bad
-          // login. Surface it distinctly so it doesn't get misread as "wrong password".
+        } catch (e: any) {
           if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2021") {
             console.error("[auth] tenant database is missing expected schema (table not found):", e.meta);
             return null;

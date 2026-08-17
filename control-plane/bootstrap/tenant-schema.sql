@@ -284,6 +284,7 @@ CREATE TABLE "Booking" (
     "cancelledAt" TIMESTAMP(3),
     "cancelReason" TEXT,
     "sessionReturned" BOOLEAN NOT NULL DEFAULT false,
+    "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Booking_pkey" PRIMARY KEY ("id")

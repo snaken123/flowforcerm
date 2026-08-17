@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getPrismaClientForTenant } from "@/lib/db";
 import { getActiveTenants } from "@/control-plane/lib/tenant-resolution";
-import { getResend } from "@/lib/email";
+import { getResend, tenantOrigin } from "@/lib/email";
 import { manilaDateStr, manilaDayBoundaries } from "@/lib/time";
 
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
 const FROM = "FlowForceRM <noreply@flowforcerm.com>";
 
 async function getSetting(prisma: PrismaClient, key: string) {
@@ -56,7 +55,8 @@ FlowForceRM`;
 // database. Called once per ACTIVE tenant by GET below — there is no request subdomain
 // for a cron trigger to resolve a tenant from, so each tenant's client is obtained
 // explicitly via getPrismaClientForTenant() instead of the shared prisma import.
-async function runForTenant(prisma: PrismaClient): Promise<string[]> {
+async function runForTenant(prisma: PrismaClient, subdomain: string): Promise<string[]> {
+  const APP_URL = tenantOrigin(subdomain);
   const [warnEnabled, warnDaysStr, expiredEnabled,
     warnSubjectTpl, warnBodyTpl, expiredSubjectTpl, expiredBodyTpl,
   ] = await Promise.all([
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
   for (const tenant of tenants) {
     try {
       const tenantPrisma = await getPrismaClientForTenant(tenant.id);
-      byTenant[tenant.subdomain] = await runForTenant(tenantPrisma);
+      byTenant[tenant.subdomain] = await runForTenant(tenantPrisma, tenant.subdomain);
     } catch (e) {
       console.error(`[cron] membership-notifications failed for tenant ${tenant.subdomain}:`, e);
       byTenant[tenant.subdomain] = { error: e instanceof Error ? e.message : String(e) };
