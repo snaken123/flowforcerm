@@ -39,7 +39,7 @@ type NavEntry =
 // flat link regardless of where it conceptually belongs.
 const navEntries: NavEntry[] = [
   { type: "link", item: { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "STAFF", "MEMBER"] } },
-  { type: "link", item: { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF", "STORE"] } },
+  { type: "link", item: { label: "Members", href: "/admin/members", icon: Users, roles: ["ADMIN", "STAFF"] } },
   {
     type: "group", key: "schedule", label: "Schedule", icon: Calendar,
     items: [
