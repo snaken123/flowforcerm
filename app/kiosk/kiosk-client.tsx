@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getInitials, formatTime } from "@/lib/utils";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -27,26 +28,26 @@ function isClassExpiredNow(endTime: string): boolean {
 
 // ─── Close lock ─────────────────────────────────────────────────────────────
 
-function CloseLock({ onCancel, onClose }: { onCancel: () => void; onClose: () => void }) {
+function CloseLock({ onCancel, onExit, onLogout }: { onCancel: () => void; onExit: () => void; onLogout: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  const [verifying, setVerifying] = useState<"exit" | "logout" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 80); }, []);
 
-  async function confirm() {
+  async function confirm(action: "exit" | "logout") {
     if (!password.trim()) { setError("Enter your password."); return; }
-    setVerifying(true); setError("");
+    setVerifying(action); setError("");
     try {
       const res = await fetch("/api/auth/verify-password", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Incorrect password."); setVerifying(false); return; }
-      onClose();
-    } catch { setError("Network error. Try again."); setVerifying(false); }
+      if (!res.ok) { setError(data.error ?? "Incorrect password."); setVerifying(null); return; }
+      if (action === "exit") onExit(); else onLogout();
+    } catch { setError("Network error. Try again."); setVerifying(null); }
   }
 
   return (
@@ -54,18 +55,21 @@ function CloseLock({ onCancel, onClose }: { onCancel: () => void; onClose: () =>
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Lock className="h-4 w-4 text-muted-foreground" />
-          Enter your password to exit the kiosk
+          Enter your password to continue
         </div>
         <Input ref={inputRef} type="password" placeholder="••••••••" value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && confirm()} autoComplete="current-password" />
+          onKeyDown={(e) => e.key === "Enter" && confirm("exit")} autoComplete="current-password" />
         {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
-          <Button className="flex-1" onClick={confirm} disabled={verifying}>
-            {verifying && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Exit Kiosk
+          <Button className="flex-1" onClick={() => confirm("exit")} disabled={!!verifying}>
+            {verifying === "exit" && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Exit Kiosk
           </Button>
         </div>
+        <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => confirm("logout")} disabled={!!verifying}>
+          {verifying === "logout" && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Log Out of This Device
+        </Button>
       </div>
     </div>
   );
@@ -429,7 +433,11 @@ export function KioskClient() {
 
       {/* Content */}
       {showClose ? (
-        <CloseLock onCancel={() => setShowClose(false)} onClose={() => router.push("/dashboard")} />
+        <CloseLock
+          onCancel={() => setShowClose(false)}
+          onExit={() => router.push("/dashboard")}
+          onLogout={() => signOut({ callbackUrl: "/login" })}
+        />
       ) : (
         <>
           {/* Hidden USB input — always active */}
