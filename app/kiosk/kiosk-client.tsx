@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   Loader2, AlertCircle, CheckCircle2, RotateCcw,
-  Lock, X, Check, QrCode, Tablet,
+  Lock, X, Check, QrCode, Tablet, LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,28 +25,28 @@ function isClassExpiredNow(endTime: string): boolean {
   return now.getHours() * 60 + now.getMinutes() > h * 60 + m;
 }
 
-// ─── Close lock ─────────────────────────────────────────────────────────────
+// ─── Logout lock ────────────────────────────────────────────────────────────
 
-function CloseLock({ onCancel, onExit, onLogout }: { onCancel: () => void; onExit: () => void; onLogout: () => void }) {
+function LogoutLock({ onCancel, onLogout }: { onCancel: () => void; onLogout: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [verifying, setVerifying] = useState<"exit" | "logout" | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 80); }, []);
 
-  async function confirm(action: "exit" | "logout") {
+  async function confirm() {
     if (!password.trim()) { setError("Enter your password."); return; }
-    setVerifying(action); setError("");
+    setVerifying(true); setError("");
     try {
       const res = await fetch("/api/auth/verify-password", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Incorrect password."); setVerifying(null); return; }
-      if (action === "exit") onExit(); else onLogout();
-    } catch { setError("Network error. Try again."); setVerifying(null); }
+      if (!res.ok) { setError(data.error ?? "Incorrect password."); setVerifying(false); return; }
+      onLogout();
+    } catch { setError("Network error. Try again."); setVerifying(false); }
   }
 
   return (
@@ -55,21 +54,18 @@ function CloseLock({ onCancel, onExit, onLogout }: { onCancel: () => void; onExi
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Lock className="h-4 w-4 text-muted-foreground" />
-          Enter your password to continue
+          Enter your password to log out
         </div>
         <Input ref={inputRef} type="password" placeholder="••••••••" value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && confirm("exit")} autoComplete="current-password" />
+          onKeyDown={(e) => e.key === "Enter" && confirm()} autoComplete="current-password" />
         {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
-          <Button className="flex-1" onClick={() => confirm("exit")} disabled={!!verifying}>
-            {verifying === "exit" && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Exit Kiosk
+          <Button className="flex-1" onClick={confirm} disabled={verifying}>
+            {verifying && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Log Out
           </Button>
         </div>
-        <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => confirm("logout")} disabled={!!verifying}>
-          {verifying === "logout" && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Log Out of This Device
-        </Button>
       </div>
     </div>
   );
@@ -313,7 +309,6 @@ function DeviceActivation({ onActivated }: { onActivated: () => void }) {
 type ScanState = "ready" | "loading" | "found" | "error";
 
 export function KioskClient() {
-  const router = useRouter();
   const [scanState, setScanState] = useState<ScanState>("ready");
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
   const [deviceChecked, setDeviceChecked] = useState(false);
@@ -428,14 +423,18 @@ export function KioskClient() {
         <div className="flex items-center gap-2 text-lg font-semibold">
           <QrCode className="h-5 w-5" /> Check-In Kiosk
         </div>
-        <button onDoubleClick={() => setShowClose(true)} className="w-8 h-8 opacity-0" aria-hidden />
+        <button
+          onClick={() => setShowClose(true)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md px-2.5 py-1.5 transition-colors"
+        >
+          <LogOut className="h-3.5 w-3.5" /> Log out
+        </button>
       </div>
 
       {/* Content */}
       {showClose ? (
-        <CloseLock
+        <LogoutLock
           onCancel={() => setShowClose(false)}
-          onExit={() => router.push("/dashboard")}
           onLogout={() => signOut({ callbackUrl: "/login" })}
         />
       ) : (
