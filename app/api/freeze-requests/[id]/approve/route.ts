@@ -23,28 +23,47 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const now = new Date();
   const days = freezeRequest.days;
   const frozenUntil = new Date(now.getTime() + days * 86400000);
-  const toFreeze = await prisma.subscription.findMany({
-    where: { memberId: freezeRequest.memberId, status: "ACTIVE" },
-  });
 
-  for (const sub of toFreeze) {
-    await prisma.subscription.update({
-      where: { id: sub.id },
-      data: {
-        status: "PAUSED",
-        frozenAt: now,
-        frozenUntil,
-        ...(sub.endDate ? { endDate: new Date(sub.endDate.getTime() + days * 86400000) } : {}),
-      },
+  const updated = await prisma.$transaction(async (tx) => {
+    // Atomic claim: only succeeds if the request is still PENDING, so a second
+    // concurrent approve/reject (double-click, two admin tabs) cleanly fails
+    // instead of both racing through the freeze logic below.
+    const claim = await tx.membershipFreezeRequest.updateMany({
+      where: { id: params.id, status: "PENDING" },
+      data: { status: "APPROVED", reviewedById: (session.user as any).id, reviewedAt: now },
     });
-  }
+    if (claim.count === 0) {
+      throw new Error("ALREADY_REVIEWED");
+    }
 
-  await prisma.member.update({ where: { id: freezeRequest.memberId }, data: { status: "FROZEN" } });
+    const toFreeze = await tx.subscription.findMany({
+      where: { memberId: freezeRequest.memberId, status: "ACTIVE" },
+    });
 
-  const updated = await prisma.membershipFreezeRequest.update({
-    where: { id: params.id },
-    data: { status: "APPROVED", reviewedById: (session.user as any).id, reviewedAt: now },
+    for (const sub of toFreeze) {
+      await tx.subscription.update({
+        where: { id: sub.id },
+        data: {
+          status: "PAUSED",
+          frozenAt: now,
+          frozenUntil,
+          ...(sub.endDate ? { endDate: new Date(sub.endDate.getTime() + days * 86400000) } : {}),
+        },
+      });
+    }
+
+    await tx.member.update({ where: { id: freezeRequest.memberId }, data: { status: "FROZEN" } });
+
+    const freezeRequestUpdated = await tx.membershipFreezeRequest.findUniqueOrThrow({ where: { id: params.id } });
+    return { freezeRequestUpdated, subscriptionCount: toFreeze.length };
+  }).catch((err: unknown) => {
+    if (err instanceof Error && err.message === "ALREADY_REVIEWED") return null;
+    throw err;
   });
+
+  if (!updated) {
+    return NextResponse.json({ error: "This request has already been reviewed." }, { status: 409 });
+  }
 
   await logAudit({
     userId: (session.user as any).id,
@@ -54,8 +73,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     entityId: freezeRequest.memberId,
     entityName: `${freezeRequest.member.firstName} ${freezeRequest.member.lastName}`,
     description: `Approved a staff freeze request for ${freezeRequest.member.firstName} ${freezeRequest.member.lastName} for ${days} day(s). Reason: ${freezeRequest.reason}`,
-    metadata: { days, reason: freezeRequest.reason, frozenUntil, subscriptionCount: toFreeze.length, freezeRequestId: freezeRequest.id },
+    metadata: { days, reason: freezeRequest.reason, frozenUntil, subscriptionCount: updated.subscriptionCount, freezeRequestId: freezeRequest.id },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json(updated.freezeRequestUpdated);
 }

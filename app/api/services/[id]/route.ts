@@ -38,6 +38,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Subscription.serviceId is required, so an unguarded delete here would cascade into
+  // deleting every subscription ever sold for this service -- including active, paying
+  // members' memberships. Block it the same way subscription deletion already blocks on
+  // existing bookings, rather than relying solely on the DB-level onDelete: Restrict.
+  const subscriptionCount = await prisma.subscription.count({ where: { serviceId: params.id } });
+  if (subscriptionCount > 0) {
+    return NextResponse.json({
+      error: `Cannot delete a service with ${subscriptionCount} subscription${subscriptionCount !== 1 ? "s" : ""} (active or historical). Deactivate it instead.`,
+    }, { status: 409 });
+  }
+
   await prisma.service.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 }

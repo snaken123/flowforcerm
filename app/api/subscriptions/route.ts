@@ -85,6 +85,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "memberId or employeeId required" }, { status: 400 });
   }
 
+  // If a packageId is given, the submitted price must not exceed that package's listed
+  // rate -- staff can still apply any discount down to 0, but can't charge more than the
+  // package's own price, or attach a price that belongs to an unrelated package/service.
+  if (parsed.data.packageId) {
+    const pkg = await prisma.servicePackage.findUnique({ where: { id: parsed.data.packageId } });
+    if (!pkg || pkg.serviceId !== parsed.data.serviceId) {
+      return NextResponse.json({ error: "Package does not belong to the selected service" }, { status: 400 });
+    }
+    const maxAllowed = Math.max(pkg.memberPrice ?? 0, pkg.nonMemberPrice ?? 0);
+    if (parsed.data.price > maxAllowed) {
+      return NextResponse.json({
+        error: `Price (₱${parsed.data.price}) exceeds this package's listed rate (₱${maxAllowed}).`,
+      }, { status: 400 });
+    }
+  }
+
   const startDate = parsed.data.startDate ? new Date(parsed.data.startDate) : new Date();
   const endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : undefined;
   const nextBillDate = addMonths(startDate, 1);

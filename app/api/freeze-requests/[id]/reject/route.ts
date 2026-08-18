@@ -21,8 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "This request has already been reviewed." }, { status: 409 });
   }
 
-  const updated = await prisma.membershipFreezeRequest.update({
-    where: { id: params.id },
+  // Atomic claim: only succeeds if the request is still PENDING, so a concurrent
+  // approve/reject can't both go through.
+  const claim = await prisma.membershipFreezeRequest.updateMany({
+    where: { id: params.id, status: "PENDING" },
     data: {
       status: "REJECTED",
       rejectionReason: parsed.data.reason,
@@ -30,6 +32,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       reviewedAt: new Date(),
     },
   });
+  if (claim.count === 0) {
+    return NextResponse.json({ error: "This request has already been reviewed." }, { status: 409 });
+  }
+
+  const updated = await prisma.membershipFreezeRequest.findUniqueOrThrow({ where: { id: params.id } });
 
   return NextResponse.json(updated);
 }

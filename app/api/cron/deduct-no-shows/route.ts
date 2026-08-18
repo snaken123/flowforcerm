@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   let deducted = 0;
   let skipped = 0;
 
-  for (const booking of overdueBookings) {
+  async function processBooking(booking: (typeof overdueBookings)[number]) {
     // Mark as NO_SHOW regardless of subscription type
     await prisma.booking.update({
       where: { id: booking.id },
@@ -43,6 +43,15 @@ export async function GET(req: NextRequest) {
     } else {
       skipped++;
     }
+  }
+
+  // Process in small batches instead of one booking at a time -- each booking is
+  // independent, so this cuts wall-clock time roughly by the batch size with no
+  // added risk.
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < overdueBookings.length; i += BATCH_SIZE) {
+    const batch = overdueBookings.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(processBooking));
   }
 
   return NextResponse.json({ processed: overdueBookings.length, deducted, skipped });

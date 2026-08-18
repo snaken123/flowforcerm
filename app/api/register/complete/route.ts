@@ -4,6 +4,7 @@ import { getResend, tenantOrigin } from "@/lib/email";
 import { getTenantSubdomain } from "@/lib/tenant-context";
 import { manilaDayBoundaries } from "@/lib/time";
 import { MEMBERS_EMAIL } from "@/lib/contact-info";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -15,6 +16,11 @@ type SelectedClass = {
 };
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isRateLimited(`register-complete:${ip}`, 5, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
+  }
+
   const { token, selections }: { token: string; selections: SelectedClass[] } = await req.json();
 
   if (!token || !selections?.length) {

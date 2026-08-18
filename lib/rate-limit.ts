@@ -38,6 +38,19 @@ export function getResetPasswordLimiter(): Ratelimit {
   return resetPasswordLimiter;
 }
 
+let superAdminLoginLimiter: Ratelimit | null = null;
+
+export function getSuperAdminLoginLimiter(): Ratelimit {
+  if (!superAdminLoginLimiter) {
+    superAdminLoginLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(5, "15 m"),
+      prefix: "rl:superadmin-login",
+    });
+  }
+  return superAdminLoginLimiter;
+}
+
 /** Extract client IP from Next.js request headers */
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");

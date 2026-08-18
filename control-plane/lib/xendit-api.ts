@@ -4,6 +4,8 @@
 // without XENDIT_SECRET_KEY set, rather than silently no-oping -- this touches real
 // money, so failing loudly beats a lazy-client pattern that pretends to work.
 
+import crypto from "crypto";
+
 const XENDIT_API_BASE = "https://api.xendit.co";
 
 function getAuthHeader(): string {
@@ -97,6 +99,10 @@ export async function createXenditSubscriptionPlan(input: {
 // isn't configured yet, rather than treating "not configured" as "allow all".
 export function verifyXenditWebhookToken(receivedToken: string | null): boolean {
   const expected = process.env.XENDIT_WEBHOOK_TOKEN;
-  if (!expected) return false;
-  return receivedToken === expected;
+  if (!expected || !receivedToken) return false;
+  const a = Buffer.from(receivedToken);
+  const b = Buffer.from(expected);
+  // timingSafeEqual throws on length mismatch rather than returning false, so guard that first.
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }

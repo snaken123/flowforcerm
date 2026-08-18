@@ -24,6 +24,18 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  // A linked subscription must actually belong to the member the payment is being logged
+  // for, otherwise a payment could get attached to (and pollute) another member's record.
+  if (parsed.data.subscriptionId) {
+    const sub = await prisma.subscription.findUnique({
+      where: { id: parsed.data.subscriptionId },
+      select: { memberId: true },
+    });
+    if (!sub || sub.memberId !== parsed.data.memberId) {
+      return NextResponse.json({ error: "Subscription does not belong to this member" }, { status: 400 });
+    }
+  }
+
   const payment = await prisma.payment.create({
     data: {
       memberId: parsed.data.memberId,

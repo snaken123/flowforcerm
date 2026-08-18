@@ -394,7 +394,11 @@ model Subscription {
   serviceId     String
   member        Member?            @relation(fields: [memberId], references: [id])
   employee      Employee?          @relation(fields: [employeeId], references: [id])
-  service       Service            @relation(fields: [serviceId], references: [id])
+  // Explicit Restrict, not the implicit Cascade a required relation would otherwise get --
+  // Subscription is the paid-membership record; a Service delete must never be able to
+  // take active subscriptions down with it. The API route enforces this too (belt and
+  // suspenders), but this is the backstop if that check is ever bypassed or forgotten.
+  service       Service            @relation(fields: [serviceId], references: [id], onDelete: Restrict)
 
   status        SubscriptionStatus @default(ACTIVE)
   billingCycle  BillingCycle       @default(MONTHLY)

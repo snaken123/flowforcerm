@@ -13,6 +13,8 @@ const schema = z.object({
   sessionsTotal: z.number().int().positive().optional(), // for session-based
   price: z.number().min(0),
   paymentMethod: z.string().optional(),
+  needsReceipt: z.boolean().optional(),
+  receiptUrl: z.string().optional(),
   billingCycle: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL"]).default("MONTHLY"),
 });
 
@@ -37,6 +39,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
   if (member.status !== "INACTIVE") {
     return NextResponse.json({ error: "Member is not in INACTIVE/trial status" }, { status: 409 });
+  }
+
+  // This route has no packageId selector (unlike /api/subscriptions) -- staff type a price
+  // directly. Cap it at the highest listed rate among the service's own packages so it can't
+  // be set arbitrarily high or belong to some unrelated pricing; skip the check for services
+  // with no packages configured (custom/legacy pricing).
+  const packages = await prisma.servicePackage.findMany({ where: { serviceId: parsed.data.serviceId } });
+  if (packages.length > 0) {
+    const maxAllowed = Math.max(...packages.map((p) => Math.max(p.memberPrice ?? 0, p.nonMemberPrice ?? 0)));
+    if (parsed.data.price > maxAllowed) {
+      return NextResponse.json({
+        error: `Price (₱${parsed.data.price}) exceeds this service's highest listed rate (₱${maxAllowed}).`,
+      }, { status: 400 });
+    }
   }
 
   // Assign member number safely inside a transaction to avoid TOCTOU race
@@ -89,14 +105,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     if (parsed.data.price > 0) {
+      // Mirrors /api/subscriptions: only mark PAID when a payment method was actually given
+      // (and a receipt too, if required) -- otherwise PENDING so it surfaces in the To-Do list.
+      const needsReceipt = parsed.data.needsReceipt !== false; // defaults to true
+      const isComplete = !!parsed.data.paymentMethod && (!needsReceipt || !!parsed.data.receiptUrl);
       await tx.payment.create({
         data: {
           memberId: params.id,
           subscriptionId: sub.id,
           amount: parsed.data.price,
-          status: "PAID",
+          status: isComplete ? "PAID" : "PENDING",
           method: parsed.data.paymentMethod ?? null,
-          paidAt: startDate,
+          paidAt: isComplete ? startDate : null,
+          needsReceipt,
+          receiptUrl: parsed.data.receiptUrl ?? null,
         },
       });
     }
