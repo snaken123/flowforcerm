@@ -124,6 +124,9 @@ model User {
   requestedFreezes    MembershipFreezeRequest[] @relation("FreezeRequestCreatedBy")
   reviewedFreezes     MembershipFreezeRequest[] @relation("FreezeRequestReviewedBy")
   announcements       Announcement[]
+  legalAgreementAcceptances LegalAgreementAcceptance[]
+  privacyRequestsSubmitted  PrivacyRequest[] @relation("PrivacyRequestRequestedBy")
+  privacyRequestsReviewed   PrivacyRequest[] @relation("PrivacyRequestReviewedBy")
 }
 
 model AuditLog {
@@ -142,6 +145,114 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@index([entityType, entityId])
+}
+
+// ── Legal / privacy / electronic agreements (Phase 1) ─────────────────────────
+// Acceptance records for FlowForceRM's OWN platform-level legal documents (Terms
+// of Service, Privacy Policy, DPA, Acceptable Use Policy). The documents
+// themselves are versioned/published in the control-plane LegalDocument model
+// (one ToS/Privacy Policy/etc. applies platform-wide, not per tenant); these
+// acceptance rows live per-tenant because they FK to this tenant's own User.id,
+// which the control-plane database has no relation to. documentId/documentHash
+// are denormalized copies of the control-plane record at accept-time (no real FK
+// possible across separate physical databases) -- same "denormalize for
+// resilience" convention AuditLog.userName already uses.
+//
+// This is a SEPARATE system from the existing gym-facing waiver/rules/privacy
+// text (SystemSetting-backed, see lib/legal-documents.ts) and the Member
+// waiverDate/privacyAcceptedAt/etc. fields -- those describe the GYM's own
+// consent collection from ITS members and are untouched by this feature.
+//
+// Immutable by design: no update/delete API is ever exposed for these rows.
+
+enum LegalDocumentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  DATA_PROCESSING_AGREEMENT
+  ACCEPTABLE_USE_POLICY
+}
+
+// ORGANIZATION: any one user's acceptance satisfies the whole tenant (e.g. the
+// SaaS Agreement/DPA -- a contract between FlowForceRM and the gym, not the
+// individual admin). INDIVIDUAL: each user personally acknowledges for
+// themselves (e.g. the Privacy Policy -- informing a person, not binding an org).
+enum LegalAcceptanceScope {
+  ORGANIZATION
+  INDIVIDUAL
+}
+
+enum LegalAcceptanceContext {
+  REGISTRATION
+  FIRST_LOGIN
+  UPDATED_TERMS
+  ADMIN_ACTION
+  OTHER
+}
+
+model LegalAgreementAcceptance {
+  id   String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  documentType    LegalDocumentType
+  documentVersion String
+  documentId      String // control-plane LegalDocument.id -- no FK possible, different database
+  documentHash    String?
+  scope           LegalAcceptanceScope
+
+  acceptedAt DateTime @default(now()) // server-generated, never client-supplied
+  ipAddress  String?
+  userAgent  String?
+  context    LegalAcceptanceContext
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([documentType, documentVersion])
+}
+
+// Phase 2: structured data-subject requests (access/correction/deletion/
+// objection/portability/other). Reviewed by the tenant's own ADMIN -- the gym
+// remains the controller handling requests about its own data, the same way
+// MembershipFreezeRequest already works (same RecordStatus, same reviewedBy
+// shape). Marking a DELETION request APPROVED does NOT itself delete anything
+// -- the admin still performs the actual deletion via the existing member-
+// detail delete flow; this is a paper trail, not an automated trigger.
+//
+// Self-service, instant, read-only actions (like exporting your own data via
+// GET /api/member/privacy/export) don't need a row here -- this model is only
+// for requests that need someone else to review and act.
+enum PrivacyRequestType {
+  ACCESS
+  CORRECTION
+  DELETION
+  OBJECTION
+  DATA_PORTABILITY
+  OTHER
+}
+
+model PrivacyRequest {
+  id            String  @id @default(cuid())
+  requestedById String?
+  requestedBy   User?   @relation("PrivacyRequestRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  // Denormalized so a fulfilled DELETION request still shows who asked for it
+  // after that person's User row is gone -- same rationale as AuditLog.userName.
+  requestedByName  String
+  requestedByEmail String?
+
+  type    PrivacyRequestType
+  details String? @db.Text
+
+  status          RecordStatus @default(PENDING)
+  reviewedById    String?
+  reviewedBy      User?        @relation("PrivacyRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  resolutionNotes String?      @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([requestedById])
 }
 
 model Member {

@@ -40,6 +40,24 @@ export default async function SuperAdminDashboard() {
             >
               Feature Flags
             </Link>
+            <Link
+              href="/superadmin/legal-documents"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Legal Documents
+            </Link>
+            <Link
+              href="/superadmin/subprocessors"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Subprocessors
+            </Link>
+            <Link
+              href="/superadmin/security-incidents"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Security Incidents
+            </Link>
             <NewTenantForm />
           </div>
         </div>

@@ -191,17 +191,35 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const member = await prisma.member.findUnique({
     where: { id: memberId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, userId: true },
   });
 
-  // Delete all related records before deleting member
+  // Delete all related records before deleting member. Order matters:
+  // FreeTrialFollowUp references both Subscription and CheckIn, so it has to
+  // go first, before either of those. Sales/inventory history is preserved --
+  // ShopSale.buyerMemberId is nullified, not deleted, and staff-facing
+  // ShopInventoryLog has no member reference at all.
   await prisma.$transaction(async (tx) => {
+    await tx.freeTrialFollowUp.deleteMany({ where: { memberId } });
+    await tx.membershipFreezeRequest.deleteMany({ where: { memberId } });
+    await tx.shopSale.updateMany({ where: { buyerMemberId: memberId }, data: { buyerMemberId: null } });
     await tx.payment.deleteMany({ where: { memberId } });
     await tx.checkIn.deleteMany({ where: { memberId } });
     await tx.rankRecord.deleteMany({ where: { memberId } });
     await tx.booking.deleteMany({ where: { memberId } });
     await tx.subscription.deleteMany({ where: { memberId } });
     await tx.member.delete({ where: { id: memberId } });
+    // Guest members (front-desk-only records, no login) have no User row.
+    // EmailIntegration cascades automatically (onDelete: Cascade on that relation).
+    // AuditLog.userId is RESTRICT at the DB level -- a member who ever acted as
+    // themselves (e.g. submitted a privacy request) would otherwise block this
+    // delete with a raw FK error. Only rows where they were the actor are
+    // removed; the DELETE_MEMBER entry this action itself creates is attributed
+    // to the deleting admin, not the member, so it's untouched.
+    if (member?.userId) {
+      await tx.auditLog.deleteMany({ where: { userId: member.userId } });
+      await tx.user.delete({ where: { id: member.userId } });
+    }
   });
 
   await logAudit({

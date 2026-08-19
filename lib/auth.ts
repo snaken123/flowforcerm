@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 import { Prisma, Role } from "@prisma/client";
 import { getLoginLimiter } from "./rate-limit";
+import { getRequiredAgreementStatus } from "./legal-agreements";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -111,6 +112,17 @@ export const authOptions: NextAuthOptions = {
             token.employeeTypes = dbUser.employee?.employeeTypes ?? [];
             token.employeeId = dbUser.employee?.id ?? null;
             token.taughtServiceIds = dbUser.employee?.taughtServices.map((t) => t.serviceId) ?? [];
+
+            // requiredTypesForRole() returns [] for MEMBER/KIOSK/STORE, so this is a
+            // no-op (no DB queries) for the vast majority of sessions -- only ADMIN/STAFF
+            // actually incur the control-plane + tenant lookups.
+            try {
+              const { allAccepted } = await getRequiredAgreementStatus({ id: token.id as string, role: dbUser.role });
+              token.needsLegalAcceptance = !allAccepted;
+            } catch (e) {
+              console.error("[auth] legal agreement status check failed:", e);
+              token.needsLegalAcceptance = false; // fail open -- never lock users out on an infra hiccup
+            }
           }
         } catch (e) {
           console.error("[auth] JWT callback DB error:", e);
@@ -124,6 +136,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role as Role;
         session.user.name = token.name as string;
         (session.user as any).mustChangePassword = token.mustChangePassword ?? false;
+        (session.user as any).needsLegalAcceptance = token.needsLegalAcceptance ?? false;
         (session.user as any).onboardingCompleted = token.onboardingCompleted ?? false;
         (session.user as any).athleteIdAsHome = token.athleteIdAsHome ?? true;
         (session.user as any).employeeTypes = (token.employeeTypes as string[]) ?? [];

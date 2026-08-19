@@ -17,6 +17,18 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'PENDING', 'OVERDUE', 'WAIVED');
 CREATE TYPE "BookingStatus" AS ENUM ('CONFIRMED', 'ATTENDED', 'CANCELLED', 'NO_SHOW');
 
 -- CreateEnum
+CREATE TYPE "LegalDocumentType" AS ENUM ('TERMS_OF_SERVICE', 'PRIVACY_POLICY', 'DATA_PROCESSING_AGREEMENT', 'ACCEPTABLE_USE_POLICY');
+
+-- CreateEnum
+CREATE TYPE "LegalAcceptanceScope" AS ENUM ('ORGANIZATION', 'INDIVIDUAL');
+
+-- CreateEnum
+CREATE TYPE "LegalAcceptanceContext" AS ENUM ('REGISTRATION', 'FIRST_LOGIN', 'UPDATED_TERMS', 'ADMIN_ACTION', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "PrivacyRequestType" AS ENUM ('ACCESS', 'CORRECTION', 'DELETION', 'OBJECTION', 'DATA_PORTABILITY', 'OTHER');
+
+-- CreateEnum
 CREATE TYPE "RecordStatus" AS ENUM ('APPROVED', 'PENDING', 'REJECTED');
 
 -- CreateEnum
@@ -103,6 +115,41 @@ CREATE TABLE "AuditLog" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LegalAgreementAcceptance" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "documentType" "LegalDocumentType" NOT NULL,
+    "documentVersion" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "documentHash" TEXT,
+    "scope" "LegalAcceptanceScope" NOT NULL,
+    "acceptedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "context" "LegalAcceptanceContext" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LegalAgreementAcceptance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PrivacyRequest" (
+    "id" TEXT NOT NULL,
+    "requestedById" TEXT,
+    "requestedByName" TEXT NOT NULL,
+    "requestedByEmail" TEXT,
+    "type" "PrivacyRequestType" NOT NULL,
+    "details" TEXT,
+    "status" "RecordStatus" NOT NULL DEFAULT 'PENDING',
+    "reviewedById" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "resolutionNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PrivacyRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -673,6 +720,18 @@ CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 CREATE INDEX "AuditLog_entityType_entityId_idx" ON "AuditLog"("entityType", "entityId");
 
 -- CreateIndex
+CREATE INDEX "LegalAgreementAcceptance_userId_idx" ON "LegalAgreementAcceptance"("userId");
+
+-- CreateIndex
+CREATE INDEX "LegalAgreementAcceptance_documentType_documentVersion_idx" ON "LegalAgreementAcceptance"("documentType", "documentVersion");
+
+-- CreateIndex
+CREATE INDEX "PrivacyRequest_status_idx" ON "PrivacyRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "PrivacyRequest_requestedById_idx" ON "PrivacyRequest"("requestedById");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Member_userId_key" ON "Member"("userId");
 
 -- CreateIndex
@@ -854,6 +913,15 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LegalAgreementAcceptance" ADD CONSTRAINT "LegalAgreementAcceptance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PrivacyRequest" ADD CONSTRAINT "PrivacyRequest_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PrivacyRequest" ADD CONSTRAINT "PrivacyRequest_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Member" ADD CONSTRAINT "Member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

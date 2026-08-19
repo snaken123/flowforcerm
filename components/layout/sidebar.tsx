@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Users, UserCog, Dumbbell, CreditCard,
-  LayoutDashboard, Mail, BarChart2, Calendar, LogOut, Menu, X, GraduationCap, IdCard, Settings, ChevronDown, Globe, ClipboardList, Megaphone, ShoppingBag, ShieldCheck, Lock, ListChecks
+  LayoutDashboard, Mail, BarChart2, Calendar, LogOut, Menu, X, GraduationCap, IdCard, Settings, ChevronDown, Globe, ClipboardList, Megaphone, ShoppingBag, ShieldCheck, Lock, ListChecks, ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
@@ -79,6 +79,8 @@ const navEntries: NavEntry[] = [
       { label: "Web Integration", href: "/admin/web-integration", icon: Globe, roles: ["ADMIN"], requiresFlag: FLAG_WEB_INTEGRATION },
       { label: "Customize", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
       { label: "Activity Logs", href: "/admin/logs", icon: ClipboardList, roles: ["ADMIN", "STAFF"] },
+      { label: "Legal & Agreements", href: "/legal-agreements", icon: ScrollText, roles: ["ADMIN", "STAFF"] },
+      { label: "Privacy Requests", href: "/admin/privacy-requests", icon: ShieldCheck, roles: ["ADMIN"] },
     ],
   },
 ];

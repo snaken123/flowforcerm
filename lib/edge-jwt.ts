@@ -70,6 +70,7 @@ export type EdgeToken = {
   id?: string;
   role?: string;
   mustChangePassword?: boolean;
+  needsLegalAcceptance?: boolean;
   onboardingCompleted?: boolean;
   exp?: number;
   [key: string]: unknown;

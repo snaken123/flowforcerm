@@ -287,3 +287,42 @@ export async function sendWelcomeEmail({
   });
   if (error) throw new Error(error.message);
 }
+
+// Confirms which FlowForceRM platform agreements were just accepted -- deliberately
+// contains no passwords, tokens, or other sensitive account details (spec section 29).
+export async function sendLegalAgreementConfirmation({
+  to,
+  name,
+  documents,
+}: {
+  to: string;
+  name: string;
+  documents: { title: string; version: string }[];
+}) {
+  if (!to || to.endsWith("@flowforcerm.local") || documents.length === 0) return;
+  const origin = tenantOrigin(getTenantSubdomain());
+  const { error } = await getResend().emails.send({
+    from: await resolveEmailFrom(),
+    to,
+    subject: "FlowForceRM — Agreement Confirmation",
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
+        <h2 style="margin-bottom:8px">Hi ${escapeHtml(name)},</h2>
+        <p style="color:#555">This confirms you accepted the following FlowForceRM agreement${documents.length > 1 ? "s" : ""}:</p>
+
+        <div style="background:#f4f4f5;border-radius:8px;padding:20px 24px;margin:24px 0">
+          ${documents.map((d) => `<p style="margin:4px 0;font-size:15px"><strong>${escapeHtml(d.title)}</strong> — v${escapeHtml(d.version)}</p>`).join("")}
+        </div>
+
+        <a href="${origin}/legal-agreements" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+          View My Agreement History →
+        </a>
+
+        <p style="margin-top:28px;font-size:13px;color:#888">
+          If you didn't take this action, please contact us right away.
+        </p>
+      </div>
+    `,
+  });
+  if (error) throw new Error(error.message);
+}

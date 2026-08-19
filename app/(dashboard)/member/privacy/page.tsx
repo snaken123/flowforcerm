@@ -1,23 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   Download, Trash2, Loader2, CheckCircle2, AlertCircle, ShieldCheck,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { SubprocessorsList, type SubprocessorInfo } from "@/components/legal/subprocessors-list";
+
+const REQUEST_TYPES = [
+  { value: "DELETION", label: "Delete my account and data" },
+  { value: "CORRECTION", label: "Correct inaccurate information" },
+  { value: "OBJECTION", label: "Object to a specific use of my data" },
+  { value: "DATA_PORTABILITY", label: "Transfer my data elsewhere" },
+  { value: "OTHER", label: "Something else" },
+] as const;
 
 export default function PrivacyPage() {
   const [exporting, setExporting] = useState(false);
+  const [requestType, setRequestType] = useState<string>("DELETION");
   const [deletionReason, setDeletionReason] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [subprocessors, setSubprocessors] = useState<SubprocessorInfo[]>([]);
+
+  useEffect(() => {
+    fetch("/api/subprocessors")
+      .then((r) => r.json())
+      .then((d) => setSubprocessors(d.subprocessors ?? []))
+      .catch(() => {});
+  }, []);
 
   async function handleExport() {
     setExporting(true);
@@ -38,13 +60,13 @@ export default function PrivacyPage() {
     }
   }
 
-  async function handleDeletionRequest() {
+  async function handlePrivacyRequest() {
     setSubmitting(true); setError("");
     try {
-      const res = await fetch("/api/member/privacy/deletion-request", {
+      const res = await fetch("/api/privacy-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: deletionReason }),
+        body: JSON.stringify({ type: requestType, details: deletionReason || undefined }),
       });
       if (!res.ok) { setError("Request failed. Please try again."); return; }
       setSubmitted(true);
@@ -94,29 +116,38 @@ export default function PrivacyPage() {
         </CardContent>
       </Card>
 
-      {/* Deletion request */}
+      {/* Privacy request */}
       <Card className="border-destructive/30">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2 text-destructive">
             <Trash2 className="h-4 w-4" />
-            Request Data Deletion
+            Submit a Privacy Request
           </CardTitle>
           <CardDescription>
-            Request permanent deletion of your account and all associated data.
-            Our team will process your request within 30 days and contact you to confirm.
-            Active memberships must be settled before deletion can proceed.
+            Request deletion, correction, or other action on your personal data.
+            The gym's staff will review your request and contact you to confirm.
+            Active memberships must be settled before a deletion request can proceed.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {submitted ? (
             <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg p-3 text-sm">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
-              Your deletion request has been received. Our team will contact you within 30 days.
+              Your request has been received. The gym's staff will follow up with you.
             </div>
           ) : (
             <>
+              <div className="space-y-1">
+                <Label>What would you like to request?</Label>
+                <Select value={requestType} onValueChange={setRequestType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {REQUEST_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <Textarea
-                placeholder="Optional: tell us why you're requesting deletion"
+                placeholder="Optional: add any details about your request"
                 value={deletionReason}
                 onChange={(e) => setDeletionReason(e.target.value)}
                 rows={3}
@@ -128,7 +159,7 @@ export default function PrivacyPage() {
                 onClick={() => setShowConfirm(true)}
               >
                 <Trash2 className="h-4 w-4" />
-                Request Account Deletion
+                Submit Request
               </Button>
             </>
           )}
@@ -138,17 +169,17 @@ export default function PrivacyPage() {
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Deletion Request</DialogTitle>
+            <DialogTitle>Confirm Privacy Request</DialogTitle>
             <DialogDescription>
-              This will notify our team to permanently delete your account and all associated data.
-              This action cannot be undone once processed. Are you sure?
+              This will notify the gym's staff to review your request.
+              {requestType === "DELETION" && " Deletion cannot be undone once processed."} Are you sure?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirm(false)}>Cancel</Button>
             <Button
               variant="destructive"
-              onClick={handleDeletionRequest}
+              onClick={handlePrivacyRequest}
               disabled={submitting}
             >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -157,6 +188,8 @@ export default function PrivacyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SubprocessorsList subprocessors={subprocessors} />
     </div>
   );
 }

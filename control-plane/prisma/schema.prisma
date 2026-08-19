@@ -44,6 +44,7 @@ model Tenant {
   provisioningLogs ProvisioningLog[]
   featureFlags     TenantFeatureFlag[]
   subscription     Subscription?
+  securityIncidents SecurityIncidentTenant[]
 
   @@index([status])
 }
@@ -243,4 +244,153 @@ model ContactInquiry {
   phone     String?
   message   String   @db.Text
   createdAt DateTime @default(now())
+}
+
+// ── Legal / privacy / electronic agreements (Phase 1) ─────────────────────────
+// FlowForceRM's OWN platform-level legal documents (Terms of Service, Privacy
+// Policy, DPA, Acceptable Use Policy) as the SaaS vendor -- distinct from each
+// tenant's own gym-facing waiver/rules/privacy text (tenant-side SystemSetting,
+// see lib/legal-documents.ts), which this does not touch. Content lives here
+// because one ToS/Privacy Policy/DPA/AUP applies platform-wide, not per tenant.
+// Acceptance RECORDS live in each tenant's own database instead (see
+// LegalAgreementAcceptance in the tenant schema) since they FK to that tenant's
+// own User.id, which this database has no relation to.
+//
+// DEVELOPMENT PLACEHOLDER CONTENT ONLY. Every document seeded for dev/testing
+// must carry a visible "DRAFT / PLACEHOLDER -- REQUIRES REVIEW AND APPROVAL BY
+// QUALIFIED PHILIPPINE LEGAL/PRIVACY COUNSEL BEFORE COMMERCIAL USE" banner.
+// Nothing in this schema or its surrounding code implies legal compliance.
+
+enum LegalDocumentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  DATA_PROCESSING_AGREEMENT
+  ACCEPTABLE_USE_POLICY
+}
+
+enum LegalDocumentStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+  ARCHIVED
+}
+
+model LegalDocument {
+  id     String            @id @default(cuid())
+  type   LegalDocumentType
+  title  String
+  version String
+  content String           @db.Text // Markdown, sanitized on render, never trusted as raw HTML
+
+  // SHA-256 hex of `content`, computed server-side at publish time. An integrity
+  // aid for showing exactly what content an acceptance record refers to -- not by
+  // itself a claim of legal validity.
+  contentHash String?
+
+  status           LegalDocumentStatus @default(DRAFT)
+  summaryOfChanges String?             @db.Text
+  effectiveDate    DateTime?
+  publishedAt      DateTime?
+  supersededAt     DateTime?
+
+  createdBySuperAdminId String?
+  createdAt             DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // "At most one PUBLISHED row per type" is enforced in the publish API route
+  // (a transaction that supersedes the old published row and publishes the new
+  // one together), not here -- Prisma has no partial-unique-index support for this.
+  @@unique([type, version])
+  @@index([type, status])
+}
+
+// Control-plane has no general audit log yet (ProvisioningLog is provisioning-
+// specific) -- this covers superadmin actions on legal documents (and future
+// control-plane admin actions), mirroring the tenant-side AuditLog/logAudit()
+// shape so the two systems stay conceptually consistent.
+model SuperAdminAuditLog {
+  id           String   @id @default(cuid())
+  superAdminId String
+  action       String
+  entityType   String
+  entityId     String?
+  description  String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([superAdminId])
+  @@index([createdAt])
+}
+
+// ── Phase 2: subprocessor registry ──────────────────────────────────────────
+// Platform-wide, superadmin-managed list of third-party services that process
+// customer/personal data on FlowForceRM's behalf. Surfaced read-only to
+// tenants (any authenticated role) via GET /api/subprocessors. Seeded from the
+// factual inventory compiled in LEGAL_REVIEW_REQUIRED.md.
+
+enum SubprocessorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Subprocessor {
+  id             String             @id @default(cuid())
+  name           String
+  service        String // what they provide, e.g. "Hosting", "Email delivery"
+  purpose        String             @db.Text
+  dataCategories String             @db.Text
+  location       String?
+  status         SubprocessorStatus @default(ACTIVE)
+  effectiveDate  DateTime?
+  referenceUrl   String? // the provider's own privacy/security page
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+// ── Phase 2: security/privacy incident management ──────────────────────────
+// Superadmin-only -- never exposed to gym users (spec: "Do not expose incident
+// details to ordinary gym users"). notificationStatus is free text; no NPC
+// breach-notification deadline is assumed or hard-coded anywhere in this system.
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  CONTAINED
+  INVESTIGATING
+  RESOLVED
+}
+
+model SecurityIncident {
+  id                      String           @id @default(cuid())
+  detectedAt              DateTime
+  occurredAt              DateTime?
+  affectedSystems         String           @db.Text
+  dataCategories          String           @db.Text
+  affectedRecordsEstimate Int?
+  severity                IncidentSeverity
+  status                  IncidentStatus   @default(OPEN)
+  remediation             String?          @db.Text
+  notificationStatus      String?
+  resolvedAt              DateTime?
+  responsibleSuperAdminId String
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  affectedTenants SecurityIncidentTenant[]
+}
+
+model SecurityIncidentTenant {
+  id         String           @id @default(cuid())
+  incidentId String
+  incident   SecurityIncident @relation(fields: [incidentId], references: [id])
+  tenantId   String
+  tenant     Tenant           @relation(fields: [tenantId], references: [id])
+
+  @@unique([incidentId, tenantId])
 }
