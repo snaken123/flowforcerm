@@ -229,27 +229,51 @@ function DocumentRow({
   }
 
   return (
-    <div className="rounded-lg border border-white/10 bg-[#0a0a0a] p-4 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <div className="rounded-lg border border-white/10 bg-[#0a0a0a] p-4 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span className="font-medium text-sm">{doc.title}</span>
-          <span className="text-xs text-[#666]">v{doc.version}</span>
-          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[doc.status]}`}>{doc.status}</span>
+          <span className="text-xs text-[#666] shrink-0">v{doc.version}</span>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${STATUS_STYLE[doc.status]}`}>{doc.status}</span>
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <button onClick={() => setViewing((v) => !v)} className="text-[#888] hover:text-white">{viewing ? "Hide" : "View"}</button>
+        <div className="flex items-center gap-1.5 text-xs shrink-0">
+          <button onClick={() => setViewing((v) => !v)} className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 font-semibold">
+            {viewing ? "Hide" : "View"}
+          </button>
           {doc.status === "DRAFT" && (
             <>
-              <button onClick={onEdit} className="text-[#888] hover:text-white">Edit</button>
-              <button onClick={() => act("publish", onPublished)} disabled={busy} className="text-emerald-400 hover:text-emerald-300">Publish</button>
-              <button onClick={() => act("archive", onArchived)} disabled={busy} className="text-[#888] hover:text-white">Archive</button>
+              <button onClick={onEdit} className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 font-semibold">
+                Edit
+              </button>
+              <button
+                onClick={() => act("publish", onPublished)}
+                disabled={busy}
+                className="rounded-md border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black hover:border-emerald-500 transition-colors px-2.5 py-1 font-semibold disabled:opacity-50"
+              >
+                Publish
+              </button>
+              <button
+                onClick={() => act("archive", onArchived)}
+                disabled={busy}
+                className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 font-semibold disabled:opacity-50"
+              >
+                Archive
+              </button>
             </>
           )}
           {doc.status === "SUPERSEDED" && (
-            <button onClick={() => act("archive", onArchived)} disabled={busy} className="text-[#888] hover:text-white">Archive</button>
+            <button
+              onClick={() => act("archive", onArchived)}
+              disabled={busy}
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 font-semibold disabled:opacity-50"
+            >
+              Archive
+            </button>
           )}
           {(doc.status === "PUBLISHED" || doc.status === "SUPERSEDED") && (
-            <button onClick={onStats} className="text-[#888] hover:text-white">Stats</button>
+            <button onClick={onStats} className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 font-semibold">
+              Stats
+            </button>
           )}
         </div>
       </div>

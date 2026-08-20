@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 
 type Tenant = { id: string; name: string; subdomain: string };
 type Incident = {
@@ -76,7 +76,7 @@ function NewIncidentForm({ tenants, onDone, onCancel }: { tenants: Tenant[]; onD
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#111] p-6 space-y-4 mb-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="text-xs text-[#888]">Detected At</label>
           <input type="datetime-local" value={detectedAt} onChange={(e) => setDetectedAt(e.target.value)} className={inputClass()} />
@@ -106,20 +106,31 @@ function NewIncidentForm({ tenants, onDone, onCancel }: { tenants: Tenant[]; onD
       <div className="space-y-1">
         <label className="text-xs text-[#888]">Affected Tenants</label>
         <div className="max-h-32 overflow-y-auto rounded-md border border-white/20 bg-[#1a1a1a] p-2 space-y-1">
-          {tenants.map((t) => (
-            <label key={t.id} className="flex items-center gap-2 text-sm text-[#ccc] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedTenantIds.has(t.id)}
-                onChange={(e) => setSelectedTenantIds((prev) => {
+          {tenants.map((t) => {
+            const checked = selectedTenantIds.has(t.id);
+            return (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => setSelectedTenantIds((prev) => {
                   const next = new Set(prev);
-                  if (e.target.checked) next.add(t.id); else next.delete(t.id);
+                  if (checked) next.delete(t.id); else next.add(t.id);
                   return next;
                 })}
-              />
-              {t.name} ({t.subdomain})
-            </label>
-          ))}
+                className="flex items-center gap-2 text-sm text-[#ccc] cursor-pointer w-full text-left px-1 py-0.5 rounded hover:bg-white/5"
+              >
+                <span
+                  className={
+                    "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors " +
+                    (checked ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-white/5 border-white/20 text-transparent")
+                  }
+                >
+                  <Check className="h-3 w-3" />
+                </span>
+                {t.name} ({t.subdomain})
+              </button>
+            );
+          })}
         </div>
       </div>
       {error && <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">{error}</div>}
@@ -158,10 +169,10 @@ function IncidentRow({ incident, onUpdated }: { incident: Incident; onUpdated: (
 
   return (
     <div className="rounded-lg border border-white/10 bg-[#0a0a0a] p-4 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded ${SEVERITY_STYLE[incident.severity]}`}>{incident.severity}</span>
-          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[incident.status]}`}>{incident.status}</span>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${SEVERITY_STYLE[incident.severity]}`}>{incident.severity}</span>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${STATUS_STYLE[incident.status]}`}>{incident.status}</span>
           <span className="text-xs text-[#666]">Detected {new Date(incident.detectedAt).toLocaleString()}</span>
         </div>
         {busy ? (

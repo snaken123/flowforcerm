@@ -133,20 +133,21 @@ export function SubprocessorsClient({ initialSubprocessors }: { initialSubproces
       <div className="space-y-2">
         {initialSubprocessors.map((sp) => (
           <div key={sp.id} className="rounded-lg border border-white/10 bg-[#0a0a0a] p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <span className="font-medium text-sm">{sp.name}</span>
                 <span className="text-xs text-[#666]">{sp.service}</span>
-                <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded ${sp.status === "ACTIVE" ? "bg-emerald-500/20 text-emerald-400" : "bg-[#222] text-[#666]"}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${sp.status === "ACTIVE" ? "bg-emerald-500/20 text-emerald-400" : "bg-[#222] text-[#666]"}`}>
                   {sp.status}
                 </span>
               </div>
               <button
                 onClick={() => toggleStatus(sp)}
                 disabled={busyId === sp.id}
-                className="text-xs text-[#888] hover:text-white"
+                className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-2.5 py-1 text-xs font-semibold disabled:opacity-50 shrink-0 flex items-center gap-1.5"
               >
-                {busyId === sp.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sp.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
+                {busyId === sp.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {sp.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
               </button>
             </div>
             <p className="text-xs text-[#999]">{sp.purpose}</p>
