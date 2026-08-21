@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'STAFF', 'MEMBER', 'KIOSK', 'STORE');
 
@@ -739,6 +742,12 @@ CREATE UNIQUE INDEX "Member_memberNumber_key" ON "Member"("memberNumber");
 
 -- CreateIndex
 CREATE INDEX "Member_status_idx" ON "Member"("status");
+
+-- CreateIndex
+CREATE INDEX "Member_firstName_idx" ON "Member" USING GIN ("firstName" gin_trgm_ops);
+
+-- CreateIndex
+CREATE INDEX "Member_lastName_idx" ON "Member" USING GIN ("lastName" gin_trgm_ops);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Employee_userId_key" ON "Employee"("userId");

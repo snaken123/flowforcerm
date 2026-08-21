@@ -1,3 +1,5 @@
+import type { PrismaClient } from "@prisma/client";
+import { prisma as ambientPrisma } from "@/lib/db";
 import { getResend, resolveEmailFrom } from "@/lib/email";
 import { sendBulkSMS } from "@/lib/sms";
 import { resolveAnnouncementRecipients } from "@/lib/announcement-recipients";
@@ -6,16 +8,23 @@ import { resolveAnnouncementRecipients } from "@/lib/announcement-recipients";
 // and the dispatch-announcements cron (for future-scheduled ones). Best-effort: a failed
 // batch doesn't throw, since the announcement itself is already posted either way -- this
 // only concerns the optional email/SMS echo of it.
-export async function dispatchAnnouncement(announcement: {
-  title: string;
-  content: string;
-  audience: string[];
-  sendEmail: boolean;
-  sendSms: boolean;
-}) {
+//
+// `prisma` defaults to the ambient, header-scoped client so the immediate-send path
+// (a normal tenant-resolved request) needs no change. The cron path has no request
+// header to resolve a tenant from and passes its own per-tenant client explicitly.
+export async function dispatchAnnouncement(
+  announcement: {
+    title: string;
+    content: string;
+    audience: string[];
+    sendEmail: boolean;
+    sendSms: boolean;
+  },
+  prisma: PrismaClient = ambientPrisma
+) {
   if (!announcement.sendEmail && !announcement.sendSms) return;
 
-  const { email: emailRecipients, sms: smsRecipients } = await resolveAnnouncementRecipients(announcement.audience);
+  const { email: emailRecipients, sms: smsRecipients } = await resolveAnnouncementRecipients(announcement.audience, prisma);
 
   if (announcement.sendEmail && emailRecipients.length > 0) {
     const from = await resolveEmailFrom();

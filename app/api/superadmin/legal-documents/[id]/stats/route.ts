@@ -12,26 +12,38 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await requireSuperAdmin().catch(() => null);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const doc = await controlPlanePrisma.legalDocument.findUnique({ where: { id: params.id } });
-  if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const docRow = await controlPlanePrisma.legalDocument.findUnique({ where: { id: params.id } });
+  if (!docRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const doc = docRow;
 
   const tenants = await getActiveTenants();
-  let accepted = 0;
-  const perTenant: { subdomain: string; accepted: number; error?: true }[] = [];
 
-  for (const tenant of tenants) {
+  async function queryTenant(tenant: { id: string; subdomain: string }) {
     try {
       const client = await getPrismaClientForTenant(tenant.id);
       const count = await client.legalAgreementAcceptance.count({
         where: { documentType: doc.type as any, documentVersion: doc.version },
       });
-      accepted += count;
-      perTenant.push({ subdomain: tenant.subdomain, accepted: count });
+      return { subdomain: tenant.subdomain, accepted: count };
     } catch (e) {
       console.error(`[legal-documents/stats] failed to query tenant ${tenant.subdomain}:`, e);
-      perTenant.push({ subdomain: tenant.subdomain, accepted: 0, error: true });
+      // Isolated per tenant -- one tenant's failure never fails the whole batch or
+      // the request; it just shows up flagged in that tenant's own row.
+      return { subdomain: tenant.subdomain, accepted: 0, error: true as const };
     }
   }
+
+  // Batched rather than sequential: was a for-loop opening one tenant connection
+  // at a time, which is the one place in this codebase that intentionally crosses
+  // the tenant-isolation boundary and is the pattern that scales with tenant count.
+  const BATCH_SIZE = 10;
+  const perTenant: { subdomain: string; accepted: number; error?: true }[] = [];
+  for (let i = 0; i < tenants.length; i += BATCH_SIZE) {
+    const batch = tenants.slice(i, i + BATCH_SIZE);
+    perTenant.push(...(await Promise.all(batch.map(queryTenant))));
+  }
+
+  const accepted = perTenant.reduce((sum, t) => sum + t.accepted, 0);
 
   return NextResponse.json({ documentId: doc.id, type: doc.type, version: doc.version, totalAccepted: accepted, perTenant });
 }

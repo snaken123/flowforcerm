@@ -1,11 +1,16 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
+// pg_trgm backs the GIN trigram indexes on Member.firstName/lastName below, so
+// Postgres can use them for the app's substring/ILIKE name search instead of a
+// sequential scan (a leading-wildcard ILIKE can't use a plain B-tree index).
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pg_trgm]
 }
 
 enum Role {
@@ -309,6 +314,13 @@ model Member {
   freezeRequests  MembershipFreezeRequest[]
 
   @@index([status])
+  // Backs the ILIKE '%query%' name search in app/api/members/route.ts -- a leading-
+  // wildcard pattern can't use a plain B-tree index, so Postgres needs a trigram
+  // GIN index (pg_trgm, enabled above) to avoid a sequential scan. Two separate
+  // indexes, not one combined one, since the search is firstName OR lastName, and
+  // Postgres can bitmap-OR two independent index scans together for that.
+  @@index([firstName(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([lastName(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Employee {

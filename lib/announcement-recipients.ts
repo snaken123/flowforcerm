@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import type { PrismaClient } from "@prisma/client";
+import { prisma as ambientPrisma } from "@/lib/db";
 
 export type AnnouncementRecipient = { name: string; email?: string; phone?: string };
 
@@ -8,8 +9,15 @@ export type AnnouncementRecipient = { name: string; email?: string; phone?: stri
 // its own case -- not a Role, it's Employee.employeeTypes containing "COACH" -- so it
 // starts from Employee instead. Dedupes by email/phone in case tags overlap (a
 // coach-only employee matches both STAFF and COACH).
+//
+// Takes an explicit Prisma client rather than always using the ambient, header-scoped
+// `prisma` export: the immediate-send path (POST /api/announcements) runs inside a
+// normal tenant-resolved request and can rely on the ambient client, but the
+// dispatch-announcements cron has no request-scoped tenant header to resolve at all
+// and must pass its own per-tenant client explicitly.
 export async function resolveAnnouncementRecipients(
-  audience: string[]
+  audience: string[],
+  prisma: PrismaClient = ambientPrisma
 ): Promise<{ email: AnnouncementRecipient[]; sms: AnnouncementRecipient[] }> {
   const emailByAddress = new Map<string, AnnouncementRecipient>();
   const smsByPhone = new Map<string, AnnouncementRecipient>();
