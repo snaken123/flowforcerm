@@ -30,7 +30,6 @@ export function MembersClient({
   members,
   isAdmin,
   isStaff,
-  bouncedEmails = [],
   page,
   total,
   pageSize,
@@ -40,7 +39,6 @@ export function MembersClient({
   members: any[];
   isAdmin: boolean;
   isStaff?: boolean;
-  bouncedEmails?: string[];
   page: number;
   total: number;
   pageSize: number;
@@ -51,7 +49,16 @@ export function MembersClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const timeZone = useTenantTimezone();
-  const bouncedSet = new Set(bouncedEmails.map((e) => e.toLowerCase()));
+  // Fetched after mount rather than passed in from the server: it's an external
+  // Resend API call, and blocking the whole table render on it just to show a
+  // "bounced" badge made the page noticeably slower to first paint.
+  const [bouncedSet, setBouncedSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    fetch("/api/members/bounced-emails")
+      .then((r) => r.json())
+      .then((d) => setBouncedSet(new Set((d.emails ?? []) as string[])))
+      .catch(() => {});
+  }, []);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "ALL");
 

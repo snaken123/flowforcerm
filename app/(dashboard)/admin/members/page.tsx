@@ -1,30 +1,12 @@
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { MembersClient } from "./members-client";
 
 export const metadata = { title: "Members" };
 export const revalidate = 60; // refresh at most every 60 seconds
 
 const PAGE_SIZE = 50;
-
-async function fetchBouncedEmails(): Promise<Set<string>> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return new Set();
-  try {
-    const res = await fetch("https://api.resend.com/suppressions", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return new Set();
-    const data = await res.json();
-    const records: { email: string }[] = data.data ?? data.records ?? [];
-    return new Set(records.map((r) => r.email.toLowerCase()));
-  } catch {
-    return new Set();
-  }
-}
 
 export default async function MembersPage({
   searchParams,
@@ -59,7 +41,7 @@ export default async function MembersPage({
     where.status = statusFilter;
   }
 
-  const [members, total, bouncedEmails, freeTrialCount, services] = await Promise.all([
+  const [members, total, freeTrialCount, services] = await Promise.all([
     prisma.member.findMany({
       where,
       orderBy: { lastName: "asc" },
@@ -78,7 +60,6 @@ export default async function MembersPage({
       },
     }),
     prisma.member.count({ where }),
-    fetchBouncedEmails(),
     prisma.member.count({ where: { source: "free-trial-registration", status: "INACTIVE" } }),
     prisma.service.findMany({
       where: { isActive: true },
@@ -88,18 +69,15 @@ export default async function MembersPage({
   ]);
 
   return (
-    <Suspense fallback={null}>
-      <MembersClient
-        members={members}
-        isAdmin={role === "ADMIN"}
-        isStaff={role === "STAFF"}
-        bouncedEmails={[...bouncedEmails]}
-        page={page}
-        total={total}
-        pageSize={PAGE_SIZE}
-        freeTrialCount={freeTrialCount}
-        services={services}
-      />
-    </Suspense>
+    <MembersClient
+      members={members}
+      isAdmin={role === "ADMIN"}
+      isStaff={role === "STAFF"}
+      page={page}
+      total={total}
+      pageSize={PAGE_SIZE}
+      freeTrialCount={freeTrialCount}
+      services={services}
+    />
   );
 }
