@@ -59,9 +59,38 @@ export function NavProgress() {
     }
   }, [pathname, searchParams])
 
+  // pathname/searchParams only change once the new route *commits* -- and with a
+  // loading.tsx in play, that commit happens as soon as its skeleton mounts, not
+  // when the real content replaces it (that swap happens later, invisibly to this
+  // hook, as the page's own Suspense boundary resolves). So finishing here would
+  // race the bar to 100% the instant the skeleton appears. Every loading.tsx in
+  // this app renders the shared Skeleton primitive (.animate-pulse), so watch for
+  // that to actually disappear from the page before calling the nav done.
   useEffect(() => {
-    finish()
-    return clearTimers
+    const hasSkeleton = () => document.querySelector("main .animate-pulse") !== null
+
+    if (!hasSkeleton()) {
+      finish()
+      return clearTimers
+    }
+
+    const main = document.querySelector("main")
+    if (!main) {
+      finish()
+      return clearTimers
+    }
+
+    const obs = new MutationObserver(() => {
+      if (!hasSkeleton()) {
+        finish()
+        obs.disconnect()
+      }
+    })
+    obs.observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] })
+    return () => {
+      obs.disconnect()
+      clearTimers()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams])
 
