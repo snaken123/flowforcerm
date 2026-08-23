@@ -273,8 +273,8 @@ function BrandingSection({ initialBranding }: { initialBranding: any }) {
 type LegalDocuments = {
   waiverText: string;
   privacyText: string;
-  rulesPdfUrl: string;
-  handbookPdfUrl: string;
+  rulesPdfUrl: string | null;
+  handbookPdfUrl: string | null;
 };
 
 function LegalDocumentsSection({ initialDocuments }: { initialDocuments: LegalDocuments }) {
@@ -367,14 +367,18 @@ function LegalDocumentsSection({ initialDocuments }: { initialDocuments: LegalDo
             <div key={kind} className="space-y-1.5">
               <Label className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{label}</Label>
               <div className="flex items-center gap-2">
-                <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">
-                  View current PDF
-                </a>
+                {url ? (
+                  <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">
+                    View current PDF
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Not yet uploaded</span>
+                )}
               </div>
               <Label htmlFor={`pdf-upload-${kind}`} className="cursor-pointer">
                 <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted transition-colors">
                   {uploadingKind === kind ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                  {uploadingKind === kind ? "Uploading…" : "Replace PDF"}
+                  {uploadingKind === kind ? "Uploading…" : url ? "Replace PDF" : "Upload PDF"}
                 </span>
               </Label>
               <input

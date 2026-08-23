@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,6 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { SubprocessorsList, type SubprocessorInfo } from "@/components/legal/subprocessors-list";
 
 const REQUEST_TYPES = [
   { value: "DELETION", label: "Delete my account and data" },
@@ -32,14 +31,6 @@ export default function PrivacyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
-  const [subprocessors, setSubprocessors] = useState<SubprocessorInfo[]>([]);
-
-  useEffect(() => {
-    fetch("/api/subprocessors")
-      .then((r) => r.json())
-      .then((d) => setSubprocessors(d.subprocessors ?? []))
-      .catch(() => {});
-  }, []);
 
   async function handleExport() {
     setExporting(true);
@@ -188,8 +179,6 @@ export default function PrivacyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <SubprocessorsList subprocessors={subprocessors} />
     </div>
   );
 }

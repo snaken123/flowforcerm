@@ -56,8 +56,8 @@ function ScrollDocument({ text, onScrolled }: { text: string; onScrolled: () => 
 type LegalDocuments = {
   waiverText: string;
   privacyText: string;
-  rulesPdfUrl: string;
-  handbookPdfUrl: string;
+  rulesPdfUrl: string | null;
+  handbookPdfUrl: string | null;
 };
 
 export default function SetupAccountPage() {
@@ -330,57 +330,65 @@ export default function SetupAccountPage() {
               <div>
                 <h1 className="text-2xl font-bold">Welcome to FlowForceRM! 🥋</h1>
                 <p className="text-muted-foreground mt-1">
-                  You're all set. Before you jump in, here are two resources available to you anytime in the app.
+                  You're all set{(legalDocs.rulesPdfUrl || legalDocs.handbookPdfUrl) ? ". Before you jump in, here are resources available to you anytime in the app." : "."}
                 </p>
               </div>
 
-              <div className="space-y-4">
-                {/* Gym Rules card */}
-                <div className="rounded-xl border bg-muted/30 p-5 flex gap-4 items-start">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">Gym Rules & Guidelines</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      Our gym rules cover training etiquette, hygiene standards, equipment use, and conduct expectations. We encourage you to read them so you know what to expect on the mat.
-                    </p>
-                    <a
-                      href={legalDocs.rulesPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-2 text-xs font-medium text-primary hover:underline"
-                    >
-                      Read Gym Rules →
-                    </a>
-                  </div>
-                </div>
+              {(legalDocs.rulesPdfUrl || legalDocs.handbookPdfUrl) && (
+                <div className="space-y-4">
+                  {/* Gym Rules card */}
+                  {legalDocs.rulesPdfUrl && (
+                    <div className="rounded-xl border bg-muted/30 p-5 flex gap-4 items-start">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">Gym Rules & Guidelines</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          Our gym rules cover training etiquette, hygiene standards, equipment use, and conduct expectations. We encourage you to read them so you know what to expect on the mat.
+                        </p>
+                        <a
+                          href={legalDocs.rulesPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 text-xs font-medium text-primary hover:underline"
+                        >
+                          Read Gym Rules →
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
-                {/* Welcome Handbook card */}
-                <div className="rounded-xl border bg-muted/30 p-5 flex gap-4 items-start">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">Welcome Handbook</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      The welcome handbook gives you an overview of our programs, class structure, belt progression, and what to bring on your first day. A great starting point for new members.
-                    </p>
-                    <a
-                      href={legalDocs.handbookPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-2 text-xs font-medium text-primary hover:underline"
-                    >
-                      Read Welcome Handbook →
-                    </a>
-                  </div>
+                  {/* Welcome Handbook card */}
+                  {legalDocs.handbookPdfUrl && (
+                    <div className="rounded-xl border bg-muted/30 p-5 flex gap-4 items-start">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">Welcome Handbook</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          The welcome handbook gives you an overview of our programs, class structure, belt progression, and what to bring on your first day. A great starting point for new members.
+                        </p>
+                        <a
+                          href={legalDocs.handbookPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 text-xs font-medium text-primary hover:underline"
+                        >
+                          Read Welcome Handbook →
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              <p className="text-xs text-muted-foreground">
-                You can also find these documents anytime under <span className="font-medium">My Profile → Documents</span>.
-              </p>
+              {(legalDocs.rulesPdfUrl || legalDocs.handbookPdfUrl) && (
+                <p className="text-xs text-muted-foreground">
+                  You can also find these documents anytime under <span className="font-medium">My Profile → Documents</span>.
+                </p>
+              )}
 
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button

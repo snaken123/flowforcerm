@@ -7,8 +7,8 @@ import { FileText, Shield, BookOpen, BookMarked, ChevronDown, ChevronUp, Loader2
 type LegalDocuments = {
   waiverText: string;
   privacyText: string;
-  rulesPdfUrl: string;
-  handbookPdfUrl: string;
+  rulesPdfUrl: string | null;
+  handbookPdfUrl: string | null;
 };
 
 function formatAgreedDate(date: string | Date | null | undefined) {
@@ -87,12 +87,14 @@ export function DocumentsSection({ waiverDate, privacyAcceptedAt }: { waiverDate
                     <div className="h-80 overflow-y-auto p-4 text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground/80 bg-muted/20">
                       {doc.content}
                     </div>
-                  ) : (
+                  ) : doc.src ? (
                     <iframe
                       src={doc.src}
                       className="w-full h-[500px]"
                       title={doc.label}
                     />
+                  ) : (
+                    <p className="p-4 text-xs text-muted-foreground">Not yet uploaded by the gym.</p>
                   )}
                 </div>
               )}

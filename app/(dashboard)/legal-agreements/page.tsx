@@ -38,11 +38,15 @@ export default async function LegalAgreementsPage() {
     content: documentById.get(a.documentId)?.content ?? null,
   }));
 
-  const subprocessors = await controlPlanePrisma.subprocessor.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, service: true, purpose: true, dataCategories: true, location: true, referenceUrl: true },
-  });
+  // Admin-only: only the gym owner/manager is likely to need this level of vendor
+  // detail, so STAFF never even receives it in the page payload.
+  const subprocessors = session.user.role === "ADMIN"
+    ? await controlPlanePrisma.subprocessor.findMany({
+        where: { status: "ACTIVE" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, service: true, purpose: true, dataCategories: true, location: true, referenceUrl: true },
+      })
+    : [];
 
   return <LegalAgreementsClient rows={rows} subprocessors={subprocessors} />;
 }

@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db";
 
 // Admin-editable legal documents: waiver/privacy text live in SystemSetting rows,
-// falling back to these code-level defaults (the text that used to be hardcoded,
-// verbatim, in both setup-account/page.tsx and member/profile/documents-section.tsx).
-// The two PDFs default to their existing static /documents/*.pdf paths until an
-// admin uploads a replacement (persisted as a full URL, e.g. an R2 object URL).
+// falling back to these code-level defaults (generic FlowForceRM boilerplate, not
+// specific to any one gym). The two PDFs have no default at all -- each gym uploads
+// its own Rules/Handbook via Settings (app/api/admin/settings/legal-documents/upload)
+// once provisioned; until then, rulesPdfUrl/handbookPdfUrl are null and the UI shows
+// a "not yet uploaded" state instead of linking to a placeholder document.
 
 export const LEGAL_KEYS = {
   waiverText: "legal_waiver_text",
@@ -13,22 +14,19 @@ export const LEGAL_KEYS = {
   handbookPdfUrl: "legal_handbook_pdf_url",
 } as const;
 
-export const DEFAULT_RULES_PDF_URL = "/documents/gym-rules.pdf";
-export const DEFAULT_HANDBOOK_PDF_URL = "/documents/welcome-packet.pdf";
-
 export const DEFAULT_WAIVER_TEXT = `FlowForceRM
 Assumption of Risk, Waiver of Liability, Release, and Electronic Consent Agreement
 Effective Date: July 2, 2026
 
-Welcome to FlowForceRM ("NSFS").
+Welcome to FlowForceRM ("FF").
 
-Martial arts, combat sports, fitness training, and related activities involve inherent risks that cannot be completely eliminated, regardless of the care taken by coaches, staff, or participants. Before participating in any activity at NSFS, you must carefully read and agree to this Agreement.
+Martial arts, combat sports, fitness training, and related activities involve inherent risks that cannot be completely eliminated, regardless of the care taken by coaches, staff, or participants. Before participating in any activity at FF, you must carefully read and agree to this Agreement.
 
 By selecting "I Agree" within the FlowForceRM app, creating an account, purchasing a membership, booking a class, or participating in any activity, you acknowledge that you have read, understood, and voluntarily agree to the terms of this Agreement.
 
 1. Acknowledgement of Risk
 
-I understand and acknowledge that participation in Brazilian Jiu-Jitsu, Judo, Boxing, Muay Thai, Wrestling, Mixed Martial Arts, Yoga, Strength and Conditioning, Fitness Classes, Open Mat Sessions, Sparring, Competitions, Seminars, Personal Training, and all other activities conducted by NSFS involves inherent risks.
+I understand and acknowledge that participation in Brazilian Jiu-Jitsu, Judo, Boxing, Muay Thai, Wrestling, Mixed Martial Arts, Yoga, Strength and Conditioning, Fitness Classes, Open Mat Sessions, Sparring, Competitions, Seminars, Personal Training, and all other activities conducted by FF involves inherent risks.
 
 These risks include, but are not limited to:
 • Bruises and cuts
@@ -60,7 +58,7 @@ I accept full responsibility for any injury, illness, loss, damage, or death tha
 • Participating in seminars
 • Using locker rooms or common areas
 • Attending gym-sponsored events
-• Being present anywhere on NSFS premises
+• Being present anywhere on FF premises
 
 3. Medical Fitness
 
@@ -89,7 +87,7 @@ This release applies whether such claims arise from ordinary negligence or other
 
 5. Emergency Medical Treatment
 
-If I become injured or require medical assistance, I authorize NSFS to seek emergency medical treatment on my behalf when reasonable efforts to contact my emergency contact are unsuccessful or immediate action is necessary.
+If I become injured or require medical assistance, I authorize FF to seek emergency medical treatment on my behalf when reasonable efforts to contact my emergency contact are unsuccessful or immediate action is necessary.
 
 I understand that I am solely responsible for all medical expenses incurred.
 
@@ -97,7 +95,7 @@ I understand that I am solely responsible for all medical expenses incurred.
 
 I understand that I am responsible for my personal belongings.
 
-NSFS is not responsible for lost, stolen, or damaged personal property, including vehicles, equipment, electronics, jewelry, or other valuables.
+FF is not responsible for lost, stolen, or damaged personal property, including vehicles, equipment, electronics, jewelry, or other valuables.
 
 7. Conduct
 
@@ -121,7 +119,7 @@ I understand that media may be used for:
 • Educational purposes
 • Promotional materials
 
-I grant NSFS a perpetual, worldwide, royalty-free license to use images or recordings in which I appear, without compensation.
+I grant FF a perpetual, worldwide, royalty-free license to use images or recordings in which I appear, without compensation.
 
 9. Minors
 
@@ -171,7 +169,7 @@ By selecting "I Agree", I acknowledge that:
 export const DEFAULT_PRIVACY_TEXT = `FlowForceRM Privacy and Confidentiality Agreement
 Effective Date: July 2, 2026
 
-Welcome to FlowForceRM ("NSFS," "we," "our," or "us").
+Welcome to FlowForceRM ("FF," "we," "our," or "us").
 
 We respect your privacy and are committed to protecting your personal information in accordance with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173). This Privacy and Confidentiality Agreement explains how we collect, use, store, and protect your information.
 
@@ -228,7 +226,7 @@ Information is shared solely for registration and event administration.
 
 4. Communications
 
-By becoming a member, you consent to receiving communications related to your membership through email, SMS, phone calls, push notifications, or messaging platforms used by NSFS.
+By becoming a member, you consent to receiving communications related to your membership through email, SMS, phone calls, push notifications, or messaging platforms used by FF.
 
 These communications may include:
 • Class schedules
@@ -242,11 +240,11 @@ Members may unsubscribe from promotional communications, although essential memb
 
 5. Member Groups and Community Platforms
 
-NSFS may use communication platforms such as Messenger, WhatsApp, Viber, TeamReach, or similar services to coordinate classes, events, and competitions.
+FF may use communication platforms such as Messenger, WhatsApp, Viber, TeamReach, or similar services to coordinate classes, events, and competitions.
 
 By participating in these groups, you understand that your profile name, profile photo, and any information you choose to share may be visible to other participants according to the settings of the platform being used.
 
-NSFS is not responsible for information voluntarily shared by members within these community platforms.
+FF is not responsible for information voluntarily shared by members within these community platforms.
 
 6. Photography and Video
 
@@ -260,7 +258,7 @@ These images and videos may be used for:
 • Educational materials
 • Internal training
 
-By agreeing to this policy, you grant NSFS permission to use photographs or videos in which you appear without compensation or further approval.
+By agreeing to this policy, you grant FF permission to use photographs or videos in which you appear without compensation or further approval.
 
 If you prefer not to appear in promotional materials, you may submit a written request. While we will make reasonable efforts to honor your request, we cannot guarantee exclusion from group photographs, public events, or incidental appearances.
 
@@ -304,7 +302,7 @@ Violation of this provision may result in disciplinary action or termination of 
 
 10. Confidential Training Materials
 
-Training curriculums, lesson plans, instructional videos, member-only content, coaching methodologies, and other proprietary materials developed or provided by NSFS remain the intellectual property of FlowForceRM.
+Training curriculums, lesson plans, instructional videos, member-only content, coaching methodologies, and other proprietary materials developed or provided by FF remain the intellectual property of FlowForceRM.
 
 Members agree not to reproduce, distribute, sell, or commercially exploit these materials without written permission.
 
@@ -368,8 +366,8 @@ By selecting "I Agree", creating an account, purchasing a membership, registerin
 export interface LegalDocuments {
   waiverText: string;
   privacyText: string;
-  rulesPdfUrl: string;
-  handbookPdfUrl: string;
+  rulesPdfUrl: string | null;
+  handbookPdfUrl: string | null;
 }
 
 // Shared by the API route and any server component that needs these documents
@@ -383,7 +381,7 @@ export async function getLegalDocuments(): Promise<LegalDocuments> {
   return {
     waiverText: byKey.get(LEGAL_KEYS.waiverText) ?? DEFAULT_WAIVER_TEXT,
     privacyText: byKey.get(LEGAL_KEYS.privacyText) ?? DEFAULT_PRIVACY_TEXT,
-    rulesPdfUrl: byKey.get(LEGAL_KEYS.rulesPdfUrl) ?? DEFAULT_RULES_PDF_URL,
-    handbookPdfUrl: byKey.get(LEGAL_KEYS.handbookPdfUrl) ?? DEFAULT_HANDBOOK_PDF_URL,
+    rulesPdfUrl: byKey.get(LEGAL_KEYS.rulesPdfUrl) ?? null,
+    handbookPdfUrl: byKey.get(LEGAL_KEYS.handbookPdfUrl) ?? null,
   };
 }
