@@ -39,7 +39,10 @@ export function NavProgress() {
   // loading" signal right when it's needed; the pathname effect below just marks done.
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      // Capture phase, and no e.defaultPrevented check: Next.js's <Link> always
+      // calls preventDefault() on the click it intercepts for client-side routing,
+      // so checking defaultPrevented here would skip the bar on every real nav click.
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       const anchor = (e.target as HTMLElement)?.closest("a")
       if (!anchor) return
       const href = anchor.getAttribute("href")
@@ -48,10 +51,10 @@ export function NavProgress() {
       if (href === currentUrl) return
       start()
     }
-    document.addEventListener("click", onClick)
+    document.addEventListener("click", onClick, true)
     window.addEventListener("popstate", start)
     return () => {
-      document.removeEventListener("click", onClick)
+      document.removeEventListener("click", onClick, true)
       window.removeEventListener("popstate", start)
     }
   }, [pathname, searchParams])
