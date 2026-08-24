@@ -9,9 +9,17 @@ export default async function SuperAdminDashboard() {
   const session = await getSuperAdminSession();
   if (!session) redirect("/superadmin/login");
 
-  const tenants = await controlPlanePrisma.tenant.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const [tenants, facilitators] = await Promise.all([
+    controlPlanePrisma.tenant.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { subscription: { select: { status: true } } },
+    }),
+    controlPlanePrisma.facilitator.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white p-8">
@@ -41,6 +49,12 @@ export default async function SuperAdminDashboard() {
               Feature Flags
             </Link>
             <Link
+              href="/superadmin/facilitators"
+              className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
+            >
+              Facilitators
+            </Link>
+            <Link
               href="/superadmin/legal-documents"
               className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
             >
@@ -58,7 +72,10 @@ export default async function SuperAdminDashboard() {
             >
               Security Incidents
             </Link>
-            <NewTenantForm />
+            <NewTenantForm
+              facilitators={facilitators}
+              existingTenants={tenants.map((t) => ({ id: t.id, name: t.name }))}
+            />
           </div>
         </div>
 
@@ -97,6 +114,39 @@ export default async function SuperAdminDashboard() {
                         }
                       >
                         {t.status}
+                      </span>
+                      {" "}
+                      <span
+                        className={
+                          "inline-block rounded-full px-2 py-0.5 text-xs font-medium " +
+                          (!t.isBilled
+                            ? "bg-white/5 text-[#666]"
+                            : t.subscription?.status === "ACTIVE"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : t.subscription?.status === "PENDING_FIRST_CHARGE"
+                            ? "bg-sky-500/10 text-sky-400"
+                            : t.subscription?.status === "PAST_DUE"
+                            ? "bg-amber-500/10 text-amber-400"
+                            : t.subscription?.status === "SUSPENDED_PENDING"
+                            ? "bg-red-500/10 text-red-400"
+                            : t.subscription?.status === "CANCELLED"
+                            ? "bg-white/5 text-[#666]"
+                            : "bg-white/5 text-[#666]")
+                        }
+                      >
+                        {!t.isBilled
+                          ? "Not Billed"
+                          : t.subscription?.status === "PENDING_FIRST_CHARGE"
+                          ? "Trial"
+                          : t.subscription?.status === "ACTIVE"
+                          ? "Active"
+                          : t.subscription?.status === "PAST_DUE"
+                          ? "Past Due"
+                          : t.subscription?.status === "SUSPENDED_PENDING"
+                          ? "Suspended"
+                          : t.subscription?.status === "CANCELLED"
+                          ? "Cancelled"
+                          : "No Subscription"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-[#666]">{t.createdAt.toLocaleDateString()}</td>

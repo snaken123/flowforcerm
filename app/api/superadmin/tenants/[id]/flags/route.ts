@@ -4,6 +4,7 @@ import { requireSuperAdmin } from "@/control-plane/lib/superadmin-auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
 import { findTenantById } from "@/control-plane/lib/tenant-resolution";
 import { overwriteTenantCache } from "@/control-plane/lib/tenant-cache";
+import { computeBaseRateCentavos } from "@/control-plane/lib/pricing";
 
 const toggleSchema = z.object({
   flagKey: z.string().min(1),
@@ -47,6 +48,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await overwriteTenantCache(resolved.subdomain, resolved).catch((err) =>
       console.error("[flags] failed to overwrite tenant cache", err)
     );
+
+    // Price follows the flag set automatically -- there's no separate "set the price"
+    // step, so a gym's bill can never drift out of sync with what it actually has access to.
+    await controlPlanePrisma.subscription.updateMany({
+      where: { tenantId: tenant.id },
+      data: { baseRateCentavos: computeBaseRateCentavos(resolved.activeFlags) },
+    });
   }
 
   return NextResponse.json({ activeFlags: resolved?.activeFlags ?? [] });

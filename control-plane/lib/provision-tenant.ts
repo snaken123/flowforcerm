@@ -10,6 +10,7 @@ import { createTenantNeonProject, deleteTenantNeonProject } from "./neon-api";
 import { ensureTenantDomain } from "./vercel-api";
 import { sendActivationEmail } from "@/lib/email";
 import { isValidTimeZone } from "@/lib/time";
+import { BASE_PRICE_CENTAVOS } from "./pricing";
 
 const RESERVED_SUBDOMAINS = new Set(["www", "superadmin", "app", "admin", "api", "flowforcerm"]);
 
@@ -43,13 +44,18 @@ export type ProvisionTenantInput = {
   adminName: string;
   createdBySuperAdminId: string;
   timezone?: string;
+  facilitatorId?: string;
+  commissionPercent?: number;
+  commissionMonths?: number;
+  referredByTenantId?: string;
+  isBilled?: boolean;
 };
 
 // Orchestrates onboarding a brand new gym: create its control-plane record, spin up a
 // dedicated Neon project (the tenant-isolation boundary), bootstrap the gym schema into
-// it, seed the first admin account, and activate. Billing (Phase 9) isn't wired up yet,
-// so tenants activate immediately after setup rather than waiting on a first successful
-// charge -- that gate gets added once Xendit exists.
+// it, seed the first admin account, and activate. Tenant activation itself never waits
+// on billing -- a billed gym's ADMIN instead hits the /billing-setup gate (middleware.ts)
+// on their first login, which is where payment details actually get collected.
 export async function provisionTenant(input: ProvisionTenantInput) {
   validateSubdomain(input.subdomain);
 
@@ -69,8 +75,22 @@ export async function provisionTenant(input: ProvisionTenantInput) {
       brandName: input.gymName,
       timezone,
       createdBySuperAdminId: input.createdBySuperAdminId,
+      facilitatorId: input.facilitatorId,
+      commissionPercent: input.facilitatorId ? input.commissionPercent : undefined,
+      commissionMonths: input.facilitatorId ? input.commissionMonths : undefined,
+      referredByTenantId: input.referredByTenantId,
+      isBilled: input.isBilled ?? false,
     },
   });
+
+  // Only billed gyms get a Subscription row -- comped/internal/test gyms are never
+  // gated by /billing-setup and never appear as owing anything. baseRateCentavos starts
+  // at the flat full price since a brand new tenant has no feature flags yet.
+  if (input.isBilled) {
+    await controlPlanePrisma.subscription.create({
+      data: { tenantId: tenant.id, baseRateCentavos: BASE_PRICE_CENTAVOS },
+    });
+  }
   await log(tenant.id, "tenant_record_created", "success");
 
   let neonProjectId: string | null = null;

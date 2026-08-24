@@ -7,6 +7,7 @@ import { prisma } from "./db";
 import { Prisma, Role } from "@prisma/client";
 import { getLoginLimiter } from "./rate-limit";
 import { getRequiredAgreementStatus } from "./legal-agreements";
+import { getNeedsPaymentSetup } from "./billing-setup";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -123,6 +124,19 @@ export const authOptions: NextAuthOptions = {
               console.error("[auth] legal agreement status check failed:", e);
               token.needsLegalAcceptance = false; // fail open -- never lock users out on an infra hiccup
             }
+
+            // ADMIN-only -- a billed gym's admin can't proceed until payment details
+            // are on file (see lib/billing-setup.ts, middleware.ts).
+            if (dbUser.role === "ADMIN") {
+              try {
+                token.needsPaymentSetup = await getNeedsPaymentSetup();
+              } catch (e) {
+                console.error("[auth] payment setup status check failed:", e);
+                token.needsPaymentSetup = false; // fail open -- never lock users out on an infra hiccup
+              }
+            } else {
+              token.needsPaymentSetup = false;
+            }
           }
         } catch (e) {
           console.error("[auth] JWT callback DB error:", e);
@@ -137,6 +151,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string;
         (session.user as any).mustChangePassword = token.mustChangePassword ?? false;
         (session.user as any).needsLegalAcceptance = token.needsLegalAcceptance ?? false;
+        (session.user as any).needsPaymentSetup = token.needsPaymentSetup ?? false;
         (session.user as any).onboardingCompleted = token.onboardingCompleted ?? false;
         (session.user as any).athleteIdAsHome = token.athleteIdAsHome ?? true;
         (session.user as any).employeeTypes = (token.employeeTypes as string[]) ?? [];

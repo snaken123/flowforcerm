@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
 import { verifyXenditWebhookToken } from "@/control-plane/lib/xendit-api";
+import { handleCycleSucceeded, handleCycleRetrying, handleCycleFailed } from "@/control-plane/lib/billing-events";
 
 // Fixed, non-tenant-routed webhook URL for Xendit's recurring-plan events
 // (recurring.cycle.succeeded / .retrying / .failed / .created / .plan.activated /
@@ -8,12 +9,10 @@ import { verifyXenditWebhookToken } from "@/control-plane/lib/xendit-api";
 // Bypasses the subdomain-based tenant middleware entirely and uses the control-plane
 // client directly, matching /api/internal/resolve-tenant's pattern.
 //
-// Placeholder: verifies the token and records every event for idempotency/audit, but
-// does NOT yet act on them (advance billing periods, suspend/reactivate tenants, create
-// Invoice rows). There's no live Xendit account to test the real `data` payload shape
-// against yet, and guessing the field mapping here risks silently mishandling real
-// money events later -- wire up the actual enforcement logic once sandbox testing is
-// possible.
+// The three cycle events are dispatched to control-plane/lib/billing-events.ts (advance
+// billing periods, create Invoice/CommissionEntry rows, suspend on failure). That file's
+// payload field mapping is UNVERIFIED against a real Xendit account -- there's none to
+// test against yet. Every other event type is still just recorded for audit, not acted on.
 export async function POST(req: NextRequest) {
   const token = req.headers.get("x-callback-token");
   if (!verifyXenditWebhookToken(token)) {
@@ -34,16 +33,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true });
   }
 
+  // Process BEFORE recording: each handler's writes are one atomic transaction, so on
+  // failure nothing was persisted. Recording the event only after a successful process
+  // means a legitimate Xendit retry (non-2xx response) finds no row yet and genuinely
+  // retries -- recording first would make a failed attempt look like an already-handled
+  // duplicate forever.
+  try {
+    if (payload.event === "recurring.cycle.succeeded") {
+      await handleCycleSucceeded(payload);
+    } else if (payload.event === "recurring.cycle.retrying") {
+      await handleCycleRetrying(payload);
+    } else if (payload.event === "recurring.cycle.failed") {
+      await handleCycleFailed(payload);
+    }
+  } catch (err) {
+    console.error(`[xendit-webhook] failed to process ${payload.event}`, err);
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+  }
+
   await controlPlanePrisma.xenditWebhookEvent.create({
     data: { xenditEventId, eventType: payload.event, payload },
   });
-
-  // TODO once XENDIT_SECRET_KEY/XENDIT_WEBHOOK_TOKEN are configured and real webhook
-  // deliveries can be inspected: resolve the Subscription from payload.data (likely by
-  // xenditPlanId), then handle each event type -- succeeded advances the billing period
-  // and creates a PAID Invoice; retrying sets Subscription.status = PAST_DUE; failed
-  // (after Xendit's own retries are exhausted) sets SUSPENDED_PENDING or suspends the
-  // Tenant outright depending on suspensionGraceHours, per the Phase 9 plan.
 
   return NextResponse.json({ received: true });
 }

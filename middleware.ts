@@ -102,7 +102,7 @@ async function resolveTenant(host: string, req: NextRequest): Promise<ResolvedTe
 // The exact path set that previously drove withAuth's `matcher` — role-based auth
 // logic below only runs for these, tenant resolution above runs for everything.
 function needsTenantAuthCheck(pathname: string): boolean {
-  const exact = ["/change-password", "/legal-acceptance", "/kiosk", "/"];
+  const exact = ["/change-password", "/legal-acceptance", "/billing-setup", "/kiosk", "/"];
   const prefixed = ["/admin", "/staff", "/member", "/dashboard", "/api/member", "/api/auth/2fa"];
   return exact.includes(pathname) || prefixed.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
@@ -191,6 +191,15 @@ export default async function middleware(req: NextRequest) {
         pathname !== "/legal-acceptance"
       ) {
         return NextResponse.redirect(new URL("/legal-acceptance", req.url));
+      }
+      // Must have accepted the platform's own legal agreements before being asked for
+      // payment details, so this comes after the needsLegalAcceptance gate above.
+      if (
+        token.role === "ADMIN" &&
+        token.needsPaymentSetup &&
+        pathname !== "/billing-setup"
+      ) {
+        return NextResponse.redirect(new URL("/billing-setup", req.url));
       }
       const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees", "/admin/reports", "/admin/records-todo"];
       if (pathname.startsWith("/admin") && token.role !== "ADMIN") {

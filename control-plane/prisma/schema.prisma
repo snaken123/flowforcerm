@@ -41,12 +41,48 @@ model Tenant {
   provisionedAt     DateTime?
   createdBySuperAdminId String?
 
+  // Commission (Phase 11): who sold this gym, and on what terms. Percent/length are
+  // null together whenever there's no facilitator -- a commission window with no rate
+  // or vice versa would be meaningless.
+  facilitatorId     String?
+  facilitator       Facilitator? @relation(fields: [facilitatorId], references: [id])
+  commissionPercent Int?
+  commissionMonths  Int?
+
+  // Referral (Phase 11): the gym that referred this one, if any. Self-relation --
+  // referredTenants is every gym THIS one referred, used to compute its own discount.
+  referredByTenantId String?
+  referredByTenant   Tenant?  @relation("TenantReferrals", fields: [referredByTenantId], references: [id])
+  referredTenants    Tenant[] @relation("TenantReferrals")
+
+  // Whether this gym is billed at all -- false for internal/comped/test gyms, which
+  // never get a Subscription row and are never gated by /billing-setup.
+  isBilled Boolean @default(false)
+
   provisioningLogs ProvisioningLog[]
   featureFlags     TenantFeatureFlag[]
   subscription     Subscription?
   securityIncidents SecurityIncidentTenant[]
+  commissionEntries CommissionEntry[]
 
   @@index([status])
+  @@index([facilitatorId])
+  @@index([referredByTenantId])
+}
+
+// A person/agency who sells the app to gyms and earns a commission on what they bring
+// in. isActive just hides them from the "pick a facilitator" selector going forward --
+// existing tenants/commission history keep their facilitatorId either way.
+model Facilitator {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenants           Tenant[]
+  commissionEntries CommissionEntry[]
 }
 
 model SuperAdmin {
@@ -161,6 +197,17 @@ model Subscription {
   // mid-migration visible/retryable instead of silently stuck.
   migrationState String?
 
+  // Trial + payment-method setup (Phase 11). trialEndsAt doubles as the Xendit
+  // recurring plan's anchor_date -- the first real charge attempt naturally lands
+  // there, so no separate cron is needed to "start" billing at trial end.
+  trialEndsAt           DateTime?
+  paymentMethodSetupAt  DateTime?
+  xenditPaymentMethodId String?
+
+  // Referral discount (Phase 11). Recomputed whenever a referred tenant's own
+  // subscription status changes to/from ACTIVE -- never hand-edited.
+  referralDiscountPercent Int @default(0)
+
   invoices Invoice[]
 
   createdAt DateTime @default(now())
@@ -182,10 +229,33 @@ model Invoice {
   xenditCycleId     String?
   rawWebhookPayload Json?
 
+  commissionEntry CommissionEntry?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([subscriptionId])
+}
+
+// One row per invoice actually collected within a facilitator's commission window --
+// created only when the Xendit webhook marks the underlying Invoice PAID, never
+// speculatively. paidOutAt is set manually by the superadmin once they've actually
+// transferred the money to the facilitator; this table is a ledger, not a payout engine.
+model CommissionEntry {
+  id                String      @id @default(cuid())
+  tenantId          String
+  tenant            Tenant      @relation(fields: [tenantId], references: [id])
+  facilitatorId     String
+  facilitator       Facilitator @relation(fields: [facilitatorId], references: [id])
+  invoiceId         String      @unique
+  invoice           Invoice     @relation(fields: [invoiceId], references: [id])
+  commissionPercent Int
+  amountCentavos    Int
+  createdAt         DateTime    @default(now())
+  paidOutAt         DateTime?
+
+  @@index([facilitatorId])
+  @@index([tenantId])
 }
 
 // Atomic counter for sequential invoice numbers -- same pattern as the tenant-side

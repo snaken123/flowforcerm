@@ -7,17 +7,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
-const schema = z.object({
-  gymName: z.string().min(2, "Required"),
-  subdomain: z
-    .string()
-    .min(2, "Required")
-    .max(32, "Too long")
-    .regex(/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/, "Lowercase letters, numbers, hyphens only"),
-  adminEmail: z.string().email("Invalid email"),
-  adminName: z.string().min(2, "Required"),
-  timezone: z.string().min(1, "Required"),
-});
+const schema = z
+  .object({
+    gymName: z.string().min(2, "Required"),
+    subdomain: z
+      .string()
+      .min(2, "Required")
+      .max(32, "Too long")
+      .regex(/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/, "Lowercase letters, numbers, hyphens only"),
+    adminEmail: z.string().email("Invalid email"),
+    adminName: z.string().min(2, "Required"),
+    timezone: z.string().min(1, "Required"),
+    facilitatorId: z.string().optional(),
+    commissionPercent: z.coerce.number().min(1).max(100).optional(),
+    commissionMonths: z.coerce.number().min(1).max(120).optional(),
+    referredByTenantId: z.string().optional(),
+    isBilled: z.boolean(),
+  })
+  .refine((d) => !d.facilitatorId || (d.commissionPercent && d.commissionMonths), {
+    message: "Commission % and length are required when a facilitator is selected.",
+    path: ["commissionPercent"],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -36,7 +46,13 @@ function listTimeZones(): string[] {
   ];
 }
 
-export function NewTenantForm() {
+export function NewTenantForm({
+  facilitators = [],
+  existingTenants = [],
+}: {
+  facilitators?: { id: string; name: string }[];
+  existingTenants?: { id: string; name: string }[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -48,8 +64,13 @@ export function NewTenantForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { timezone: "Asia/Manila" } });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { timezone: "Asia/Manila", isBilled: true },
+  });
+  const hasFacilitator = !!watch("facilitatorId");
 
   async function onSubmit(data: FormValues) {
     setSubmitting(true);
@@ -182,6 +203,66 @@ export function NewTenantForm() {
             ))}
           </select>
           {errors.timezone && <p className="text-xs text-destructive">{errors.timezone.message}</p>}
+        </div>
+
+        <div className="col-span-2 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs text-[#888]">Facilitator (optional)</label>
+            <select
+              {...register("facilitatorId")}
+              className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white"
+            >
+              <option value="">— None —</option>
+              {facilitators.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-[#888]">Referred by (optional)</label>
+            <select
+              {...register("referredByTenantId")}
+              className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white"
+            >
+              <option value="">— None —</option>
+              {existingTenants.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          {hasFacilitator && (
+            <>
+              <div className="space-y-1">
+                <label className="text-xs text-[#888]">Commission %</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  {...register("commissionPercent")}
+                  placeholder="10"
+                  className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
+                />
+                {errors.commissionPercent && <p className="text-xs text-destructive">{errors.commissionPercent.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-[#888]">Commission length (months)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  {...register("commissionMonths")}
+                  placeholder="12"
+                  className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
+                />
+              </div>
+            </>
+          )}
+          <div className="col-span-2 flex items-center gap-2">
+            <input type="checkbox" id="isBilled" {...register("isBilled")} className="h-4 w-4" />
+            <label htmlFor="isBilled" className="text-sm text-[#888]">
+              Bill this gym (30-day trial, requires payment details from the gym)
+            </label>
+          </div>
         </div>
 
         {error && (

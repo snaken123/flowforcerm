@@ -94,6 +94,48 @@ export async function createXenditSubscriptionPlan(input: {
   return { id: data.id, status: data.status };
 }
 
+export type XenditPaymentMethodSetup = { id: string; actionUrl: string | null };
+
+// POST /payment_methods -- https://docs.xendit.co/apidocs/create-payment-method
+// Creates a reusable, not-yet-confirmed payment method for a customer; the tenant
+// completes it via actionUrl (a hosted Xendit page) before it can be charged. Unverified
+// against a real response shape -- there's no live account yet to confirm whether
+// `actions` always contains a redirect-type action for every payment channel Xendit
+// might return here; re-check once sandbox testing is possible.
+export async function createXenditPaymentMethodSetup(input: {
+  customerId: string;
+  referenceId: string;
+}): Promise<XenditPaymentMethodSetup> {
+  const data = await xenditFetch("/payment_methods", {
+    method: "POST",
+    idempotencyKey: input.referenceId,
+    body: JSON.stringify({
+      customer_id: input.customerId,
+      reference_id: input.referenceId,
+      reusability: "MULTIPLE_USE",
+      type: "CARD",
+    }),
+  });
+  const redirectAction = (data.actions ?? []).find((a: { action: string; url?: string }) => a.action === "AUTH" || a.action === "REDIRECT_CUSTOMER");
+  return { id: data.id, actionUrl: redirectAction?.url ?? null };
+}
+
+// GET /payment_methods/{id} -- https://docs.xendit.co/apidocs/get-payment-method-by-id
+// Polled by the /billing-setup completion step to confirm the customer actually
+// finished the hosted card-entry flow before the trial clock starts -- the redirect
+// back to our site alone isn't proof of that.
+export async function getXenditPaymentMethodStatus(id: string): Promise<{ status: string }> {
+  const data = await xenditFetch(`/payment_methods/${id}`, { method: "GET" });
+  return { status: data.status };
+}
+
+// POST /recurring/plans/{id}/deactivate -- https://docs.xendit.co/apidocs/deactivate-recurring-plan
+// Used both for an explicit gym cancellation and for the "cancel anytime in the first
+// 30 days" trial disclaimer -- either way, this stops any further charge attempts.
+export async function cancelXenditSubscriptionPlan(planId: string): Promise<void> {
+  await xenditFetch(`/recurring/plans/${planId}/deactivate`, { method: "POST" });
+}
+
 // Compares the inbound `x-callback-token` header against XENDIT_WEBHOOK_TOKEN (from
 // Dashboard > Settings > Webhooks). Returns false -- reject everything -- if the token
 // isn't configured yet, rather than treating "not configured" as "allow all".
