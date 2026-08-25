@@ -42,10 +42,10 @@ model Tenant {
   createdBySuperAdminId String?
 
   // Commission (Phase 11): who sold this gym, and on what terms. Percent/length are
-  // null together whenever there's no facilitator -- a commission window with no rate
-  // or vice versa would be meaningless.
-  facilitatorId     String?
-  facilitator       Facilitator? @relation(fields: [facilitatorId], references: [id])
+  // null together whenever there's no agent -- a commission window with no rate or
+  // vice versa would be meaningless.
+  agentId           String?
+  agent             Agent?   @relation(fields: [agentId], references: [id])
   commissionPercent Int?
   commissionMonths  Int?
 
@@ -66,20 +66,29 @@ model Tenant {
   commissionEntries CommissionEntry[]
 
   @@index([status])
-  @@index([facilitatorId])
+  @@index([agentId])
   @@index([referredByTenantId])
 }
 
 // A person/agency who sells the app to gyms and earns a commission on what they bring
-// in. isActive just hides them from the "pick a facilitator" selector going forward --
-// existing tenants/commission history keep their facilitatorId either way.
-model Facilitator {
+// in. isActive just hides them from the "pick an agent" selector going forward --
+// existing tenants/commission history keep their agentId either way. Bank details are
+// used for direct Xendit disbursement of their commission (control-plane/lib/xendit-api.ts's
+// createXenditDisbursement) -- all three are optional together, but a disbursement
+// attempt with any missing is rejected before ever calling Xendit.
+model Agent {
   id        String   @id @default(cuid())
   name      String
   email     String?
   phone     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  // Unverified against Xendit's exact supported bank-code list (docs.xendit.co) --
+  // there's no live account yet to confirm the right values for PH banks.
+  bankCode              String?
+  bankAccountNumber     String?
+  bankAccountHolderName String?
 
   tenants           Tenant[]
   commissionEntries CommissionEntry[]
@@ -237,24 +246,29 @@ model Invoice {
   @@index([subscriptionId])
 }
 
-// One row per invoice actually collected within a facilitator's commission window --
+// One row per invoice actually collected within an agent's commission window --
 // created only when the Xendit webhook marks the underlying Invoice PAID, never
-// speculatively. paidOutAt is set manually by the superadmin once they've actually
-// transferred the money to the facilitator; this table is a ledger, not a payout engine.
+// speculatively. paidOutAt is set either by a direct Xendit disbursement
+// (xenditDisbursementId also set) or manually when paid outside the platform.
 model CommissionEntry {
-  id                String      @id @default(cuid())
+  id                String   @id @default(cuid())
   tenantId          String
-  tenant            Tenant      @relation(fields: [tenantId], references: [id])
-  facilitatorId     String
-  facilitator       Facilitator @relation(fields: [facilitatorId], references: [id])
-  invoiceId         String      @unique
-  invoice           Invoice     @relation(fields: [invoiceId], references: [id])
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  agentId           String
+  agent             Agent    @relation(fields: [agentId], references: [id])
+  invoiceId         String   @unique
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id])
   commissionPercent Int
   amountCentavos    Int
-  createdAt         DateTime    @default(now())
-  paidOutAt         DateTime?
+  createdAt         DateTime @default(now())
 
-  @@index([facilitatorId])
+  // paidOutAt is set either way -- manually (no Xendit disbursement attempted, e.g.
+  // paid by cash/bank transfer outside the platform) or automatically alongside
+  // xenditDisbursementId when createXenditDisbursement succeeds.
+  paidOutAt           DateTime?
+  xenditDisbursementId String?
+
+  @@index([agentId])
   @@index([tenantId])
 }
 

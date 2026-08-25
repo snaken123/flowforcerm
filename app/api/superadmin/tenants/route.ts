@@ -11,14 +11,14 @@ const createTenantSchema = z
     adminEmail: z.string().email(),
     adminName: z.string().min(2).max(100),
     timezone: z.string().refine(isValidTimeZone, "Not a recognized timezone").optional(),
-    facilitatorId: z.string().optional(),
+    agentId: z.string().optional(),
     commissionPercent: z.number().min(1).max(100).optional(),
     commissionMonths: z.number().min(1).max(120).optional(),
     referredByTenantId: z.string().optional(),
     isBilled: z.boolean().optional(),
   })
-  .refine((d) => !d.facilitatorId || (d.commissionPercent && d.commissionMonths), {
-    message: "Commission % and length are required when a facilitator is selected.",
+  .refine((d) => !d.agentId || (d.commissionPercent && d.commissionMonths), {
+    message: "Commission % and length are required when an agent is selected.",
   });
 
 export async function POST(req: Request) {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       adminName: parsed.data.adminName,
       timezone: parsed.data.timezone,
       createdBySuperAdminId: (session.user as { id: string }).id,
-      facilitatorId: parsed.data.facilitatorId || undefined,
+      agentId: parsed.data.agentId || undefined,
       commissionPercent: parsed.data.commissionPercent,
       commissionMonths: parsed.data.commissionMonths,
       referredByTenantId: parsed.data.referredByTenantId || undefined,

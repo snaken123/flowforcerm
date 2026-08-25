@@ -136,6 +136,36 @@ export async function cancelXenditSubscriptionPlan(planId: string): Promise<void
   await xenditFetch(`/recurring/plans/${planId}/deactivate`, { method: "POST" });
 }
 
+export type XenditDisbursement = { id: string; status: string };
+
+// POST /disbursements -- https://docs.xendit.co/apidocs/create-disbursement
+// Direct bank transfer of an agent's commission, separate from the /recurring/plans
+// (customer-charging) API used everywhere else in this file. bank_code must match
+// Xendit's exact supported PH bank code list -- unverified against a real account,
+// same caveat as the rest of this file.
+export async function createXenditDisbursement(input: {
+  externalId: string;
+  amountCentavos: number;
+  bankCode: string;
+  accountHolderName: string;
+  accountNumber: string;
+  description: string;
+}): Promise<XenditDisbursement> {
+  const data = await xenditFetch("/disbursements", {
+    method: "POST",
+    idempotencyKey: input.externalId,
+    body: JSON.stringify({
+      external_id: input.externalId,
+      amount: input.amountCentavos / 100,
+      bank_code: input.bankCode,
+      account_holder_name: input.accountHolderName,
+      account_number: input.accountNumber,
+      description: input.description,
+    }),
+  });
+  return { id: data.id, status: data.status };
+}
+
 // Compares the inbound `x-callback-token` header against XENDIT_WEBHOOK_TOKEN (from
 // Dashboard > Settings > Webhooks). Returns false -- reject everything -- if the token
 // isn't configured yet, rather than treating "not configured" as "allow all".

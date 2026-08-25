@@ -23,7 +23,7 @@ export default async function BillingPage() {
         name: true,
         subdomain: true,
         isBilled: true,
-        facilitator: { select: { name: true } },
+        agent: { select: { name: true } },
         commissionPercent: true,
         commissionMonths: true,
         subscription: {
@@ -33,7 +33,7 @@ export default async function BillingPage() {
     }),
     controlPlanePrisma.commissionEntry.findMany({
       orderBy: { createdAt: "desc" },
-      include: { facilitator: { select: { name: true } }, tenant: { select: { name: true } } },
+      include: { agent: { select: { name: true } }, tenant: { select: { name: true } } },
     }),
   ]);
 
@@ -69,7 +69,7 @@ export default async function BillingPage() {
                   <th className="px-4 py-3 font-medium">Price</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Trial / Payment</th>
-                  <th className="px-4 py-3 font-medium">Facilitator</th>
+                  <th className="px-4 py-3 font-medium">Agent</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,8 +114,8 @@ export default async function BillingPage() {
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-[#888] text-xs">
-                        {t.facilitator
-                          ? `${t.facilitator.name} · ${t.commissionPercent}% / ${t.commissionMonths}mo`
+                        {t.agent
+                          ? `${t.agent.name} · ${t.commissionPercent}% / ${t.commissionMonths}mo`
                           : "—"}
                       </td>
                     </tr>
@@ -137,7 +137,7 @@ export default async function BillingPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-left text-[#888] uppercase text-xs tracking-wide">
-                    <th className="px-4 py-3 font-medium">Facilitator</th>
+                    <th className="px-4 py-3 font-medium">Agent</th>
                     <th className="px-4 py-3 font-medium">Gym</th>
                     <th className="px-4 py-3 font-medium">Rate</th>
                     <th className="px-4 py-3 font-medium">Amount</th>
@@ -155,7 +155,7 @@ export default async function BillingPage() {
                         commissionPercent: e.commissionPercent,
                         paidOutAt: e.paidOutAt?.toISOString() ?? null,
                         createdAt: e.createdAt.toISOString(),
-                        facilitator: e.facilitator,
+                        agent: e.agent,
                         tenant: e.tenant,
                       }}
                     />

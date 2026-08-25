@@ -88,7 +88,7 @@ export async function handleCycleSucceeded(payload: XenditWebhookPayload): Promi
     });
 
     const { tenant } = subscription;
-    if (tenant.facilitatorId && tenant.commissionPercent != null && tenant.commissionMonths != null) {
+    if (tenant.agentId && tenant.commissionPercent != null && tenant.commissionMonths != null) {
       const firstChargeDate = isFirstCharge
         ? now
         : (await tx.invoice.findFirst({
@@ -101,7 +101,7 @@ export async function handleCycleSucceeded(payload: XenditWebhookPayload): Promi
         await tx.commissionEntry.create({
           data: {
             tenantId: tenant.id,
-            facilitatorId: tenant.facilitatorId,
+            agentId: tenant.agentId,
             invoiceId: invoice.id,
             commissionPercent: tenant.commissionPercent,
             amountCentavos: Math.round((totalCentavos * tenant.commissionPercent) / 100),

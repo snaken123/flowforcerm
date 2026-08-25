@@ -10,27 +10,40 @@ type Entry = {
   commissionPercent: number;
   paidOutAt: string | null;
   createdAt: string;
-  facilitator: { name: string };
+  agent: { name: string };
   tenant: { name: string };
 };
 
 export function CommissionEntryRow({ entry }: { entry: Entry }) {
   const router = useRouter();
-  const [marking, setMarking] = useState(false);
+  const [busy, setBusy] = useState<"mark_paid" | "disburse" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function markPaid() {
-    setMarking(true);
+  async function act(action: "mark_paid" | "disburse") {
+    setBusy(action);
+    setError(null);
     try {
-      await fetch(`/api/superadmin/commission-entries/${entry.id}`, { method: "PATCH" });
+      const res = await fetch(`/api/superadmin/commission-entries/${entry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.error ?? "Failed");
+        return;
+      }
       router.refresh();
+    } catch {
+      setError("Network error — please try again.");
     } finally {
-      setMarking(false);
+      setBusy(null);
     }
   }
 
   return (
-    <tr className="border-b border-white/5 last:border-0">
-      <td className="px-4 py-3">{entry.facilitator.name}</td>
+    <tr className="border-b border-white/5 last:border-0 align-top">
+      <td className="px-4 py-3">{entry.agent.name}</td>
       <td className="px-4 py-3 text-[#888]">{entry.tenant.name}</td>
       <td className="px-4 py-3 text-[#888]">{entry.commissionPercent}%</td>
       <td className="px-4 py-3">₱{(entry.amountCentavos / 100).toFixed(2)}</td>
@@ -41,14 +54,27 @@ export function CommissionEntryRow({ entry }: { entry: Entry }) {
             Paid {new Date(entry.paidOutAt).toLocaleDateString()}
           </span>
         ) : (
-          <button
-            onClick={markPaid}
-            disabled={marking}
-            className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-3 py-1.5 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5 ml-auto"
-          >
-            {marking && <Loader2 className="h-3 w-3 animate-spin" />}
-            Mark Paid Out
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => act("disburse")}
+                disabled={busy !== null}
+                className="rounded-md bg-white text-black px-3 py-1.5 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {busy === "disburse" && <Loader2 className="h-3 w-3 animate-spin" />}
+                Pay via Xendit
+              </button>
+              <button
+                onClick={() => act("mark_paid")}
+                disabled={busy !== null}
+                className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-3 py-1.5 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {busy === "mark_paid" && <Loader2 className="h-3 w-3 animate-spin" />}
+                Mark Paid
+              </button>
+            </div>
+            {error && <p className="text-xs text-destructive max-w-[220px] text-right">{error}</p>}
+          </div>
         )}
       </td>
     </tr>

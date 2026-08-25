@@ -18,14 +18,14 @@ const schema = z
     adminEmail: z.string().email("Invalid email"),
     adminName: z.string().min(2, "Required"),
     timezone: z.string().min(1, "Required"),
-    facilitatorId: z.string().optional(),
+    agentId: z.string().optional(),
     commissionPercent: z.coerce.number().min(1).max(100).optional(),
     commissionMonths: z.coerce.number().min(1).max(120).optional(),
     referredByTenantId: z.string().optional(),
     isBilled: z.boolean(),
   })
-  .refine((d) => !d.facilitatorId || (d.commissionPercent && d.commissionMonths), {
-    message: "Commission % and length are required when a facilitator is selected.",
+  .refine((d) => !d.agentId || (d.commissionPercent && d.commissionMonths), {
+    message: "Commission % and length are required when an agent is selected.",
     path: ["commissionPercent"],
   });
 
@@ -47,10 +47,10 @@ function listTimeZones(): string[] {
 }
 
 export function NewTenantForm({
-  facilitators = [],
+  agents = [],
   existingTenants = [],
 }: {
-  facilitators?: { id: string; name: string }[];
+  agents?: { id: string; name: string }[];
   existingTenants?: { id: string; name: string }[];
 }) {
   const router = useRouter();
@@ -70,7 +70,7 @@ export function NewTenantForm({
     resolver: zodResolver(schema),
     defaultValues: { timezone: "Asia/Manila", isBilled: true },
   });
-  const hasFacilitator = !!watch("facilitatorId");
+  const hasAgent = !!watch("agentId");
 
   async function onSubmit(data: FormValues) {
     setSubmitting(true);
@@ -207,14 +207,14 @@ export function NewTenantForm({
 
         <div className="col-span-2 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-xs text-[#888]">Facilitator (optional)</label>
+            <label className="text-xs text-[#888]">Agent (optional)</label>
             <select
-              {...register("facilitatorId")}
+              {...register("agentId")}
               className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white"
             >
               <option value="">— None —</option>
-              {facilitators.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
           </div>
@@ -230,7 +230,7 @@ export function NewTenantForm({
               ))}
             </select>
           </div>
-          {hasFacilitator && (
+          {hasAgent && (
             <>
               <div className="space-y-1">
                 <label className="text-xs text-[#888]">Commission %</label>

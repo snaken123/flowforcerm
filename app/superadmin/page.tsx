@@ -9,12 +9,12 @@ export default async function SuperAdminDashboard() {
   const session = await getSuperAdminSession();
   if (!session) redirect("/superadmin/login");
 
-  const [tenants, facilitators] = await Promise.all([
+  const [tenants, agents] = await Promise.all([
     controlPlanePrisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
       include: { subscription: { select: { status: true } } },
     }),
-    controlPlanePrisma.facilitator.findMany({
+    controlPlanePrisma.agent.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
@@ -49,10 +49,10 @@ export default async function SuperAdminDashboard() {
               Feature Flags
             </Link>
             <Link
-              href="/superadmin/facilitators"
+              href="/superadmin/agents"
               className="rounded-md border border-white/20 hover:bg-white hover:text-black transition-colors px-4 py-2 text-sm font-semibold"
             >
-              Facilitators
+              Agents
             </Link>
             <Link
               href="/superadmin/legal-documents"
@@ -73,7 +73,7 @@ export default async function SuperAdminDashboard() {
               Security Incidents
             </Link>
             <NewTenantForm
-              facilitators={facilitators}
+              agents={agents}
               existingTenants={tenants.map((t) => ({ id: t.id, name: t.name }))}
             />
           </div>

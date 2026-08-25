@@ -44,7 +44,7 @@ export type ProvisionTenantInput = {
   adminName: string;
   createdBySuperAdminId: string;
   timezone?: string;
-  facilitatorId?: string;
+  agentId?: string;
   commissionPercent?: number;
   commissionMonths?: number;
   referredByTenantId?: string;
@@ -75,9 +75,9 @@ export async function provisionTenant(input: ProvisionTenantInput) {
       brandName: input.gymName,
       timezone,
       createdBySuperAdminId: input.createdBySuperAdminId,
-      facilitatorId: input.facilitatorId,
-      commissionPercent: input.facilitatorId ? input.commissionPercent : undefined,
-      commissionMonths: input.facilitatorId ? input.commissionMonths : undefined,
+      agentId: input.agentId,
+      commissionPercent: input.agentId ? input.commissionPercent : undefined,
+      commissionMonths: input.agentId ? input.commissionMonths : undefined,
       referredByTenantId: input.referredByTenantId,
       isBilled: input.isBilled ?? false,
     },
