@@ -13,6 +13,7 @@ type Profile = {
   firstName: string;
   lastName: string;
   photoUrl: string | null;
+  hasAnnual: boolean;
 };
 
 export function AthleteIdClient({ profiles, athleteIdAsHome }: { profiles: Profile[]; athleteIdAsHome: boolean }) {
@@ -98,7 +99,7 @@ export function AthleteIdClient({ profiles, athleteIdAsHome }: { profiles: Profi
 
       {/* ID Card + download button */}
       <div className="flex flex-col items-center gap-3 mx-14">
-      <div ref={cardRef} className="w-full max-w-[340px] rounded-3xl bg-white overflow-hidden shadow-2xl">
+      <div ref={cardRef} className={`w-full max-w-[340px] rounded-3xl overflow-hidden shadow-2xl ${member.hasAnnual ? "bg-white" : "bg-yellow-100"}`}>
         {/* Top accent */}
         <div className="h-2 bg-primary w-full" />
 

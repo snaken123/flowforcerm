@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,9 +117,20 @@ export function LogbookCard() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [cancelTarget, setCancelTarget] = useState<LogbookEntry | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayLabel = formatDateShort(todayStr + "T00:00:00Z");
+
+  // Today's active schedules, for the row-level class-time editor -- fetched here
+  // (not just inside AddEntryDialog) so it's available whether or not that dialog is open.
+  useEffect(() => {
+    const todayDow = new Date().getDay();
+    fetch("/api/schedules")
+      .then((r) => r.json())
+      .then((d) => setTodaySchedules(Array.isArray(d) ? d.filter((s: any) => s.isActive && s.dayOfWeek === todayDow) : []))
+      .catch(() => {});
+  }, []);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -188,6 +198,30 @@ export function LogbookCard() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscriptionId }),
+    });
+    if (r.ok) {
+      const updated = await r.json();
+      setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    }
+  };
+
+  const handleDateChange = async (entry: LogbookEntry, dateStr: string) => {
+    const r = await fetch(`/api/logbook/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledDate: dateStr }),
+    });
+    if (r.ok) {
+      const updated = await r.json();
+      setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    }
+  };
+
+  const handleScheduleChange = async (entry: LogbookEntry, scheduleId: string) => {
+    const r = await fetch(`/api/logbook/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduleId }),
     });
     if (r.ok) {
       const updated = await r.json();
@@ -360,6 +394,9 @@ export function LogbookCard() {
                   onAttendance={handleAttendance}
                   onNotesBlur={handleNotesBlur}
                   onSubChange={handleSubChange}
+                  onDateChange={handleDateChange}
+                  onScheduleChange={handleScheduleChange}
+                  todaySchedules={todaySchedules}
                   onCancelClick={setCancelTarget}
                   attendancePending={pendingAttendanceIds.has(entry.id)}
                 />
@@ -459,6 +496,9 @@ export function LogbookRow({
   onAttendance,
   onNotesBlur,
   onSubChange,
+  onDateChange,
+  onScheduleChange,
+  todaySchedules = [],
   onCancelClick,
   readOnly = false,
   attendancePending = false,
@@ -468,6 +508,10 @@ export function LogbookRow({
   onAttendance?: (e: LogbookEntry, checked: boolean) => void;
   onNotesBlur?: (e: LogbookEntry, notes: string) => void;
   onSubChange?: (e: LogbookEntry, subId: string) => void;
+  onDateChange?: (e: LogbookEntry, dateStr: string) => void;
+  onScheduleChange?: (e: LogbookEntry, scheduleId: string) => void;
+  // Today's active schedules, for the class-time editor. Only relevant when !readOnly.
+  todaySchedules?: any[];
   onCancelClick?: (e: LogbookEntry) => void;
   // Reports view: same row layout, but no inline edit controls -- plain text throughout.
   readOnly?: boolean;
@@ -498,13 +542,45 @@ export function LogbookRow({
 
   return (
     <tr className={rowClass}>
-      <td className={`px-2 py-1.5 whitespace-nowrap text-muted-foreground ${cellClass}`}>{formatDateTime(entry.createdAt)}</td>
+      <td className={`px-2 py-1.5 whitespace-nowrap text-muted-foreground ${cellClass}`}>
+        {readOnly || isCancelled ? (
+          formatDateTime(entry.createdAt)
+        ) : (
+          <input
+            type="date"
+            // entry.scheduledDate arrives JSON-serialized (already a string, never a raw
+            // Prisma Date), but going through `new Date(...).toISOString()` rather than a
+            // bare .slice() keeps this safe even if that ever changes.
+            value={new Date(entry.scheduledDate ?? entry.createdAt).toISOString().slice(0, 10)}
+            onChange={(e) => e.target.value && onDateChange?.(entry, e.target.value)}
+            className="h-6 text-xs px-1 border rounded-md bg-background w-[124px]"
+          />
+        )}
+      </td>
       <td className={`px-2 py-1.5 font-mono ${cellClass}`}>{entry.member?.memberNumber ?? "—"}</td>
       <td className={`px-2 py-1.5 whitespace-nowrap font-medium ${cellClass}`}>
         {entry.member ? `${entry.member.firstName} ${entry.member.lastName}` : "—"}
       </td>
-      <td className={`px-2 py-1.5 whitespace-nowrap ${cellClass}`}>
-        {entry.schedule ? formatTime(entry.schedule.startTime) : "—"}
+      <td className="px-2 py-1.5 whitespace-nowrap">
+        {readOnly || isCancelled ? (
+          <span className={`text-muted-foreground ${cellClass}`}>{entry.schedule ? formatTime(entry.schedule.startTime) : "—"}</span>
+        ) : (
+          <Select
+            value={entry.schedule ? (todaySchedules.find((s) => s.startTime === entry.schedule!.startTime && s.classDef?.name === entry.schedule!.classDef.name)?.id ?? "") : ""}
+            onValueChange={(val) => val && onScheduleChange?.(entry, val)}
+          >
+            <SelectTrigger className="h-6 text-xs w-32 px-1.5">
+              <SelectValue placeholder="Select time…" />
+            </SelectTrigger>
+            <SelectContent>
+              {todaySchedules.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="text-xs">
+                  {s.classDef?.name ?? "Class"} — {formatTime(s.startTime)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </td>
       <td className="px-2 py-1.5 whitespace-nowrap">
         {readOnly || isCancelled ? (
@@ -597,7 +673,6 @@ function AddEntryDialog({
   onClose: () => void;
   onAdd: () => void;
 }) {
-  const router = useRouter();
   const timeZone = useTenantTimezone();
   const [memberQuery, setMemberQuery] = useState("");
   const [memberResults, setMemberResults] = useState<any[]>([]);
@@ -610,6 +685,13 @@ function AddEntryDialog({
   const [subscriptionId, setSubscriptionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateMember, setShowCreateMember] = useState(false);
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [creatingMember, setCreatingMember] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const debouncedQuery = useDebounce(memberQuery, 300);
 
   useEffect(() => {
@@ -665,6 +747,7 @@ function AddEntryDialog({
   const submit = async () => {
     if (!selectedMember) return;
     setSubmitting(true);
+    setError(null);
     try {
       const r = await fetch("/api/logbook", {
         method: "POST",
@@ -675,11 +758,46 @@ function AddEntryDialog({
           subscriptionId: subscriptionId || undefined,
         }),
       });
-      if (r.ok) onAdd();
+      if (r.ok) {
+        onAdd();
+      } else {
+        const body = await r.json().catch(() => ({}));
+        setError(typeof body.error === "string" ? body.error : "Could not add this entry. Please try again.");
+      }
+    } catch {
+      setError("Network error — please try again.");
     } finally {
       setSubmitting(false);
     }
   };
+
+  async function createMember() {
+    if (!newFirstName.trim() || !newLastName.trim()) return;
+    setCreatingMember(true);
+    setCreateError(null);
+    try {
+      const r = await fetch("/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName: newFirstName.trim(), lastName: newLastName.trim(), phone: newPhone.trim() || undefined }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setCreateError(typeof body.error === "string" ? body.error : "Could not create member.");
+        return;
+      }
+      setSelectedMember(body);
+      setMemberQuery(`${body.firstName} ${body.lastName}`);
+      setShowCreateMember(false);
+      setNewFirstName("");
+      setNewLastName("");
+      setNewPhone("");
+    } catch {
+      setCreateError("Network error — please try again.");
+    } finally {
+      setCreatingMember(false);
+    }
+  }
 
   return (
     <>
@@ -711,15 +829,54 @@ function AddEntryDialog({
                 ))}
               </div>
             )}
-            {memberSearched && memberResults.length === 0 && !selectedMember && debouncedQuery.length >= 2 && (
+            {memberSearched && memberResults.length === 0 && !selectedMember && debouncedQuery.length >= 2 && !showCreateMember && (
               <div className="border rounded-md mt-1 px-3 py-3 bg-background text-sm text-muted-foreground flex items-center justify-between">
                 <span>No member found for &ldquo;{debouncedQuery}&rdquo;</span>
                 <button
                   className="text-primary font-medium hover:underline ml-3 whitespace-nowrap"
-                  onClick={() => { onClose(); router.push("/admin/members?add=1"); }}
+                  onClick={() => {
+                    setShowCreateMember(true);
+                    const parts = debouncedQuery.trim().split(/\s+/);
+                    setNewFirstName(parts[0] ?? "");
+                    setNewLastName(parts.slice(1).join(" "));
+                  }}
                 >
                   + Create new member
                 </button>
+              </div>
+            )}
+            {showCreateMember && !selectedMember && (
+              <div className="border rounded-md mt-1 p-3 bg-background space-y-2">
+                <p className="text-sm font-medium">Create New Member</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    placeholder="First name"
+                    value={newFirstName}
+                    onChange={(e) => setNewFirstName(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                  <Input
+                    placeholder="Last name"
+                    value={newLastName}
+                    onChange={(e) => setNewLastName(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <Input
+                  placeholder="Phone (optional)"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                {createError && <p className="text-xs text-destructive">{createError}</p>}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setShowCreateMember(false); setCreateError(null); }}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={createMember} disabled={creatingMember || !newFirstName.trim() || !newLastName.trim()}>
+                    {creatingMember ? "Creating…" : "Create & Select"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -794,6 +951,12 @@ function AddEntryDialog({
                 )}
               </div>
             </>
+          )}
+
+          {error && (
+            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+              {error}
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-2">

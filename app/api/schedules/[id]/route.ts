@@ -124,11 +124,36 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   if (mode === "this" && dateStr) {
     const date = new Date(`${dateStr}T00:00:00Z`);
-    await prisma.classScheduleException.upsert({
-      where: { scheduleId_date: { scheduleId: params.id, date } },
-      create: { scheduleId: params.id, date },
-      update: {},
+
+    // Refund and cancel bookings for this one occurrence -- scoped to scheduledDate
+    // matching this exact date, not the (also-valid) null-scheduledDate bookings that
+    // represent an ongoing recurring reservation and still apply to every other week.
+    const affectedBookings = await prisma.booking.findMany({
+      where: { scheduleId: params.id, scheduledDate: date, status: "CONFIRMED" },
+      select: { id: true, subscriptionId: true },
     });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.classScheduleException.upsert({
+        where: { scheduleId_date: { scheduleId: params.id, date } },
+        create: { scheduleId: params.id, date },
+        update: {},
+      });
+
+      for (const b of affectedBookings) {
+        if (b.subscriptionId) {
+          // Same race-safe pattern as check-in: only decrement a session-based
+          // subscription (sessionsTotal not null), and only if it actually has a used
+          // session to give back.
+          await tx.subscription.updateMany({
+            where: { id: b.subscriptionId, sessionsTotal: { not: null }, sessionsUsed: { gt: 0 } },
+            data: { sessionsUsed: { decrement: 1 } },
+          });
+        }
+        await tx.booking.update({ where: { id: b.id }, data: { status: "CANCELLED" } });
+      }
+    });
+
     await logAudit({
       userId: (session.user as any).id,
       userName: session.user?.name ?? session.user?.email ?? "Unknown",

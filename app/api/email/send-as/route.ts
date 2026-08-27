@@ -17,6 +17,11 @@ export async function GET() {
   const integration = await prisma.emailIntegration.findUnique({ where: { userId } });
   if (!integration) return NextResponse.json({ error: "NO_INTEGRATION" }, { status: 404 });
 
+  // filterAddresses is independent DB data -- the frontend needs it whether or not the
+  // Gmail alias fetch below succeeds, so it's read and returned unconditionally rather
+  // than only on the success path.
+  const filterAddresses = integration.emailFilterAddresses;
+
   try {
     const gmail = getGmailClient(integration.accessToken, integration.refreshToken ?? undefined);
     const res = await gmail.users.settings.sendAs.list({ userId: "me" });
@@ -26,14 +31,11 @@ export async function GET() {
       isPrimary: a.isPrimary ?? false,
     })).filter((a) => a.email);
 
-    return NextResponse.json({
-      aliases,
-      filterAddresses: integration.emailFilterAddresses,
-    });
+    return NextResponse.json({ aliases, filterAddresses });
   } catch (err: any) {
     if (err?.code === 401 || err?.response?.status === 401) {
-      return NextResponse.json({ error: "TOKEN_EXPIRED" }, { status: 401 });
+      return NextResponse.json({ error: "TOKEN_EXPIRED", filterAddresses }, { status: 401 });
     }
-    return NextResponse.json({ error: "Failed to fetch aliases" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch aliases", filterAddresses }, { status: 500 });
   }
 }

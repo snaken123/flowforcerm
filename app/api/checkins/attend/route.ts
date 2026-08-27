@@ -117,7 +117,14 @@ export async function POST(req: NextRequest) {
       if (existingBooking) {
         await tx.booking.update({
           where: { id: existingBooking.id },
-          data: { status: "ATTENDED" },
+          data: {
+            status: "ATTENDED",
+            // Only overwrite when a session-based subscription actually got deducted
+            // here -- deductedSubId is null whenever the match was date-based/unlimited
+            // (never considered for deduction above), and the booking's existing
+            // subscriptionId from booking time is still the correct reference then.
+            ...(deductedSubId ? { subscriptionId: deductedSubId } : {}),
+          },
         });
       } else {
         await tx.booking.create({

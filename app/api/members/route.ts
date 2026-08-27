@@ -43,6 +43,19 @@ export async function GET(req: NextRequest) {
               { firstName: { contains: q, mode: "insensitive" } },
               { lastName: { contains: q, mode: "insensitive" } },
               { user: { email: { contains: q, mode: "insensitive" } } },
+              // Multi-word query (e.g. "John Smith") -- match first+last together in
+              // either order, so a full-name search finds the member even though
+              // neither single field alone contains the whole query string.
+              ...(q.trim().split(/\s+/).length > 1
+                ? (() => {
+                    const [first, ...rest] = q.trim().split(/\s+/);
+                    const last = rest.join(" ");
+                    return [
+                      { AND: [{ firstName: { contains: first, mode: "insensitive" as const } }, { lastName: { contains: last, mode: "insensitive" as const } }] },
+                      { AND: [{ firstName: { contains: last, mode: "insensitive" as const } }, { lastName: { contains: first, mode: "insensitive" as const } }] },
+                    ];
+                  })()
+                : []),
             ],
           }
         : {}),

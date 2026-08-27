@@ -132,7 +132,7 @@ function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email" className="text-[#ccc]">Email</Label>
-        <Input id="email" type="email" placeholder="you@gym.com" className="bg-[#1a1a1a] border-white/20 text-white placeholder:text-[#555] focus-visible:ring-white/30" {...register("email")} />
+        <Input id="email" type="email" autoComplete="off" placeholder="you@gym.com" className="bg-[#1a1a1a] border-white/20 text-white placeholder:text-[#555] focus-visible:ring-white/30" {...register("email")} />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
       <div className="space-y-2">

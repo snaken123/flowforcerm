@@ -117,7 +117,18 @@ export function EmailClient({ integration }: { integration: any | null }) {
       const res = await fetch("/api/email/send-as");
       const data = await res.json();
       setAliases(data.aliases ?? []);
+      // filterAddresses now comes back even when the Gmail call itself failed (see
+      // api/email/send-as/route.ts), so this stays accurate independent of the error below.
       setSelectedAddresses(data.filterAddresses ?? []);
+      if (data.error === "TOKEN_EXPIRED") {
+        toast({
+          variant: "destructive",
+          title: "Google connection expired",
+          description: "Reconnect your Gmail account to send email or fetch aliases.",
+        });
+      } else if (data.error) {
+        toast({ variant: "destructive", title: "Could not load Gmail aliases" });
+      }
     } catch {
       toast({ variant: "destructive", title: "Failed to load email aliases" });
     } finally {

@@ -150,6 +150,13 @@ export async function POST(req: NextRequest) {
   if (subscriptionId) {
     const ownsSub = await prisma.subscription.findFirst({ where: { id: subscriptionId, memberId } });
     if (!ownsSub) return NextResponse.json({ error: "Subscription does not belong to this member" }, { status: 403 });
+
+    // Members can't book against a subscription that's already expired for this sport --
+    // staff/admin bypass this the same way they bypass the "class already ended" check
+    // above, since they may be recording something retroactively.
+    if (!["ADMIN", "STAFF", "STORE"].includes(role) && ownsSub.endDate && ownsSub.endDate < new Date()) {
+      return NextResponse.json({ error: "This subscription has expired and can't be used to book." }, { status: 403 });
+    }
   }
 
   const existing = await prisma.booking.findFirst({
@@ -172,6 +179,7 @@ export async function POST(req: NextRequest) {
       where: {
         scheduleId,
         status: { not: "CANCELLED" },
+        memberId: { not: null }, // employee/coach bookings don't count toward member capacity
         ...(scheduledDate ? { scheduledDate } : {}),
       },
     });
