@@ -29,6 +29,12 @@ export default async function MemberSchedulePage() {
   const serviceIds = member?.subscriptions.map((s) => s.serviceId) ?? [];
 
   const accessibleClassIds: string[] = [];
+  // sessionId (= ClassSession.id, aka Booking.sessionId) -> the service ids allowed to
+  // book it. An empty array means "open to any active subscription" (matches the
+  // `allowedServices: { none: {} }` branch below) -- the booking flow needs this so it
+  // can pick the subscription that actually matches the class being booked, instead of
+  // always defaulting to the member's first subscription regardless of sport.
+  const sessionServiceMap: Record<string, string[]> = {};
   if (serviceIds.length > 0) {
     const rows = await prisma.classSession.findMany({
       where: {
@@ -37,9 +43,10 @@ export default async function MemberSchedulePage() {
           { allowedServices: { some: { serviceId: { in: serviceIds } } } },
         ],
       },
-      select: { id: true },
+      select: { id: true, allowedServices: { select: { serviceId: true } } },
     });
     accessibleClassIds.push(...rows.map((r) => r.id));
+    for (const r of rows) sessionServiceMap[r.id] = r.allowedServices.map((a) => a.serviceId);
   }
 
   const schedules = accessibleClassIds.length === 0 ? [] : await prisma.classSchedule.findMany({
@@ -60,7 +67,8 @@ export default async function MemberSchedulePage() {
       schedules={JSON.parse(JSON.stringify(schedules))}
       hasActiveMembership={serviceIds.length > 0}
       memberId={member?.id ?? ""}
-      subscriptionId={member?.subscriptions[0]?.id ?? ""}
+      subscriptions={member?.subscriptions ?? []}
+      sessionServiceMap={sessionServiceMap}
       existingBookings={member?.bookings ?? []}
     />
   );

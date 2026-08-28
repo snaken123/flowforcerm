@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaDateStr } from "@/lib/time";
 import { isWithinCancellationCutoff, CANCELLATION_CUTOFF_HOURS } from "@/lib/booking-rules";
+import { markBookingAttended } from "@/lib/booking-actions";
 import { z } from "zod";
 
 const cancelSchema = z.object({
@@ -20,29 +21,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const existing = await prisma.booking.findUnique({
-    where: { id: params.id },
-    include: { subscription: true },
-  });
+  if (status === "ATTENDED") {
+    const booking = await markBookingAttended(params.id);
+    if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(booking);
+  }
+
+  const existing = await prisma.booking.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const booking = await prisma.booking.update({
     where: { id: params.id },
     data: { status },
   });
-
-  // Deduct a session when manually marking ATTENDED (mirrors the check-in flow)
-  if (status === "ATTENDED" && existing.status !== "ATTENDED" && existing.subscriptionId && existing.subscription?.sessionsTotal != null) {
-    await prisma.subscription.updateMany({
-      where: { id: existing.subscriptionId, sessionsUsed: { lt: existing.subscription.sessionsTotal } },
-      data: { sessionsUsed: { increment: 1 } },
-    });
-    // Auto-expire if sessions exhausted
-    const updated = await prisma.subscription.findUnique({ where: { id: existing.subscriptionId } });
-    if (updated && updated.sessionsUsed >= (updated.sessionsTotal ?? Infinity)) {
-      await prisma.subscription.update({ where: { id: existing.subscriptionId }, data: { status: "EXPIRED" } });
-    }
-  }
 
   return NextResponse.json(booking);
 }

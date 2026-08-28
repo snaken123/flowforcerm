@@ -28,6 +28,18 @@ export default async function MembersPage({
       { firstName: { contains: search, mode: "insensitive" } },
       { lastName: { contains: search, mode: "insensitive" } },
       { user: { email: { contains: search, mode: "insensitive" } } },
+      // Multi-word query (e.g. "John Smith") -- match first+last together in either
+      // order, same fix already applied to app/api/members/route.ts's own search.
+      ...(search.split(/\s+/).length > 1
+        ? (() => {
+            const [first, ...rest] = search.split(/\s+/);
+            const last = rest.join(" ");
+            return [
+              { AND: [{ firstName: { contains: first, mode: "insensitive" as const } }, { lastName: { contains: last, mode: "insensitive" as const } }] },
+              { AND: [{ firstName: { contains: last, mode: "insensitive" as const } }, { lastName: { contains: first, mode: "insensitive" as const } }] },
+            ];
+          })()
+        : []),
     ];
   }
   if (statusFilter === "ACTIVATED") {

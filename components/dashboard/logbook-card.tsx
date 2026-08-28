@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
-import Link from "next/link";
 import { toast } from "@/lib/use-toast";
 import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
 import { useTenantTimezone } from "@/components/tenant-timezone-provider";
@@ -118,6 +117,9 @@ export function LogbookCard() {
   const [cancelTarget, setCancelTarget] = useState<LogbookEntry | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
+  const [assignTarget, setAssignTarget] = useState<LogbookEntry | null>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const timeZone = useTenantTimezone();
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayLabel = formatDateShort(todayStr + "T00:00:00Z");
@@ -129,6 +131,10 @@ export function LogbookCard() {
     fetch("/api/schedules")
       .then((r) => r.json())
       .then((d) => setTodaySchedules(Array.isArray(d) ? d.filter((s: any) => s.isActive && s.dayOfWeek === todayDow) : []))
+      .catch(() => {});
+    fetch("/api/services?withPackages=true")
+      .then((r) => r.json())
+      .then((d) => setServices(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, []);
 
@@ -398,6 +404,7 @@ export function LogbookCard() {
                   onScheduleChange={handleScheduleChange}
                   todaySchedules={todaySchedules}
                   onCancelClick={setCancelTarget}
+                  onAssignClick={setAssignTarget}
                   attendancePending={pendingAttendanceIds.has(entry.id)}
                 />
               ))}
@@ -485,6 +492,22 @@ export function LogbookCard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {assignTarget?.member && (
+        <AssignMembershipDialog
+          open={!!assignTarget}
+          onOpenChange={(o) => { if (!o) setAssignTarget(null); }}
+          member={{
+            id: assignTarget.member.id,
+            firstName: assignTarget.member.firstName,
+            lastName: assignTarget.member.lastName,
+            subscriptions: assignTarget.member.subscriptions,
+          }}
+          services={services}
+          timeZone={timeZone}
+          onAssigned={() => { setAssignTarget(null); refresh(); }}
+        />
+      )}
       </div>{/* end lg:contents */}
     </Card>
   );
@@ -500,6 +523,7 @@ export function LogbookRow({
   onScheduleChange,
   todaySchedules = [],
   onCancelClick,
+  onAssignClick,
   readOnly = false,
   attendancePending = false,
 }: {
@@ -513,6 +537,9 @@ export function LogbookRow({
   // Today's active schedules, for the class-time editor. Only relevant when !readOnly.
   todaySchedules?: any[];
   onCancelClick?: (e: LogbookEntry) => void;
+  // Opens AssignMembershipDialog inline for this entry's member, when they have no
+  // active subscription -- see the "No active sub" cell below.
+  onAssignClick?: (e: LogbookEntry) => void;
   // Reports view: same row layout, but no inline edit controls -- plain text throughout.
   readOnly?: boolean;
   // True while a just-clicked "mark attended" PATCH is in flight, so the checkbox
@@ -587,9 +614,13 @@ export function LogbookRow({
           <span className={`text-xs text-muted-foreground ${cellClass}`}>{selectedSub?.service.name ?? "—"}</span>
         ) : activeSubs.length === 0 ? (
           entry.member ? (
-            <Link href={`/admin/members/${entry.member.id}`} className="text-blue-600 underline text-xs">
-              No active sub
-            </Link>
+            <button
+              type="button"
+              onClick={() => onAssignClick?.(entry)}
+              className="text-blue-600 underline text-xs"
+            >
+              + Assign Package
+            </button>
           ) : "—"
         ) : (
           <Select
@@ -771,27 +802,47 @@ function AddEntryDialog({
     }
   };
 
-  async function createMember() {
+  // Create the member, then immediately add the logbook entry for them, then close --
+  // deliberately doesn't touch any dialog-visible state (setSelectedMember,
+  // setShowCreateMember) in between, so the main Add Entry form never gets a chance to
+  // flash into view before the dialog actually closes.
+  async function createAndAdd() {
     if (!newFirstName.trim() || !newLastName.trim()) return;
     setCreatingMember(true);
     setCreateError(null);
     try {
-      const r = await fetch("/api/members", {
+      const memberRes = await fetch("/api/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName: newFirstName.trim(), lastName: newLastName.trim(), phone: newPhone.trim() || undefined }),
       });
-      const body = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        setCreateError(typeof body.error === "string" ? body.error : "Could not create member.");
+      const newMember = await memberRes.json().catch(() => ({}));
+      if (!memberRes.ok) {
+        setCreateError(typeof newMember.error === "string" ? newMember.error : "Could not create member.");
         return;
       }
-      setSelectedMember(body);
-      setMemberQuery(`${body.firstName} ${body.lastName}`);
-      setShowCreateMember(false);
-      setNewFirstName("");
-      setNewLastName("");
-      setNewPhone("");
+
+      const entryRes = await fetch("/api/logbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: newMember.id,
+          scheduleId: scheduleId || undefined,
+          subscriptionId: subscriptionId || undefined,
+        }),
+      });
+      if (!entryRes.ok) {
+        // The member itself was created successfully -- select them so the admin can
+        // retry adding the entry via the normal flow instead of re-searching from scratch.
+        setSelectedMember(newMember);
+        setMemberQuery(`${newMember.firstName} ${newMember.lastName}`);
+        setShowCreateMember(false);
+        const body = await entryRes.json().catch(() => ({}));
+        setCreateError(typeof body.error === "string" ? body.error : "Member created, but the logbook entry could not be added.");
+        return;
+      }
+
+      onAdd();
     } catch {
       setCreateError("Network error — please try again.");
     } finally {
@@ -873,8 +924,8 @@ function AddEntryDialog({
                   <Button variant="outline" size="sm" onClick={() => { setShowCreateMember(false); setCreateError(null); }}>
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={createMember} disabled={creatingMember || !newFirstName.trim() || !newLastName.trim()}>
-                    {creatingMember ? "Creating…" : "Create & Select"}
+                  <Button size="sm" onClick={createAndAdd} disabled={creatingMember || !newFirstName.trim() || !newLastName.trim()}>
+                    {creatingMember ? "Adding…" : "Create & Add Entry"}
                   </Button>
                 </div>
               </div>

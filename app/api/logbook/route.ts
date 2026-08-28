@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { manilaDateStr } from "@/lib/time";
+import { markBookingAttended } from "@/lib/booking-actions";
 import { z } from "zod";
 
 const MEMBER_INCLUDE = {
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
     sessionId = firstSession.id;
   }
 
-  const booking = await prisma.booking.create({
+  const created = await prisma.booking.create({
     data: {
       memberId,
       sessionId,
@@ -120,8 +121,16 @@ export async function POST(req: NextRequest) {
       status: "CONFIRMED",
       bookedById: (session.user as any).id,
     },
-    include: BOOKING_INCLUDE,
   });
+
+  // A walk-in with no package assigned isn't actually attending anything yet -- only
+  // move it straight to ATTENDED (and run the same session-deduction/CheckIn side
+  // effects as every other attendance path) when a subscription was actually given.
+  if (subscriptionId) {
+    await markBookingAttended(created.id);
+  }
+
+  const booking = await prisma.booking.findUnique({ where: { id: created.id }, include: BOOKING_INCLUDE });
 
   return NextResponse.json(booking, { status: 201 });
 }

@@ -36,8 +36,9 @@ export function PendingPaymentsClient({ pendingPayments }: { pendingPayments: an
   const [editNeedsReceipt, setEditNeedsReceipt] = useState(true);
   const [editReceiptUrl, setEditReceiptUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [paidDateMode, setPaidDateMode] = useState<"today" | "custom">("today");
+  const [paidDateMode, setPaidDateMode] = useState<"today" | "transaction" | "custom">("today");
   const [customPaidDate, setCustomPaidDate] = useState("");
+  const [transactionDate, setTransactionDate] = useState("");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
   function openRow(payment: any) {
@@ -50,6 +51,7 @@ export function PendingPaymentsClient({ pendingPayments }: { pendingPayments: an
     setEditNotes(payment.notes ?? "");
     setPaidDateMode("today");
     setCustomPaidDate(new Date().toISOString().slice(0, 10));
+    setTransactionDate(new Date(payment.createdAt).toISOString().slice(0, 10));
     setExpanded(payment.id);
   }
 
@@ -65,7 +67,11 @@ export function PendingPaymentsClient({ pendingPayments }: { pendingPayments: an
           needsReceipt: editNeedsReceipt,
           receiptUrl: editReceiptUrl || null,
           notes: editNotes || null,
-          ...(paidDateMode === "custom" && customPaidDate ? { paidAt: customPaidDate } : {}),
+          ...(paidDateMode === "transaction" && transactionDate
+            ? { paidAt: transactionDate }
+            : paidDateMode === "custom" && customPaidDate
+            ? { paidAt: customPaidDate }
+            : {}),
         }),
       });
       if (!res.ok) throw new Error();
@@ -195,6 +201,18 @@ export function PendingPaymentsClient({ pendingPayments }: { pendingPayments: an
                         className="h-3.5 w-3.5"
                       />
                       <label htmlFor={`paid-today-${p.id}`} className="text-sm cursor-pointer select-none">Today</label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        id={`paid-transaction-${p.id}`}
+                        checked={paidDateMode === "transaction"}
+                        onChange={() => setPaidDateMode("transaction")}
+                        className="h-3.5 w-3.5"
+                      />
+                      <label htmlFor={`paid-transaction-${p.id}`} className="text-sm cursor-pointer select-none">
+                        Transaction date ({transactionDate})
+                      </label>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <input

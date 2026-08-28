@@ -16,6 +16,8 @@ import {
   type SortKey,
   type SortDir,
 } from "@/components/dashboard/logbook-card";
+import { AssignMembershipDialog } from "@/components/members/assign-membership-dialog";
+import { useTenantTimezone } from "@/components/tenant-timezone-provider";
 
 function toDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -119,6 +121,16 @@ export function LogbookReportCard({ canEdit }: { canEdit: boolean }) {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [cancelTarget, setCancelTarget] = useState<LogbookEntry | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<LogbookEntry | null>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const timeZone = useTenantTimezone();
+
+  useEffect(() => {
+    fetch("/api/services?withPackages=true")
+      .then((r) => r.json())
+      .then((d) => setServices(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -283,6 +295,7 @@ export function LogbookReportCard({ canEdit }: { canEdit: boolean }) {
                     onNotesBlur={handleNotesBlur}
                     onSubChange={handleSubChange}
                     onCancelClick={setCancelTarget}
+                    onAssignClick={setAssignTarget}
                     attendancePending={pendingAttendanceIds.has(entry.id)}
                   />
                 ))
@@ -327,6 +340,22 @@ export function LogbookReportCard({ canEdit }: { canEdit: boolean }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {assignTarget?.member && (
+        <AssignMembershipDialog
+          open={!!assignTarget}
+          onOpenChange={(o) => { if (!o) setAssignTarget(null); }}
+          member={{
+            id: assignTarget.member.id,
+            firstName: assignTarget.member.firstName,
+            lastName: assignTarget.member.lastName,
+            subscriptions: assignTarget.member.subscriptions,
+          }}
+          services={services}
+          timeZone={timeZone}
+          onAssigned={() => { setAssignTarget(null); load(); }}
+        />
+      )}
     </Card>
   );
 }

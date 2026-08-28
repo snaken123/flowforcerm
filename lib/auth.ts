@@ -79,6 +79,23 @@ export const authOptions: NextAuthOptions = {
       if (token.role === "KIOSK") {
         token.exp = Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 60 * 60;
       }
+
+      // Force logout on a new deployment: stamp which deploy issued this token, and on
+      // every later check (any request, not just sign-in) compare against the deploy
+      // actually running now. A mismatch expires the token immediately so the user is
+      // bounced to sign in and picks up whatever shipped -- without this, a JWT session
+      // can keep running against stale client code/assumptions for its full 12h maxAge.
+      // KIOSK is exempt (its session is already set to effectively never expire above);
+      // devices aren't expected to be manually re-logged-in after every deploy.
+      const currentDeployId = process.env.VERCEL_GIT_COMMIT_SHA;
+      if (currentDeployId) {
+        if (!token.deployId) {
+          token.deployId = currentDeployId;
+        } else if (token.deployId !== currentDeployId && token.role !== "KIOSK") {
+          token.exp = Math.floor(Date.now() / 1000) - 1;
+        }
+      }
+
       if (account?.provider === "google") {
         token.googleAccessToken = account.access_token;
         token.googleRefreshToken = account.refresh_token;

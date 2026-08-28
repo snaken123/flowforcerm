@@ -74,13 +74,15 @@ export function MemberCalendar({
   schedules,
   hasActiveMembership,
   memberId,
-  subscriptionId,
+  subscriptions,
+  sessionServiceMap,
   existingBookings,
 }: {
   schedules: any[];
   hasActiveMembership: boolean;
   memberId: string;
-  subscriptionId: string;
+  subscriptions: { id: string; serviceId: string }[];
+  sessionServiceMap: Record<string, string[]>;
   existingBookings: { id: string; sessionId: string; scheduleId: string | null; status: string }[];
 }) {
   const router = useRouter();
@@ -134,6 +136,16 @@ export function MemberCalendar({
     if (!selected) return;
     setLoading(true);
     try {
+      // Pick the subscription that actually matches this class's sport, not just
+      // whichever subscription happens to be first -- an empty allowed-list means the
+      // class is open to any active subscription (mirrors the server's own
+      // `allowedServices: none` fallback in app/(dashboard)/member/schedule/page.tsx).
+      const allowedServiceIds = sessionServiceMap[selected.classId] ?? [];
+      const matchingSub = allowedServiceIds.length > 0
+        ? subscriptions.find((s) => allowedServiceIds.includes(s.serviceId))
+        : subscriptions[0];
+      const subscriptionId = matchingSub?.id;
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
