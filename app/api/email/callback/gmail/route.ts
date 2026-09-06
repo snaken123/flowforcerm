@@ -1,39 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { google } from "googleapis";
-import { isFeatureEnabled, FLAG_COMMUNICATIONS } from "@/lib/feature-flags";
+import { verifyOAuthState } from "@/lib/oauth-state";
+import { findTenantBySubdomain } from "@/control-plane/lib/tenant-resolution";
+import { getPrismaClientForTenant } from "@/lib/db";
+import { tenantOrigin } from "@/lib/email";
+import { FLAG_COMMUNICATIONS } from "@/lib/feature-flags-constants";
 
+// This callback's URL is fixed and shared by every gym (see api/email/connect/start) --
+// it does NOT run with the originating tenant's middleware context (no x-tenant-*
+// headers) or a usable session cookie (cookies don't cross subdomains), so it can't use
+// the ambient `prisma` export or getAuthSession() the way a normal tenant-side route
+// would. Everything it needs -- which gym, which admin -- comes from the signed state
+// instead, and it talks to that one tenant's database via getPrismaClientForTenant().
 export async function GET(req: NextRequest) {
-  if (!isFeatureEnabled(FLAG_COMMUNICATIONS)) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
-  const returnedState = searchParams.get("state");
+  const rawState = searchParams.get("state");
 
-  if (error || !code) {
-    return NextResponse.redirect(new URL("/admin/email?error=oauth_denied", req.url));
+  const fallbackHome = process.env.NEXTAUTH_URL ?? "https://flowforcerm.com";
+  const state = rawState ? verifyOAuthState<{ userId: string; subdomain: string }>(rawState) : null;
+  if (!state) {
+    // No valid state means we don't know which gym to send them back to.
+    return NextResponse.redirect(fallbackHome);
   }
 
-  // Verify CSRF state parameter
-  const cookieHeader = req.headers.get("cookie") ?? "";
-  const storedState = cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith("gmail_oauth_state="))
-    ?.split("=")[1];
+  const backTo = (path: string) => NextResponse.redirect(new URL(path, tenantOrigin(state.subdomain)));
 
-  if (!returnedState || !storedState || returnedState !== storedState) {
-    console.error("[gmail-callback] State mismatch — possible CSRF");
-    return NextResponse.redirect(new URL("/admin/email?error=oauth_state_mismatch", req.url));
+  if (error || !code) {
+    return backTo("/admin/email?error=oauth_denied");
+  }
+
+  const tenant = await findTenantBySubdomain(state.subdomain);
+  if (!tenant || !tenant.activeFlags.includes(FLAG_COMMUNICATIONS)) {
+    return backTo("/admin/email?error=oauth_failed");
   }
 
   const oauth2Client = new google.auth.OAuth2(
@@ -49,10 +49,9 @@ export async function GET(req: NextRequest) {
     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const userInfo = await oauth2.userinfo.get();
 
-    const userId = (session.user as any).id;
-
-    await prisma.emailIntegration.upsert({
-      where: { userId },
+    const tenantPrisma = await getPrismaClientForTenant(tenant.id);
+    await tenantPrisma.emailIntegration.upsert({
+      where: { userId: state.userId },
       update: {
         accessToken: tokens.access_token!,
         refreshToken: tokens.refresh_token ?? undefined,
@@ -61,7 +60,7 @@ export async function GET(req: NextRequest) {
         provider: "gmail",
       },
       create: {
-        userId,
+        userId: state.userId,
         provider: "gmail",
         accessToken: tokens.access_token!,
         refreshToken: tokens.refresh_token,
@@ -70,11 +69,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const redirectResponse = NextResponse.redirect(new URL("/admin/email?connected=true", req.url));
-    redirectResponse.cookies.set("gmail_oauth_state", "", { path: "/", maxAge: 0 });
-    return redirectResponse;
+    return backTo("/admin/email?connected=true");
   } catch (err) {
     console.error("Gmail OAuth callback error:", err);
-    return NextResponse.redirect(new URL("/admin/email?error=oauth_failed", req.url));
+    return backTo("/admin/email?error=oauth_failed");
   }
 }

@@ -468,18 +468,11 @@ export function EmailClient({ integration }: { integration: any | null }) {
 
 function ConnectEmailButton() {
   function connectGmail() {
-    const state = crypto.randomUUID();
-    document.cookie = `gmail_oauth_state=${state}; path=/; max-age=300; SameSite=Lax`;
-    const params = new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
-      redirect_uri: `${window.location.origin}/api/email/callback/gmail`,
-      response_type: "code",
-      scope: "openid email profile https://www.googleapis.com/auth/gmail.modify",
-      access_type: "offline",
-      prompt: "consent",
-      state,
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    // The server builds the actual Google OAuth URL (api/email/connect/start) -- it
+    // knows which gym/admin this is from the request itself and signs that into the
+    // state it hands to Google, so there's nothing tenant- or account-specific to
+    // construct here. Any admin can connect any Gmail account, gym or personal.
+    window.location.href = "/api/email/connect/start";
   }
 
   return (
