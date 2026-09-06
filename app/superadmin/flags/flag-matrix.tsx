@@ -11,10 +11,12 @@ export function FlagMatrix({
   flags,
   tenants,
   pricesCentavos,
+  basePriceCentavos,
 }: {
   flags: Flag[];
   tenants: Tenant[];
   pricesCentavos: Record<string, number>;
+  basePriceCentavos: number;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null); // `${tenantId}:${flagKey}`
@@ -68,8 +70,14 @@ export function FlagMatrix({
             ))}
           </tr>
           <tr className="border-b border-white/10">
-            <td className="px-4 py-2 sticky left-0 bg-[#111] text-[10px] uppercase tracking-wide text-[#666]">
-              What it does
+            <td className="px-4 py-2 sticky left-0 bg-[#111] align-top">
+              <p className="text-[10px] uppercase tracking-wide text-[#666]">What it does</p>
+              <p className="text-xs text-[#aaa] leading-snug mt-1">
+                Members, Schedule, Check-ins, Records, Reports, Employees, Settings
+              </p>
+              <p className="text-xs font-semibold text-emerald-400 mt-1">
+                ₱{(basePriceCentavos / 100).toFixed(0)}/mo base
+              </p>
             </td>
             {flags.map((f) => {
               const priceCentavos = pricesCentavos[f.key];
