@@ -10,7 +10,6 @@ import {
   LogbookRow,
   formatTime,
   formatDateShort,
-  hasAnnualSub,
   getActiveSubs,
   type LogbookEntry,
   type SortKey,
@@ -40,13 +39,12 @@ function entryRow(e: LogbookEntry) {
     packageName: selectedSub?.service.name ?? "—",
     sessions: sessionsDisplay,
     expiration: selectedSub?.endDate ? formatDateShort(selectedSub.endDate) : "—",
-    member: hasAnnualSub(e.member) ? "Yes" : "No",
     attendance: e.status === "ATTENDED" ? "Attended" : e.status === "CANCELLED" ? "Cancelled" : "—",
     notes: e.notes ?? "",
   };
 }
 
-const CSV_HEADERS = ["Date Booked", "Athlete ID", "Athlete", "Class Time", "Class", "Package", "Sessions", "Expiration", "Member?", "Attendance", "Notes"];
+const CSV_HEADERS = ["Date Booked", "Athlete ID", "Athlete", "Class Time", "Class", "Package", "Sessions", "Expiration", "Attendance", "Notes"];
 
 function downloadCSV(filename: string, entries: LogbookEntry[], label: string) {
   const rows = entries.map(entryRow);
@@ -55,7 +53,7 @@ function downloadCSV(filename: string, entries: LogbookEntry[], label: string) {
     label,
     "",
     CSV_HEADERS.join(","),
-    ...rows.map((r) => [r.dateBooked, r.athleteId, r.athlete, r.classTime, r.className, r.packageName, r.sessions, r.expiration, r.member, r.attendance, r.notes].map((v) => esc(String(v))).join(",")),
+    ...rows.map((r) => [r.dateBooked, r.athleteId, r.athlete, r.classTime, r.className, r.packageName, r.sessions, r.expiration, r.attendance, r.notes].map((v) => esc(String(v))).join(",")),
   ];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
@@ -70,7 +68,7 @@ function buildHtmlTable(entries: LogbookEntry[], label: string) {
         <tr>
           <td>${r.dateBooked}</td><td>${r.athleteId}</td><td>${r.athlete}</td><td>${r.classTime}</td>
           <td>${r.className}</td><td>${r.packageName}</td><td>${r.sessions}</td><td>${r.expiration}</td>
-          <td>${r.member}</td><td>${r.attendance}</td><td>${r.notes}</td>
+          <td>${r.attendance}</td><td>${r.notes}</td>
         </tr>`).join("")}
       </tbody>
     </table>`;
@@ -273,7 +271,6 @@ export function LogbookReportCard({ canEdit }: { canEdit: boolean }) {
                 <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground">Package</th>
                 <Th col="sessions" label="Sessions" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <Th col="expiration" label="Expiration" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                <Th col="membership" label="Member?" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <Th col="attendance" label="Attendance" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground min-w-[160px]">Notes</th>
                 <th className="px-2 py-2"></th>
@@ -281,9 +278,9 @@ export function LogbookReportCard({ canEdit }: { canEdit: boolean }) {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={12} className="px-2 py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
+                <tr><td colSpan={11} className="px-2 py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : sorted.length === 0 ? (
-                <tr><td colSpan={12} className="px-2 py-6 text-center text-muted-foreground">No logbook entries in this range.</td></tr>
+                <tr><td colSpan={11} className="px-2 py-6 text-center text-muted-foreground">No logbook entries in this range.</td></tr>
               ) : (
                 sorted.map((entry, idx) => (
                   <LogbookRow

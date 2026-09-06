@@ -385,7 +385,6 @@ export function LogbookCard() {
                 <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground">Package</th>
                 <Th col="sessions" label="Sessions" />
                 <Th col="expiration" label="Expiration" />
-                <Th col="membership" label="Member?" />
                 <Th col="attendance" label="Attendance" />
                 <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground min-w-[160px]">Notes</th>
                 <th className="px-2 py-2"></th>
@@ -410,7 +409,7 @@ export function LogbookCard() {
               ))}
               {sorted.length === 0 && loaded && (
                 <tr>
-                  <td colSpan={12} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-2 py-6 text-center text-muted-foreground">
                     No logbook entries for today.
                   </td>
                 </tr>
@@ -560,7 +559,6 @@ export function LogbookRow({
     return `${remaining}/${selectedSub.sessionsTotal}`;
   })();
 
-  const isAnnual = hasAnnualSub(entry.member);
   const isAttended = entry.status === "ATTENDED";
   const isCancelled = entry.status === "CANCELLED";
 
@@ -650,14 +648,7 @@ export function LogbookRow({
       <td className="px-2 py-1.5">
         {isCancelled ? (
           <Badge className="text-xs" variant="secondary">Cancelled</Badge>
-        ) : (
-          <Badge className="text-xs" variant={isAnnual ? "success" : "destructive"}>
-            {isAnnual ? "Yes" : "No"}
-          </Badge>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {readOnly ? (
+        ) : readOnly ? (
           <span className="text-xs text-muted-foreground">{isAttended ? "Attended" : "—"}</span>
         ) : (
           <input
