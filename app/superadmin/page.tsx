@@ -151,7 +151,7 @@ export default async function SuperAdminDashboard() {
                     </td>
                     <td className="px-4 py-3 text-[#666]">{t.createdAt.toLocaleDateString()}</td>
                     <td className="px-4 py-3">
-                      <TenantRowActions tenantId={t.id} />
+                      <TenantRowActions tenantId={t.id} subdomain={t.subdomain} name={t.name} />
                     </td>
                   </tr>
                 ))}
