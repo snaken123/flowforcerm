@@ -39,7 +39,10 @@ export async function GET() {
     response_type: "code",
     scope: "openid email profile https://www.googleapis.com/auth/gmail.modify",
     access_type: "offline",
-    prompt: "consent",
+    // select_account forces Google's account chooser every time, rather than silently
+    // reusing whatever Google account happens to already be signed into this browser --
+    // without it, switching to a different Gmail account here would be hard to trigger.
+    prompt: "consent select_account",
     state,
   });
 

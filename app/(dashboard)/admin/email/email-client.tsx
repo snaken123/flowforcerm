@@ -34,6 +34,23 @@ export function EmailClient({ integration }: { integration: any | null }) {
   const [savingFilter, setSavingFilter] = useState(false);
   const [loadingAliases, setLoadingAliases] = useState(false);
   const [manualInput, setManualInput] = useState("");
+  const [switching, setSwitching] = useState(false);
+
+  // Disconnects the current Gmail account, then immediately kicks off a fresh connect
+  // flow -- select_account (api/email/connect/start) forces Google's account chooser,
+  // so this actually lets the admin pick a different Gmail account instead of silently
+  // reusing whichever one is signed into the browser.
+  async function switchAccount() {
+    if (!confirm("Disconnect the current Gmail account and connect a different one?")) return;
+    setSwitching(true);
+    try {
+      await fetch("/api/email/connect", { method: "DELETE" });
+      window.location.href = "/api/email/connect/start";
+    } catch {
+      toast({ variant: "destructive", title: "Could not disconnect Gmail" });
+      setSwitching(false);
+    }
+  }
 
   const fetchThreads = useCallback(async (label = "INBOX") => {
     if (!integration) return;
@@ -204,6 +221,10 @@ export function EmailClient({ integration }: { integration: any | null }) {
           <Button variant="outline" size="sm" onClick={openSettings}>
             <Settings className="h-4 w-4 mr-2" />
             Filter
+          </Button>
+          <Button variant="outline" size="sm" onClick={switchAccount} disabled={switching}>
+            {switching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+            Switch Account
           </Button>
           <Button size="sm" onClick={() => { setReplyMode(false); setComposing(true); }}>
             <Send className="mr-2 h-4 w-4" />Compose
