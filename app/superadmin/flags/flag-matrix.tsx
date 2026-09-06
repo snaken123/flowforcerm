@@ -7,7 +7,15 @@ import { Loader2, Check } from "lucide-react";
 type Flag = { key: string; description: string | null };
 type Tenant = { id: string; name: string; subdomain: string; activeFlagKeys: string[] };
 
-export function FlagMatrix({ flags, tenants }: { flags: Flag[]; tenants: Tenant[] }) {
+export function FlagMatrix({
+  flags,
+  tenants,
+  pricesCentavos,
+}: {
+  flags: Flag[];
+  tenants: Tenant[];
+  pricesCentavos: Record<string, number>;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null); // `${tenantId}:${flagKey}`
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +66,22 @@ export function FlagMatrix({ flags, tenants }: { flags: Flag[]; tenants: Tenant[
                 {f.key}
               </th>
             ))}
+          </tr>
+          <tr className="border-b border-white/10">
+            <td className="px-4 py-2 sticky left-0 bg-[#111] text-[10px] uppercase tracking-wide text-[#666]">
+              What it does
+            </td>
+            {flags.map((f) => {
+              const priceCentavos = pricesCentavos[f.key];
+              return (
+                <td key={f.key} className="px-4 py-2 text-center align-top">
+                  <p className="text-xs text-[#aaa] leading-snug">{f.description ?? "—"}</p>
+                  <p className="text-xs font-semibold text-emerald-400 mt-1">
+                    {priceCentavos != null ? `₱${(priceCentavos / 100).toFixed(0)}/mo` : "No charge"}
+                  </p>
+                </td>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

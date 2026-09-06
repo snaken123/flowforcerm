@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSuperAdminSession } from "@/control-plane/lib/superadmin-auth";
 import { controlPlanePrisma } from "@/control-plane/lib/db";
+import { FEATURE_PRICES_CENTAVOS } from "@/control-plane/lib/pricing";
 import { NewFlagForm } from "./new-flag-form";
 import { FlagMatrix } from "./flag-matrix";
 
@@ -45,7 +46,7 @@ export default async function FeatureFlagsPage() {
           <NewFlagForm />
         </div>
 
-        <FlagMatrix flags={flags} tenants={tenantsForMatrix} />
+        <FlagMatrix flags={flags} tenants={tenantsForMatrix} pricesCentavos={FEATURE_PRICES_CENTAVOS} />
       </div>
     </div>
   );
