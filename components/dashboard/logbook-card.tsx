@@ -562,7 +562,11 @@ export function LogbookRow({
   const dropdownSubs = allowedServiceIds.length > 0
     ? activeSubs.filter((s) => allowedServiceIds.includes(s.serviceId))
     : activeSubs;
-  const linkedSub = entry.member?.subscriptions.find((s) => s.id === selectedSubId);
+  // entry.member.subscriptions is pre-filtered to ACTIVE/PAUSED server-side, so once the
+  // linked subscription auto-expires (e.g. right after being marked attended) it can't be
+  // found there any more -- use the booking's own subscription relation instead, which is
+  // never filtered by status.
+  const linkedSub = entry.subscription;
   const subOptions = linkedSub && !dropdownSubs.some((s) => s.id === linkedSub.id)
     ? [...dropdownSubs, linkedSub]
     : dropdownSubs;

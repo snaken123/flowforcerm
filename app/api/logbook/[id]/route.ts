@@ -72,7 +72,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (subscriptionId !== undefined) {
     const existing = await prisma.booking.findUnique({
       where: { id: params.id },
-      select: { memberId: true, status: true, subscriptionId: true },
+      select: {
+        memberId: true,
+        status: true,
+        subscriptionId: true,
+        subscription: { select: { status: true, sessionsTotal: true } },
+      },
     });
     if (!existing?.memberId) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     const ownsSub = await prisma.subscription.findFirst({
@@ -90,6 +95,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           where: { id: existing.subscriptionId, sessionsTotal: { not: null }, sessionsUsed: { gt: 0 } },
           data: { sessionsUsed: { decrement: 1 } },
         });
+        // Mirrors cancelBookingByStaff's reactivation check -- refunding a session can
+        // bring an auto-expired subscription's usage back under its total, in which case
+        // it should go back to being usable instead of staying stuck EXPIRED.
+        if (existing.subscription?.status === "EXPIRED") {
+          const updated = await prisma.subscription.findUnique({ where: { id: existing.subscriptionId } });
+          if (updated && updated.sessionsUsed <= (updated.sessionsTotal ?? 0)) {
+            await prisma.subscription.update({ where: { id: existing.subscriptionId }, data: { status: "ACTIVE" } });
+          }
+        }
       }
       await prisma.subscription.updateMany({
         where: { id: subscriptionId, sessionsTotal: { not: null } },
