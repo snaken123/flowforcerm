@@ -18,7 +18,12 @@ const MEMBER_INCLUDE = {
 
 const BOOKING_INCLUDE = {
   member: { select: MEMBER_INCLUDE },
-  schedule: { select: { startTime: true, classDef: { select: { name: true } } } },
+  schedule: {
+    select: {
+      startTime: true,
+      classDef: { select: { name: true, allowedServices: { select: { serviceId: true } } } },
+    },
+  },
   subscription: {
     select: { id: true, sessionsUsed: true, sessionsTotal: true, endDate: true, service: { select: { name: true } } },
   },

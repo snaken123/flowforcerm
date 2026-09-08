@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -156,11 +157,13 @@ export function SubscriptionsClient({
                 {filtered.map((sub) => (
                   <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="px-4 py-3 font-medium">
-                      {sub.member
-                        ? `${sub.member.firstName} ${sub.member.lastName}`
-                        : sub.employee
-                          ? `${sub.employee.firstName} ${sub.employee.lastName} (staff)`
-                          : "—"}
+                      {sub.member ? (
+                        <Link href={`/admin/members/${sub.member.id}`} className="hover:underline">
+                          {sub.member.firstName} {sub.member.lastName}
+                        </Link>
+                      ) : sub.employee
+                        ? `${sub.employee.firstName} ${sub.employee.lastName} (staff)`
+                        : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

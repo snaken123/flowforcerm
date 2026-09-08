@@ -25,7 +25,12 @@ const BOOKING_INCLUDE = {
       },
     },
   },
-  schedule: { select: { startTime: true, classDef: { select: { name: true } } } },
+  schedule: {
+    select: {
+      startTime: true,
+      classDef: { select: { name: true, allowedServices: { select: { serviceId: true } } } },
+    },
+  },
   subscription: {
     select: { id: true, sessionsUsed: true, sessionsTotal: true, endDate: true, service: { select: { name: true } } },
   },
@@ -65,12 +70,32 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (subscriptionId !== undefined) {
-    const existing = await prisma.booking.findUnique({ where: { id: params.id }, select: { memberId: true } });
+    const existing = await prisma.booking.findUnique({
+      where: { id: params.id },
+      select: { memberId: true, status: true, subscriptionId: true },
+    });
     if (!existing?.memberId) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     const ownsSub = await prisma.subscription.findFirst({
       where: { id: subscriptionId, memberId: existing.memberId },
     });
     if (!ownsSub) return NextResponse.json({ error: "Subscription does not belong to this member" }, { status: 403 });
+
+    // Already attended, and the subscription is only now being set/changed -- the
+    // status-dispatch above never ran (this PATCH didn't include `status`), so no
+    // session was ever deducted for this attendance. Deduct from the new subscription;
+    // if a different one was already linked, refund it first so nothing double-counts.
+    if (existing.status === "ATTENDED" && status !== "ATTENDED" && existing.subscriptionId !== subscriptionId) {
+      if (existing.subscriptionId) {
+        await prisma.subscription.updateMany({
+          where: { id: existing.subscriptionId, sessionsTotal: { not: null }, sessionsUsed: { gt: 0 } },
+          data: { sessionsUsed: { decrement: 1 } },
+        });
+      }
+      await prisma.subscription.updateMany({
+        where: { id: subscriptionId, sessionsTotal: { not: null } },
+        data: { sessionsUsed: { increment: 1 } },
+      });
+    }
   }
 
   // Correcting which class this entry is for -- keep sessionId (the class def) in sync

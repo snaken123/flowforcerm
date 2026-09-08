@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     prisma.payment.findMany({
       where: { status: "PAID", paidAt: { gte: start, lte: end } },
       include: {
-        member: { select: { firstName: true, lastName: true, memberNumber: true } },
+        member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
         employee: { select: { firstName: true, lastName: true } },
         subscription: { include: { service: { select: { name: true } } } },
       },
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
 
   const rows = payments.map((p) => ({
     id: p.id,
+    memberId: p.member?.id ?? null,
     memberName: p.member
       ? `${p.member.firstName} ${p.member.lastName}`
       : p.employee

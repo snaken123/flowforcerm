@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,7 +137,11 @@ function DailyRevenueCard() {
                 <tbody className="divide-y">
                   {data.payments.map((r) => (
                     <tr key={r.id}>
-                      <td className="py-1.5 pr-3 font-medium">{r.memberName}</td>
+                      <td className="py-1.5 pr-3 font-medium">
+                        {r.memberId ? (
+                          <Link href={`/admin/members/${r.memberId}`} className="hover:underline">{r.memberName}</Link>
+                        ) : r.memberName}
+                      </td>
                       <td className="py-1.5 pr-3 text-muted-foreground">{r.service}</td>
                       <td className="py-1.5 pr-3 text-muted-foreground">{r.method}</td>
                       <td className="py-1.5 text-right font-semibold">{formatCurrencyPlain(r.amount)}</td>
@@ -225,7 +230,11 @@ function MonthlyRevenueCard() {
                   {data.payments.map((r) => (
                     <tr key={r.id}>
                       <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">{new Date(r.paidAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</td>
-                      <td className="py-1.5 pr-3 font-medium">{r.memberName}</td>
+                      <td className="py-1.5 pr-3 font-medium">
+                        {r.memberId ? (
+                          <Link href={`/admin/members/${r.memberId}`} className="hover:underline">{r.memberName}</Link>
+                        ) : r.memberName}
+                      </td>
                       <td className="py-1.5 pr-3 text-muted-foreground">{r.service}</td>
                       <td className="py-1.5 pr-3 text-muted-foreground">{r.method}</td>
                       <td className="py-1.5 text-right font-semibold">{formatCurrencyPlain(r.amount)}</td>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,7 @@ export interface LogbookEntry {
   } | null;
   schedule: {
     startTime: string;
-    classDef: { name: string };
+    classDef: { name: string; allowedServices: { serviceId: string }[] };
   } | null;
   subscription: {
     id: string;
@@ -552,15 +553,38 @@ export function LogbookRow({
   const selectedSubId = entry.subscriptionId ?? "";
   const selectedSub = entry.subscription ?? activeSubs.find((s) => s.id === selectedSubId) ?? null;
 
+  // Only offer subscriptions that actually match this class's sport -- an empty
+  // allowedServices list means the class is open to any active subscription. The
+  // already-linked subscription is always included even if it wouldn't otherwise pass
+  // (a different service, or since expired/cancelled), so an existing selection never
+  // renders as a blank placeholder.
+  const allowedServiceIds = entry.schedule?.classDef.allowedServices.map((a) => a.serviceId) ?? [];
+  const dropdownSubs = allowedServiceIds.length > 0
+    ? activeSubs.filter((s) => allowedServiceIds.includes(s.serviceId))
+    : activeSubs;
+  const linkedSub = entry.member?.subscriptions.find((s) => s.id === selectedSubId);
+  const subOptions = linkedSub && !dropdownSubs.some((s) => s.id === linkedSub.id)
+    ? [...dropdownSubs, linkedSub]
+    : dropdownSubs;
+
   const sessionsDisplay = (() => {
     if (!selectedSub) return "—";
     if (selectedSub.sessionsTotal == null) return "Unli";
-    const remaining = selectedSub.sessionsTotal - selectedSub.sessionsUsed;
-    return `${remaining}/${selectedSub.sessionsTotal}`;
+    // used/total, matching every other screen (dashboard, member detail, employee
+    // detail) -- this used to show remaining/total, the opposite meaning.
+    return `${selectedSub.sessionsUsed}/${selectedSub.sessionsTotal}`;
   })();
 
   const isAttended = entry.status === "ATTENDED";
   const isCancelled = entry.status === "CANCELLED";
+
+  // A stored scheduleId (or, here, the schedule object it resolves to) could point at a
+  // schedule not visible in today's loaded list -- match the same way the Class Time
+  // <Select> below already does (by startTime + class name), not just presence of `schedule`.
+  const hasValidSchedule = !!entry.schedule && todaySchedules.some(
+    (s) => s.startTime === entry.schedule!.startTime && s.classDef?.name === entry.schedule!.classDef.name
+  );
+  const canMarkAttended = !!entry.member && hasValidSchedule && !!selectedSubId;
 
   const rowClass = `${idx % 2 === 0 ? "bg-background" : "bg-muted/20"} ${isCancelled ? "opacity-60" : ""}`;
   const cellClass = isCancelled ? "line-through text-muted-foreground" : "";
@@ -584,7 +608,11 @@ export function LogbookRow({
       </td>
       <td className={`px-2 py-1.5 font-mono ${cellClass}`}>{entry.member?.memberNumber ?? "—"}</td>
       <td className={`px-2 py-1.5 whitespace-nowrap font-medium ${cellClass}`}>
-        {entry.member ? `${entry.member.firstName} ${entry.member.lastName}` : "—"}
+        {entry.member ? (
+          <Link href={`/admin/members/${entry.member.id}`} className="hover:underline">
+            {entry.member.firstName} {entry.member.lastName}
+          </Link>
+        ) : "—"}
       </td>
       <td className="px-2 py-1.5 whitespace-nowrap">
         {readOnly || isCancelled ? (
@@ -610,7 +638,7 @@ export function LogbookRow({
       <td className="px-2 py-1.5 whitespace-nowrap">
         {readOnly || isCancelled ? (
           <span className={`text-xs text-muted-foreground ${cellClass}`}>{selectedSub?.service.name ?? "—"}</span>
-        ) : activeSubs.length === 0 ? (
+        ) : subOptions.length === 0 ? (
           entry.member ? (
             <button
               type="button"
@@ -629,7 +657,7 @@ export function LogbookRow({
               <SelectValue placeholder="Select sub…" />
             </SelectTrigger>
             <SelectContent>
-              {activeSubs.map((s) => (
+              {subOptions.map((s) => (
                 <SelectItem key={s.id} value={s.id} className="text-xs">
                   {s.service.name}
                 </SelectItem>
@@ -656,7 +684,8 @@ export function LogbookRow({
             className="h-4 w-4 accent-green-600 cursor-pointer disabled:cursor-not-allowed"
             checked={isAttended}
             onChange={(e) => onAttendance?.(entry, e.target.checked)}
-            disabled={isAttended || isCancelled || attendancePending}
+            disabled={isAttended || isCancelled || attendancePending || !canMarkAttended}
+            title={!canMarkAttended ? "Needs a member, class time, and package before attendance can be marked" : undefined}
           />
         )}
       </td>
