@@ -19,8 +19,14 @@ const schema = z
     adminName: z.string().min(2, "Required"),
     timezone: z.string().min(1, "Required"),
     agentId: z.string().optional(),
-    commissionPercent: z.coerce.number().min(1).max(100).optional(),
-    commissionMonths: z.coerce.number().min(1).max(120).optional(),
+    // z.coerce.number() alone turns an empty string into 0 (Number("") === 0), not
+    // undefined -- .optional() only skips validation for undefined, so a blank field
+    // (e.g. Commission length left empty while disabled by "No expiration") would fail
+    // its own .min(1) with an error on a field nothing ever renders, blocking submit
+    // with zero visible feedback. Preprocess blank/empty to undefined first so it's
+    // treated as genuinely absent.
+    commissionPercent: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(1).max(100).optional()),
+    commissionMonths: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(1).max(120).optional()),
     commissionNoExpiration: z.boolean().optional(),
     referredByTenantId: z.string().optional(),
     isBilled: z.boolean(),
@@ -263,6 +269,7 @@ export function NewTenantForm({
                   placeholder="12"
                   className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555] disabled:opacity-40"
                 />
+                {errors.commissionMonths && <p className="text-xs text-destructive">{errors.commissionMonths.message}</p>}
                 <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
                   <input type="checkbox" {...register("commissionNoExpiration")} className="h-4 w-4" />
                   <span className="text-xs text-[#888]">No expiration — commission continues until the gym stops paying or is deleted</span>
