@@ -72,11 +72,17 @@ export default async function SuperAdminDashboard() {
             >
               Security Incidents
             </Link>
-            <NewTenantForm
-              agents={agents}
-              existingTenants={tenants.map((t) => ({ id: t.id, name: t.name }))}
-            />
           </div>
+        </div>
+
+        {/* Its own row, not a flex sibling of the nav links above -- crammed in there it
+            had no dedicated width to size its two-column grid against and got squeezed
+            down to a sliver by its larger siblings. */}
+        <div className="mb-6 flex justify-end">
+          <NewTenantForm
+            agents={agents}
+            existingTenants={tenants.map((t) => ({ id: t.id, name: t.name }))}
+          />
         </div>
 
         {tenants.length === 0 ? (

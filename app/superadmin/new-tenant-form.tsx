@@ -115,7 +115,7 @@ export function NewTenantForm({
 
   if (result) {
     return (
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 mb-6">
+      <div className="w-full max-w-md rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 mb-6">
         <p className="text-emerald-400 font-semibold mb-3">
           {result.subdomain}.flowforcerm.com is live
         </p>
@@ -151,7 +151,7 @@ export function NewTenantForm({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#111] p-6 mb-6">
+    <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#111] p-6 mb-6">
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="text-xs text-[#888]">Gym Name</label>
