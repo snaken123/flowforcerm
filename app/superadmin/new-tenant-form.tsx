@@ -21,11 +21,12 @@ const schema = z
     agentId: z.string().optional(),
     commissionPercent: z.coerce.number().min(1).max(100).optional(),
     commissionMonths: z.coerce.number().min(1).max(120).optional(),
+    commissionNoExpiration: z.boolean().optional(),
     referredByTenantId: z.string().optional(),
     isBilled: z.boolean(),
   })
-  .refine((d) => !d.agentId || (d.commissionPercent && d.commissionMonths), {
-    message: "Commission % and length are required when an agent is selected.",
+  .refine((d) => !d.agentId || (d.commissionPercent && (d.commissionMonths || d.commissionNoExpiration)), {
+    message: "Commission % and either a length or \"No expiration\" are required when an agent is selected.",
     path: ["commissionPercent"],
   });
 
@@ -71,15 +72,22 @@ export function NewTenantForm({
     defaultValues: { timezone: "Asia/Manila", isBilled: true },
   });
   const hasAgent = !!watch("agentId");
+  const noExpiration = !!watch("commissionNoExpiration");
 
   async function onSubmit(data: FormValues) {
     setSubmitting(true);
     setError(null);
     try {
+      // commissionMonths may still hold a stale value from before "No expiration" was
+      // checked (it's disabled, not cleared, so re-checking it keeps what was there) --
+      // strip it here so the server sees a real "no expiration" signal (field omitted)
+      // rather than whatever number happened to be left in the input.
+      const { commissionNoExpiration, ...rest } = data;
+      const payload = commissionNoExpiration ? { ...rest, commissionMonths: undefined } : rest;
       const res = await fetch("/api/superadmin/tenants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -251,9 +259,14 @@ export function NewTenantForm({
                   min={1}
                   max={120}
                   {...register("commissionMonths")}
+                  disabled={noExpiration}
                   placeholder="12"
-                  className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
+                  className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555] disabled:opacity-40"
                 />
+                <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                  <input type="checkbox" {...register("commissionNoExpiration")} className="h-4 w-4" />
+                  <span className="text-xs text-[#888]">No expiration — commission continues until the gym stops paying or is deleted</span>
+                </label>
               </div>
             </>
           )}

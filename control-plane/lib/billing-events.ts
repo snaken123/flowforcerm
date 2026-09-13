@@ -88,16 +88,24 @@ export async function handleCycleSucceeded(payload: XenditWebhookPayload): Promi
     });
 
     const { tenant } = subscription;
-    if (tenant.agentId && tenant.commissionPercent != null && tenant.commissionMonths != null) {
-      const firstChargeDate = isFirstCharge
-        ? now
-        : (await tx.invoice.findFirst({
-            where: { subscriptionId: subscription.id, status: "PAID" },
-            orderBy: { createdAt: "asc" },
-            select: { createdAt: true },
-          }))?.createdAt ?? now;
-      const windowEnd = addMonths(firstChargeDate, tenant.commissionMonths);
-      if (now < windowEnd) {
+    // commissionMonths == null means "no expiration" (set via the "No expiration"
+    // checkbox at gym creation) -- the window never closes on its own; commission just
+    // stops accruing naturally once this webhook stops firing (subscription cancelled/
+    // lapsed) or the tenant is deleted, same as the time-boxed case below.
+    if (tenant.agentId && tenant.commissionPercent != null) {
+      const withinWindow = await (async () => {
+        if (tenant.commissionMonths == null) return true;
+        const firstChargeDate = isFirstCharge
+          ? now
+          : (await tx.invoice.findFirst({
+              where: { subscriptionId: subscription.id, status: "PAID" },
+              orderBy: { createdAt: "asc" },
+              select: { createdAt: true },
+            }))?.createdAt ?? now;
+        const windowEnd = addMonths(firstChargeDate, tenant.commissionMonths);
+        return now < windowEnd;
+      })();
+      if (withinWindow) {
         await tx.commissionEntry.create({
           data: {
             tenantId: tenant.id,

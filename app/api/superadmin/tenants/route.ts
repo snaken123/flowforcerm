@@ -13,12 +13,15 @@ const createTenantSchema = z
     timezone: z.string().refine(isValidTimeZone, "Not a recognized timezone").optional(),
     agentId: z.string().optional(),
     commissionPercent: z.number().min(1).max(100).optional(),
+    // Omitted (not present in the request body) means "no expiration" -- the commission
+    // window never closes on its own, it just stops producing entries once the gym's
+    // subscription stops generating successful-payment webhooks (see billing-events.ts).
     commissionMonths: z.number().min(1).max(120).optional(),
     referredByTenantId: z.string().optional(),
     isBilled: z.boolean().optional(),
   })
-  .refine((d) => !d.agentId || (d.commissionPercent && d.commissionMonths), {
-    message: "Commission % and length are required when an agent is selected.",
+  .refine((d) => !d.agentId || !!d.commissionPercent, {
+    message: "Commission % is required when an agent is selected.",
   });
 
 export async function POST(req: Request) {

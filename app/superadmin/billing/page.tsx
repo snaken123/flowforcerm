@@ -115,7 +115,7 @@ export default async function BillingPage() {
                       </td>
                       <td className="px-4 py-3 text-[#888] text-xs">
                         {t.agent
-                          ? `${t.agent.name} · ${t.commissionPercent}% / ${t.commissionMonths}mo`
+                          ? `${t.agent.name} · ${t.commissionPercent}% / ${t.commissionMonths != null ? `${t.commissionMonths}mo` : "no expiration"}`
                           : "—"}
                       </td>
                     </tr>
