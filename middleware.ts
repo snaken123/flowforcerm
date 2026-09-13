@@ -170,36 +170,29 @@ export default async function middleware(req: NextRequest) {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     } else {
-      if (token.role === "KIOSK" && pathname !== "/kiosk") {
-        return NextResponse.redirect(new URL("/kiosk", req.url));
+      // A single priority-ordered chain, not independent sequential checks: each gate
+      // used to only exempt its OWN target path, so a token needing two gates at once
+      // (e.g. a brand-new admin with both mustChangePassword and needsLegalAcceptance)
+      // would bounce between them forever -- landing on /legal-acceptance satisfied
+      // that gate's own exemption but not mustChangePassword's, which would immediately
+      // send it back to /change-password, whose gate would then re-fire the legal one,
+      // looping until the browser gave up with ERR_TOO_MANY_REDIRECTS. Computing one
+      // target up front (first match wins) and only redirecting when the current
+      // pathname isn't already that target makes the gates mutually exclusive instead.
+      let gateTarget: string | null = null;
+      if (token.role === "KIOSK") {
+        gateTarget = "/kiosk";
+      } else if (token.role === "MEMBER" && !token.onboardingCompleted) {
+        gateTarget = "/setup-account";
+      } else if ((token.role === "STAFF" || token.role === "ADMIN") && token.mustChangePassword) {
+        gateTarget = "/change-password";
+      } else if ((token.role === "STAFF" || token.role === "ADMIN") && token.needsLegalAcceptance) {
+        gateTarget = "/legal-acceptance";
+      } else if (token.role === "ADMIN" && token.needsPaymentSetup) {
+        gateTarget = "/billing-setup";
       }
-      if (token.role === "MEMBER" && !token.onboardingCompleted && pathname !== "/setup-account") {
-        return NextResponse.redirect(new URL("/setup-account", req.url));
-      }
-      if (
-        (token.role === "STAFF" || token.role === "ADMIN") &&
-        token.mustChangePassword &&
-        pathname !== "/change-password"
-      ) {
-        return NextResponse.redirect(new URL("/change-password", req.url));
-      }
-      // Must have a real password set before accepting anything under their own
-      // identity, so this comes after the mustChangePassword gate above.
-      if (
-        (token.role === "STAFF" || token.role === "ADMIN") &&
-        token.needsLegalAcceptance &&
-        pathname !== "/legal-acceptance"
-      ) {
-        return NextResponse.redirect(new URL("/legal-acceptance", req.url));
-      }
-      // Must have accepted the platform's own legal agreements before being asked for
-      // payment details, so this comes after the needsLegalAcceptance gate above.
-      if (
-        token.role === "ADMIN" &&
-        token.needsPaymentSetup &&
-        pathname !== "/billing-setup"
-      ) {
-        return NextResponse.redirect(new URL("/billing-setup", req.url));
+      if (gateTarget && pathname !== gateTarget) {
+        return NextResponse.redirect(new URL(gateTarget, req.url));
       }
       const staffAllowedAdminPaths = ["/admin/members", "/admin/schedule", "/admin/classes", "/admin/store", "/admin/logs", "/admin/employees", "/admin/reports", "/admin/records-todo"];
       if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
