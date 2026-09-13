@@ -83,7 +83,7 @@ export function MemberCalendar({
   memberId: string;
   subscriptions: { id: string; serviceId: string }[];
   sessionServiceMap: Record<string, string[]>;
-  existingBookings: { id: string; sessionId: string; scheduleId: string | null; status: string }[];
+  existingBookings: { id: string; sessionId: string; scheduleId: string | null; status: string; scheduledDate: string | null }[];
 }) {
   const router = useRouter();
   const timeZone = useTenantTimezone();
@@ -92,7 +92,7 @@ export function MemberCalendar({
   const [dayView, setDayView] = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const [selected, setSelected] = useState<any | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [bookings, setBookings] = useState<{ id: string; sessionId: string; scheduleId: string | null; status: string }[]>(existingBookings);
+  const [bookings, setBookings] = useState<{ id: string; sessionId: string; scheduleId: string | null; status: string; scheduledDate: string | null }[]>(existingBookings);
   const [loading, setLoading] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
   const [cancelWithinCutoff, setCancelWithinCutoff] = useState(false);
@@ -115,8 +115,14 @@ export function MemberCalendar({
   const totalHeight = (END_HOUR - START_HOUR) * HOUR_PX;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
-  function getBooking(scheduleId: string) {
-    return bookings.find((b) => b.scheduleId === scheduleId) ?? null;
+  // A ClassSchedule is the recurring weekly slot definition (e.g. "CrossFit Mon 7am"),
+  // reused by every week's occurrence -- matching a booking by scheduleId alone would make
+  // one booked Monday show as booked on every past and future Monday too. There's no
+  // recurring booking here (every Booking.scheduledDate is a specific date), so a booking
+  // only counts for the exact calendar date it was made for.
+  function getBooking(scheduleId: string, cellDate: Date) {
+    const dateStr = cellDate.toLocaleDateString("en-CA");
+    return bookings.find((b) => b.scheduleId === scheduleId && b.scheduledDate?.slice(0, 10) === dateStr) ?? null;
   }
 
   function isClassExpired(item: any, cellDate: Date): boolean {
@@ -156,7 +162,7 @@ export function MemberCalendar({
         throw new Error(err.error ?? "Failed to book");
       }
       const booking = await res.json();
-      setBookings((prev) => [...prev, { id: booking.id, sessionId: selected.classId, scheduleId: selected.id, status: "CONFIRMED" }]);
+      setBookings((prev) => [...prev, { id: booking.id, sessionId: selected.classId, scheduleId: selected.id, status: "CONFIRMED", scheduledDate: booking.scheduledDate ?? null }]);
       toast({ title: "Class booked!", description: `${selected.classDef?.name} reserved. Attendance will be marked when you visit.` });
       setSelected(null);
       router.refresh();
@@ -295,7 +301,7 @@ export function MemberCalendar({
                   const height = Math.max(((endMin - startMin) / 60) * HOUR_PX, 20);
                   const widthPct = 100 / totalCols;
                   const color = item.classDef?.color ?? "#3b82f6";
-                  const booking = getBooking(item.id);
+                  const booking = getBooking(item.id, dayView);
                   const isBooked = !!booking;
                   const isAttended = booking?.status === "ATTENDED";
                   const expired = isClassExpired(item, dayView);
@@ -378,7 +384,7 @@ export function MemberCalendar({
                       const height = Math.max(((endMin - startMin) / 60) * HOUR_PX, 20);
                       const widthPct = 100 / totalCols;
                       const color = item.classDef?.color ?? "#3b82f6";
-                      const booking = getBooking(item.id);
+                      const booking = getBooking(item.id, cellDate);
                       const isBooked = !!booking;
                       const isAttended = booking?.status === "ATTENDED";
                       const expired = isClassExpired(item, cellDate);
@@ -414,7 +420,7 @@ export function MemberCalendar({
       {/* Class detail dialog */}
 
       {selected && (() => {
-        const booking = getBooking(selected.id);
+        const booking = getBooking(selected.id, selectedDate ?? dayView);
         const isBooked = !!booking;
         const isAttended = booking?.status === "ATTENDED";
         const expired = !!selected.expired;

@@ -21,7 +21,7 @@ export default async function MemberSchedulePage() {
       },
       bookings: {
         where: { status: { in: ["CONFIRMED", "ATTENDED"] } },
-        select: { id: true, sessionId: true, scheduleId: true, status: true },
+        select: { id: true, sessionId: true, scheduleId: true, status: true, scheduledDate: true },
       },
     },
   });
@@ -69,7 +69,7 @@ export default async function MemberSchedulePage() {
       memberId={member?.id ?? ""}
       subscriptions={member?.subscriptions ?? []}
       sessionServiceMap={sessionServiceMap}
-      existingBookings={member?.bookings ?? []}
+      existingBookings={JSON.parse(JSON.stringify(member?.bookings ?? []))}
     />
   );
 }
