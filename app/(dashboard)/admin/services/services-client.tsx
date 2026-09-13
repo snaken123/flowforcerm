@@ -355,6 +355,16 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
 
   const sessionsType = pkgForm.watch("sessionsType");
 
+  // "Annual Membership" is the built-in service every tenant gets by default and can't
+  // delete -- its own edit/free-trial controls don't apply to it, so those icons are
+  // hidden on its card. Its active toggle also doubles as the on/off switch for the
+  // member-vs-non-member price distinction everywhere else: turn it off and there's no
+  // more "member" tier to price against, so Non-Member Price becomes non-editable on
+  // every package everywhere (existing values are preserved, just no longer changeable),
+  // same "annual" name match already used for the Athlete ID card's background.
+  const annualService = items.find((s) => s.name.toLowerCase().includes("annual"));
+  const annualMembershipActive = annualService?.isActive ?? false;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -367,7 +377,9 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {items.map((service) => (
+        {items.map((service) => {
+        const isAnnualMembership = service.name.toLowerCase().includes("annual");
+        return (
           <Card
             key={service.id}
             draggable
@@ -388,21 +400,25 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(service)} title="Edit">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled={togglingId === `${service.id}:trial`}
-                    onClick={() => toggleFreeTrial(service)}
-                    title={service.freeTrialEnabled ? "Disable free trial" : "Enable free trial"}
-                  >
-                    {togglingId === `${service.id}:trial`
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <FlaskConical className={`h-3.5 w-3.5 ${service.freeTrialEnabled ? "text-blue-500" : "text-muted-foreground"}`} />}
-                  </Button>
+                  {!isAnnualMembership && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(service)} title="Edit">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {!isAnnualMembership && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={togglingId === `${service.id}:trial`}
+                      onClick={() => toggleFreeTrial(service)}
+                      title={service.freeTrialEnabled ? "Disable free trial" : "Enable free trial"}
+                    >
+                      {togglingId === `${service.id}:trial`
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <FlaskConical className={`h-3.5 w-3.5 ${service.freeTrialEnabled ? "text-blue-500" : "text-muted-foreground"}`} />}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -475,7 +491,8 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
 
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
         {items.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
             <Dumbbell className="mx-auto h-10 w-10 mb-3 opacity-30" />
@@ -544,7 +561,10 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
               </div>
               <div className="space-y-1">
                 <Label>Non-Member Price (₱)</Label>
-                <Input type="text" placeholder="0.00 or leave blank" {...editPkgForm.register("nonMemberPrice")} />
+                <Input type="text" placeholder="0.00 or leave blank" {...editPkgForm.register("nonMemberPrice")} disabled={!annualMembershipActive} />
+                {!annualMembershipActive && (
+                  <p className="text-xs text-muted-foreground">Enable Annual Membership to set non-member pricing.</p>
+                )}
               </div>
             </div>
 
@@ -615,7 +635,10 @@ export function ServicesClient({ services: initial }: { services: any[] }) {
               </div>
               <div className="space-y-1">
                 <Label>Non-Member Price (₱)</Label>
-                <Input type="text" placeholder="0.00 or leave blank" {...pkgForm.register("nonMemberPrice")} />
+                <Input type="text" placeholder="0.00 or leave blank" {...pkgForm.register("nonMemberPrice")} disabled={!annualMembershipActive} />
+                {!annualMembershipActive && (
+                  <p className="text-xs text-muted-foreground">Enable Annual Membership to set non-member pricing.</p>
+                )}
                 {pkgForm.formState.errors.nonMemberPrice && <p className="text-xs text-destructive">{pkgForm.formState.errors.nonMemberPrice.message}</p>}
               </div>
             </div>

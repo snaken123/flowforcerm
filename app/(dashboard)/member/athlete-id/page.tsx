@@ -28,16 +28,24 @@ export default async function AthleteIdPage() {
 
   const userId = (session.user as any).id;
 
-  const [ownMember, managedMembers] = await Promise.all([
+  const [ownMember, managedMembers, annualService] = await Promise.all([
     prisma.member.findUnique({ where: { userId }, select: memberSelect }),
     prisma.member.findMany({ where: { guardianUserId: userId }, select: memberSelect, orderBy: { firstName: "asc" } }),
+    // Same "annual" name match already used for the logbook's badge (hasAnnualSub in
+    // components/dashboard/logbook-card.tsx) -- kept consistent rather than reinvented here.
+    prisma.service.findFirst({ where: { name: { contains: "annual", mode: "insensitive" } }, select: { isActive: true } }),
   ]);
+  const annualMembershipActive = annualService?.isActive ?? false;
 
-  // Same "annual" name match already used for the logbook's badge (hasAnnualSub in
-  // components/dashboard/logbook-card.tsx) -- kept consistent rather than reinvented here.
+  // The white/yellow distinction exists to flag "this athlete doesn't have the premium
+  // (annual) option" -- once the gym has turned Annual Membership off entirely, that
+  // distinction has nothing to flag, so it falls back to just "has any active membership".
   function toProfile(m: NonNullable<typeof ownMember>) {
     const { subscriptions, ...rest } = m;
-    return { ...rest, hasAnnual: subscriptions.some((s) => s.service.name.toLowerCase().includes("annual")) };
+    const whiteCard = annualMembershipActive
+      ? subscriptions.some((s) => s.service.name.toLowerCase().includes("annual"))
+      : subscriptions.length > 0;
+    return { ...rest, whiteCard };
   }
 
   const profiles = [
