@@ -168,9 +168,9 @@ export function NewTenantForm({
             <input
               {...register("subdomain")}
               placeholder="ironfist"
-              className="w-full bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
+              className="flex-1 min-w-0 bg-[#1a1a1a] border border-white/20 rounded-md px-3 py-2 text-sm text-white placeholder:text-[#555]"
             />
-            <span className="text-xs text-[#555] ml-2 whitespace-nowrap">.flowforcerm.com</span>
+            <span className="text-xs text-[#555] ml-2 whitespace-nowrap shrink-0">.flowforcerm.com</span>
           </div>
           {errors.subdomain && <p className="text-xs text-destructive">{errors.subdomain.message}</p>}
         </div>
