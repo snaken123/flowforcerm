@@ -12,7 +12,7 @@ export default async function MemberTrainingPlanPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Training Plan</h1>
-      <TrainingPlanBoard canEdit={false} />
+      <TrainingPlanBoard canEdit={false} dayOnly />
     </div>
   );
 }

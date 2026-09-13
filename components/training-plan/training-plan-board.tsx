@@ -43,9 +43,13 @@ type Card = { date: string; categoryKey: string; rows: TrainingPlanCell[][]; not
 // read-only mode. canEdit only gates which controls render; the API independently
 // re-checks permission server-side on every write, and Coach's Note visibility is
 // decided entirely server-side (from the session) on every fetch, not passed in here.
-export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
+//
+// dayOnly locks the board to today with no nav/view-toggle controls at all -- members
+// only ever need today's plan, and there's no way to book/attend a past or future day's
+// session anyway, so a full week/day navigator would just be surface area for confusion.
+export function TrainingPlanBoard({ canEdit, dayOnly = false }: { canEdit: boolean; dayOnly?: boolean }) {
   const timeZone = useTenantTimezone();
-  const [viewMode, setViewMode] = useState<"week" | "day">("week");
+  const [viewMode, setViewMode] = useState<"week" | "day">(dayOnly ? "day" : "week");
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [dayView, setDayView] = useState(() => todayMidnight());
   const [categories, setCategories] = useState<Category[]>([]);
@@ -220,7 +224,10 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
         ))}
       </div>
 
-      {/* Nav header — mirrors the Prev/Today/Next + Week/Day toggle on the Class Schedule tab */}
+      {/* Nav header — mirrors the Prev/Today/Next + Week/Day toggle on the Class Schedule
+          tab. Members only ever see today's plan, so dayOnly drops this whole section --
+          there's nothing to navigate to and nothing to toggle. */}
+      {!dayOnly && (
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">
           {viewMode === "week"
@@ -275,6 +282,7 @@ export function TrainingPlanBoard({ canEdit }: { canEdit: boolean }) {
           </label>
         </div>
       </div>
+      )}
 
       {/* Board — one flat CSS grid, day headers then category rows in row-major order
           (day-header cells first, then every day's card for category 1, then category
