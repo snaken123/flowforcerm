@@ -37,7 +37,13 @@ export async function sendSMS(to: string, message: string) {
   });
 
   if (!res.ok) throw new Error(`Semaphore error: ${res.status}`);
-  return res.json();
+  const body = await res.json();
+  // Semaphore returns HTTP 200 even when it rejects the request (bad/missing apikey,
+  // invalid number, etc.) -- the error only shows up as a plain object of field errors
+  // in the body instead of an array of sent messages, so res.ok alone can't tell success
+  // from failure. Without this check a rejected send silently counts as delivered.
+  if (!Array.isArray(body)) throw new Error(`Semaphore rejected the request: ${JSON.stringify(body)}`);
+  return body;
 }
 
 export async function sendBulkSMS(recipients: { phone: string; name: string }[], message: string) {
@@ -46,7 +52,8 @@ export async function sendBulkSMS(recipients: { phone: string; name: string }[],
     try {
       await sendSMS(r.phone, message);
       results.sent++;
-    } catch {
+    } catch (e) {
+      console.error(`[sms] failed to send to ${r.phone}:`, e instanceof Error ? e.message : e);
       results.failed++;
     }
   }
