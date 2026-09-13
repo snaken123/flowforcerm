@@ -22,7 +22,7 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import {
   ShoppingBag, Plus, Pencil, Trash2, Package, GlassWater,
   ClipboardList, ShoppingCart, X, Camera, Search,
-  ChevronDown, ChevronUp, BarChart2, ScrollText, AlertCircle, MoreVertical, Tag,
+  ChevronDown, ChevronUp, BarChart2, ScrollText, AlertCircle, MoreVertical, Tag, Loader2,
 } from "lucide-react";
 
 type SizeStock = { size: string; stock: number };
@@ -1640,7 +1640,10 @@ export function ShopClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowItemDialog(false)}>Cancel</Button>
-            <Button onClick={saveItem} disabled={savingItem || !itemForm.name || !itemForm.sellingPrice}>{savingItem ? "Saving..." : "Save"}</Button>
+            <Button onClick={saveItem} disabled={savingItem || !itemForm.name || !itemForm.sellingPrice}>
+              {savingItem && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {savingItem ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1804,7 +1807,10 @@ export function ShopClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowInventoryDialog(false)}>Cancel</Button>
-            <Button onClick={saveInventory} disabled={savingInv || !invQty}>{savingInv ? "Saving..." : "Save"}</Button>
+            <Button onClick={saveInventory} disabled={savingInv || !invQty}>
+              {savingInv && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {savingInv ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1980,6 +1986,7 @@ export function ShopClient({
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingSale(null)}>Cancel</Button>
             <Button onClick={saveSaleEdit} disabled={savingSale || !editPaymentMode || (!!PAYMENT_SUB[editPaymentMode] && !editPaymentSub)}>
+              {savingSale && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {savingSale ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

@@ -504,6 +504,7 @@ function PasswordForm({ account, label, icon: Icon, email }: {
           {success && <p className="text-sm text-green-600 font-medium">Password updated successfully.</p>}
 
           <Button type="submit" disabled={loading} className="w-full">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "Updating..." : `Update ${label} Password`}
           </Button>
         </form>
@@ -677,6 +678,7 @@ function KioskDevicesSection({ initialDevices }: { initialDevices: KioskDevice[]
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
                 <Button type="submit" disabled={adding}>
+                  {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {adding ? "Generating…" : "Generate Token"}
                 </Button>
               </DialogFooter>

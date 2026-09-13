@@ -375,8 +375,9 @@ export function MemberProfileClient({ member }: { member: any }) {
                 <button
                   onClick={saveEmergency}
                   disabled={emergencySaving}
-                  className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 inline-flex items-center"
                 >
+                  {emergencySaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {emergencySaving ? "Saving…" : "Save"}
                 </button>
               </div>
@@ -432,8 +433,9 @@ export function MemberProfileClient({ member }: { member: any }) {
                 <button
                   onClick={saveContact}
                   disabled={contactSaving}
-                  className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 inline-flex items-center"
                 >
+                  {contactSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {contactSaving ? "Saving…" : "Save"}
                 </button>
               </div>

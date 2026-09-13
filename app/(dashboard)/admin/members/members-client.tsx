@@ -554,6 +554,7 @@ export function MembersClient({
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDeleteStep(1)}>Back</Button>
                 <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {deleting ? "Deleting..." : "Delete Athlete"}
                 </Button>
               </DialogFooter>
