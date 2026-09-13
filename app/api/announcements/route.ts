@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const expiresAt = parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null;
   const isDueNow = !sendAt || sendAt <= new Date();
 
-  const announcement = await prisma.announcement.create({
+  let announcement = await prisma.announcement.create({
     data: {
       title: parsed.data.title,
       content: parsed.data.content,
@@ -84,7 +84,12 @@ export async function POST(req: NextRequest) {
   // down as soon as the response is sent, which would silently kill an un-awaited send.
   if (isDueNow && (parsed.data.sendEmail || parsed.data.sendSms)) {
     try {
-      await dispatchAnnouncement(announcement);
+      const result = await dispatchAnnouncement(announcement);
+      announcement = await prisma.announcement.update({
+        where: { id: announcement.id },
+        data: result,
+        include: { createdBy: { select: { name: true, email: true } } },
+      });
     } catch (e) {
       console.error("[announcements] immediate dispatch failed:", e instanceof Error ? e.message : e);
     }

@@ -25,8 +25,8 @@ async function runForTenant(prisma: PrismaClient): Promise<{ processed: number; 
   let dispatched = 0;
   for (const a of due) {
     try {
-      await dispatchAnnouncement(a, prisma);
-      await prisma.announcement.update({ where: { id: a.id }, data: { notifiedAt: new Date() } });
+      const result = await dispatchAnnouncement(a, prisma);
+      await prisma.announcement.update({ where: { id: a.id }, data: { notifiedAt: new Date(), ...result } });
       dispatched++;
     } catch (e) {
       console.error(`[cron/dispatch-announcements] failed for announcement ${a.id}:`, e instanceof Error ? e.message : e);

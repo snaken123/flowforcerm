@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Megaphone, Loader2, Pin, Plus, Trash2 } from "lucide-react";
+import { Megaphone, Loader2, Pin, Plus, Trash2, Mail, MessageSquare, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,11 @@ type Announcement = {
   expiresAt: string | null;
   sendEmail: boolean;
   sendSms: boolean;
+  notifiedAt: string | null;
+  emailSent: number | null;
+  emailFailed: number | null;
+  smsSent: number | null;
+  smsFailed: number | null;
   status: AnnouncementStatus;
   createdAt: string;
   createdBy: { name: string | null; email: string };
@@ -178,6 +183,34 @@ export function AnnouncementBoardCard({ canManage }: { canManage: boolean }) {
                           {AUDIENCE_OPTIONS.find((o) => o.key === tag)?.label ?? tag}
                         </span>
                       ))}
+                    </div>
+                  )}
+                  {canManage && (a.sendEmail || a.sendSms) && (
+                    <div className="flex flex-wrap gap-2.5 text-[10px]">
+                      {a.sendEmail && (
+                        !a.notifiedAt ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" />Email pending</span>
+                        ) : a.emailSent === null ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" />Email sent (delivery not tracked)</span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 ${a.emailFailed ? "text-destructive" : "text-muted-foreground"}`}>
+                            {a.emailFailed ? <AlertTriangle className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
+                            Email {a.emailSent}/{a.emailSent + (a.emailFailed ?? 0)} sent
+                          </span>
+                        )
+                      )}
+                      {a.sendSms && (
+                        !a.notifiedAt ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><MessageSquare className="h-3 w-3" />SMS pending</span>
+                        ) : a.smsSent === null ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><MessageSquare className="h-3 w-3" />SMS sent (delivery not tracked)</span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 ${a.smsFailed ? "text-destructive" : "text-muted-foreground"}`}>
+                            {a.smsFailed ? <AlertTriangle className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+                            SMS {a.smsSent}/{a.smsSent + (a.smsFailed ?? 0)} sent
+                          </span>
+                        )
+                      )}
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground">

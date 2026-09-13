@@ -719,7 +719,14 @@ model Announcement {
   expiresAt   DateTime?              // null = never expires
   sendEmail   Boolean                @default(false)
   sendSms     Boolean                @default(false)
-  notifiedAt  DateTime?              // stamped once email/SMS actually dispatched -- prevents double-send
+  notifiedAt  DateTime?              // stamped once email/SMS dispatch was attempted -- prevents double-send
+  // Per-channel delivery results, filled in after dispatchAnnouncement() runs -- null
+  // means that channel wasn't selected at all, distinct from 0 (selected, zero recipients
+  // or all failed). notifiedAt alone only proves a send was attempted, not that it worked.
+  emailSent   Int?
+  emailFailed Int?
+  smsSent     Int?
+  smsFailed   Int?
   createdAt   DateTime               @default(now())
   createdById String
   createdBy   User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
