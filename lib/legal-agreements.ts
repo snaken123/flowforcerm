@@ -106,9 +106,16 @@ export async function acceptAgreements(
     ).map((r) => r.documentType)
   );
 
-  await prisma.$transaction(
-    toAccept.map((doc) =>
-      prisma.legalAgreementAcceptance.create({
+  // Callback form, not the array-batch form ($transaction([p1, p2, ...])) -- the
+  // shared `prisma` export is a Proxy that resolves the right tenant's real client
+  // per call (see lib/db.ts), so each prisma.model.method() it returns is a plain
+  // async-wrapped Promise, not the special PrismaPromise the array-batch API
+  // requires ("All elements of the array need to be Prisma Client promises"). Every
+  // other $transaction call in the codebase already uses this callback form for the
+  // same reason.
+  await prisma.$transaction(async (tx) => {
+    for (const doc of toAccept) {
+      await tx.legalAgreementAcceptance.create({
         data: {
           userId: user.id,
           documentType: doc.type,
@@ -120,9 +127,9 @@ export async function acceptAgreements(
           userAgent: opts.userAgent ?? null,
           context: priorTypes.has(doc.type) ? "UPDATED_TERMS" : (opts.fallbackContext ?? "FIRST_LOGIN"),
         },
-      })
-    )
-  );
+      });
+    }
+  });
 
   const actionForType: Record<TenantLegalDocumentType, string> = {
     TERMS_OF_SERVICE: "TERMS_ACCEPTED",
