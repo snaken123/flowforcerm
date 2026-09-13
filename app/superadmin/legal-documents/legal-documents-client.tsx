@@ -14,10 +14,14 @@ type LegalDocument = {
   contentHash: string | null;
   status: "DRAFT" | "PUBLISHED" | "SUPERSEDED" | "ARCHIVED";
   summaryOfChanges: string | null;
-  effectiveDate: string | null;
-  publishedAt: string | null;
-  supersededAt: string | null;
-  createdAt: string;
+  // These come straight from a server component's Prisma result rather than a JSON API
+  // response -- React's RSC serialization preserves Date objects as actual Date
+  // instances across that boundary, so every one of these can arrive as either a Date
+  // or (already-serialized, e.g. after a client-side refetch) a string.
+  effectiveDate: string | Date | null;
+  publishedAt: string | Date | null;
+  supersededAt: string | Date | null;
+  createdAt: string | Date;
 };
 
 const TYPES = [
@@ -58,7 +62,15 @@ function DocumentForm({
       "**DRAFT / PLACEHOLDER — REQUIRES REVIEW AND APPROVAL BY QUALIFIED PHILIPPINE LEGAL/PRIVACY COUNSEL BEFORE COMMERCIAL USE.**\n\n"
   );
   const [summaryOfChanges, setSummaryOfChanges] = useState(editing?.summaryOfChanges ?? "");
-  const [effectiveDate, setEffectiveDate] = useState(editing?.effectiveDate?.slice(0, 10) ?? "");
+  // `editing` is a prop passed straight from the server component's Prisma result --
+  // React's RSC serialization preserves Date objects as actual Date instances across
+  // that boundary (unlike a JSON API response, which would already be a string), so
+  // effectiveDate can arrive as either depending on the call path. Normalize both.
+  const [effectiveDate, setEffectiveDate] = useState(() => {
+    if (!editing?.effectiveDate) return "";
+    const d = editing.effectiveDate instanceof Date ? editing.effectiveDate : new Date(editing.effectiveDate);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  });
   const [preview, setPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
