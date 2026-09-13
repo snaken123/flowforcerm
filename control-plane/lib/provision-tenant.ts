@@ -137,6 +137,19 @@ export async function provisionTenant(input: ProvisionTenantInput) {
       await tenantPrisma.tenantBranding.create({
         data: { id: "singleton", gymName: input.gymName, timezone },
       });
+      // Every gym gets this built-in service -- it's the one Memberships-page card
+      // that can't be deleted or edited from the UI (see services-client.tsx). Seeded
+      // inactive with no starting price/package: the gym decides whether to turn it on
+      // and sets its own pricing rather than inheriting a placeholder amount.
+      await tenantPrisma.service.create({
+        data: {
+          name: "Annual Membership",
+          slug: "annual-membership",
+          category: "Fitness",
+          color: "#3B82F6",
+          isActive: false,
+        },
+      });
     } finally {
       await tenantPrisma.$disconnect();
     }
