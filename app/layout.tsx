@@ -11,9 +11,11 @@ const khand = Khand({ subsets: ["latin"], weight: ["300", "400", "500", "600", "
 // Dynamic (not a static `metadata` export) so a tenant's own logo can replace the
 // favicon/apple-touch-icon and browser tab title -- superadmin and the bare marketing
 // domain never resolve a tenant (see middleware.ts), so this falls back to the
-// platform's own assets there, same guard as getBrandStyle() below. The PWA manifest
-// itself is handled separately by app/manifest.ts (its own tenant-aware convention
-// file), not listed here.
+// platform's own assets there, same guard as getBrandStyle() below. `manifest` points
+// at a Route Handler (app/api/manifest/route.ts), not Next's own manifest.ts
+// convention file -- that convention auto-injects its link at the root in a way a
+// nested layout's own `metadata.manifest` override (see kiosk/layout.tsx) can't
+// actually take precedence over, so both need to be explicit Route Handlers instead.
 export async function generateMetadata(): Promise<Metadata> {
   const tenantId = headers().get("x-tenant-id");
   const branding = tenantId ? await prisma.tenantBranding.findFirst().catch(() => null) : null;
@@ -22,6 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: gymName, template: `%s | ${gymName}` },
     description: `${gymName} — Gym Management System`,
+    manifest: "/api/manifest",
     icons: branding?.logoUrl
       ? { icon: [{ url: branding.logoUrl }], apple: [{ url: branding.logoUrl }] }
       : {
