@@ -8,24 +8,37 @@ import { hexToHslTriplet, pickForegroundHsl } from "@/lib/color";
 
 const khand = Khand({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
-export const metadata: Metadata = {
-  title: { default: "FlowForceRM", template: "%s | FlowForceRM" },
-  description: "FlowForceRM — Gym Management System",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "FlowForceRM",
-  },
-};
+// Dynamic (not a static `metadata` export) so a tenant's own logo can replace the
+// favicon/apple-touch-icon and browser tab title -- superadmin and the bare marketing
+// domain never resolve a tenant (see middleware.ts), so this falls back to the
+// platform's own assets there, same guard as getBrandStyle() below. The PWA manifest
+// itself is handled separately by app/manifest.ts (its own tenant-aware convention
+// file), not listed here.
+export async function generateMetadata(): Promise<Metadata> {
+  const tenantId = headers().get("x-tenant-id");
+  const branding = tenantId ? await prisma.tenantBranding.findFirst().catch(() => null) : null;
+  const gymName = branding?.gymName || "FlowForceRM";
+
+  return {
+    title: { default: gymName, template: `%s | ${gymName}` },
+    description: `${gymName} — Gym Management System`,
+    icons: branding?.logoUrl
+      ? { icon: [{ url: branding.logoUrl }], apple: [{ url: branding.logoUrl }] }
+      : {
+          icon: [
+            { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+            { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+            { url: "/favicon.ico", sizes: "any" },
+          ],
+          apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+        },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: gymName,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#111111",
